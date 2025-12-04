@@ -100,7 +100,7 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     setIsPlacingOrder(true);
     await placeOrder();
-    setIsPlacingOrder(false);
+    // No need to set isPlacingOrder to false, as the page will redirect.
   }
 
   const isLoading = isUserLoading || isProfileLoading;
@@ -110,105 +110,103 @@ export default function CheckoutPage() {
   }
 
   if(!user) {
-    return null; // Should be redirected
+    return null; // Should be redirected by the useEffect
   }
 
   if (totalItems === 0 && !isPlacingOrder) {
     return (
-        <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Your cart is empty</AlertTitle>
-            <AlertDescription>
-               You cannot checkout with an empty cart. Please add items from the menu.
-            </AlertDescription>
-        </Alert>
+        <div className="flex-grow flex items-center justify-center">
+            <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Your cart is empty</AlertTitle>
+                <AlertDescription>
+                   Please add items from the menu to proceed to checkout.
+                </AlertDescription>
+            </Alert>
+        </div>
     )
   }
 
   return (
-    <div className="grid md:grid-cols-3 gap-8 items-start">
-      <div className="md:col-span-2 space-y-6">
-        <Card>
-            <CardHeader>
-                <CardTitle>Customer Information</CardTitle>
-                <CardDescription>Review your details below.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="grid sm:grid-cols-2 gap-4">
+     <div className="flex flex-col h-full">
+        <div className="flex-grow space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Customer Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
                     <div>
                         <dt className="text-sm font-medium text-muted-foreground">Name</dt>
-                        <dd className="mt-1 font-semibold">{userProfile?.name}</dd>
+                        <dd className="mt-1 font-semibold">{userProfile?.name || 'Loading...'}</dd>
                     </div>
                      <div>
                         <dt className="text-sm font-medium text-muted-foreground">Email</dt>
-                        <dd className="mt-1 font-semibold">{userProfile?.email}</dd>
+                        <dd className="mt-1 font-semibold">{userProfile?.email || 'Loading...'}</dd>
                     </div>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Items in Order ({totalItems})</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <ul className="divide-y">
+                        {state.items.map(item => {
+                            const itemImage = PlaceHolderImages.find(img => img.id === item.image);
+                            return (
+                                <li key={item.id} className="flex items-center gap-4 p-4">
+                                    {itemImage && (
+                                    <Image
+                                        src={itemImage.imageUrl}
+                                        alt={item.name}
+                                        width={64}
+                                        height={64}
+                                        className="rounded-md object-cover"
+                                    />
+                                    )}
+                                    <div className="flex-grow grid gap-1">
+                                        <h3 className="font-semibold">{item.name}</h3>
+                                        <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
+                                    </div>
+                                    <div className="text-right font-semibold">
+                                        ${(item.price * item.quantity).toFixed(2)}
+                                    </div>
+                                </li>
+                            )
+                        })}
+                    </ul>
+                </CardContent>
+            </Card>
+        </div>
         
-        <Card>
-            <CardHeader>
-                <CardTitle>Items in Order</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-                <ul className="divide-y">
-                    {state.items.map(item => {
-                        const itemImage = PlaceHolderImages.find(img => img.id === item.image);
-                        return (
-                             <li key={item.id} className="flex items-center gap-4 p-4">
-                                {itemImage && (
-                                <Image
-                                    src={itemImage.imageUrl}
-                                    alt={item.name}
-                                    width={64}
-                                    height={64}
-                                    className="rounded-md object-cover"
-                                />
-                                )}
-                                <div className="flex-grow grid gap-1">
-                                    <h3 className="font-semibold">{item.name}</h3>
-                                    <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
-                                </div>
-                                <div className="text-right font-semibold">
-                                    ${(item.price * item.quantity).toFixed(2)}
-                                </div>
-                            </li>
-                        )
-                    })}
-                </ul>
-            </CardContent>
-        </Card>
+        <div className="mt-auto pt-6 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Order Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <div className="flex justify-between text-muted-foreground">
+                        <span>Subtotal</span>
+                        <span>${totalPrice.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                        <span>Taxes & Fees</span>
+                        <span>$0.00</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between font-bold text-lg">
+                        <span>Total</span>
+                        <span>${totalPrice.toFixed(2)}</span>
+                    </div>
+                </CardContent>
+            </Card>
 
-      </div>
-      <div className="md:col-span-1 sticky top-24">
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="flex justify-between">
-              <span>Subtotal ({totalItems} items)</span>
-              <span>${totalPrice.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Taxes & Fees</span>
-              <span>$0.00</span>
-            </div>
-            <Separator />
-            <div className="flex justify-between font-bold text-lg">
-              <span>Total</span>
-              <span>${totalPrice.toFixed(2)}</span>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
+            <Button className="w-full h-14 text-lg font-bold" size="lg" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
               {isPlacingOrder ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
-              {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
+              {isPlacingOrder ? 'Placing Order...' : `Pay $${totalPrice.toFixed(2)}`}
             </Button>
-          </CardFooter>
-        </Card>
-      </div>
+        </div>
     </div>
   );
 }
