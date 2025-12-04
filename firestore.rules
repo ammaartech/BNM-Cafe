@@ -165,11 +165,13 @@ service cloud.firestore {
       allow create, update, delete: if false; // TODO: Implement admin-only write access once an admin system is in place.
     }
 
-    // This rule allows any authenticated user to query the 'orders' collection group.
-    // This is required for the admin page to see all orders.
-    // WARNING: In a production app, you should restrict this to admin users
-    // using custom claims, e.g. `if request.auth.token.isAdmin == true;`
-    match /{path=**}/orders/{order} {
+    /**
+     * This rule allows any authenticated user to query the 'orders' collection group.
+     * This is required for the admin page to see all orders.
+     * WARNING: In a production app, you should restrict this to admin users
+     * using custom claims, e.g. `if request.auth.token.isAdmin == true;`
+     */
+    match /{path=**}/orders/{orderId} {
       allow list: if isSignedIn();
     }
   }

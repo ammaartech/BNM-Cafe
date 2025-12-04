@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collectionGroup, query, orderBy } from "firebase/firestore";
 import type { Order } from "@/lib/types";
@@ -9,8 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Lock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { AdminPinDialog } from '@/components/AdminPinDialog';
 
 function AdminOrderSkeleton() {
     return (
@@ -43,14 +44,29 @@ function AdminOrderSkeleton() {
 
 export default function AdminPage() {
     const firestore = useFirestore();
+    const [isVerified, setIsVerified] = useState(false);
 
     const allOrdersQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        // Only construct the query if the user is verified and firestore is available
+        if (!isVerified || !firestore) return null;
         return query(collectionGroup(firestore, 'orders'), orderBy('orderDate', 'desc'));
-    }, [firestore]);
+    }, [firestore, isVerified]);
 
     const { data: orders, isLoading, error } = useCollection<Order>(allOrdersQuery);
     
+    if (!isVerified) {
+        return (
+            <>
+                <AdminPinDialog isOpen={!isVerified} onPinVerified={setIsVerified} />
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                    <Lock className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h2 className="text-xl font-semibold">Admin Area Locked</h2>
+                    <p className="text-muted-foreground">Please enter the PIN to continue.</p>
+                </div>
+            </>
+        )
+    }
+
     return (
         <div className="space-y-8">
             <div className="text-center">
@@ -69,9 +85,7 @@ export default function AdminPage() {
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Error Fetching Orders</AlertTitle>
                     <AlertDescription>
-                        Could not fetch all orders. This is likely a Firestore security rule issue. 
-                        For an admin to view all orders, the data structure might need to be changed to a top-level `orders` collection,
-                        and security rules would need to grant admin-only access. The current structure `/users/{userId}/orders` prevents this by design.
+                       {error.message}
                     </AlertDescription>
                 </Alert>
             )}
@@ -103,7 +117,7 @@ export default function AdminPage() {
                                     </TableCell>
                                     <TableCell>{order.items.reduce((acc, item) => acc + item.quantity, 0)}</TableCell>
                                     <TableCell className="text-right font-bold">${order.totalAmount.toFixed(2)}</TableCell>
-                                </TableRow>
+                                 </TableRow>
                             )) : (
                                 <TableRow>
                                     <TableCell colSpan={6} className="h-24 text-center">
