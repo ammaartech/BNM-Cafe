@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { collectionGroup, query, orderBy, doc } from 'firebase/firestore';
-import type { Order, OrderItem } from '@/lib/types';
+import type { Order } from '@/lib/types';
 import {
   Table,
   TableBody,
