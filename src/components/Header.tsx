@@ -97,7 +97,7 @@ export default function Header() {
                         </DropdownMenuItem>
                     ))}
                      <DropdownMenuItem asChild>
-                       <Link href="/admin"><LayoutDashboard className="mr-2 h-4 w-4"/>Admin</Link>
+                       <Link href="/admin2"><LayoutDashboard className="mr-2 h-4 w-4"/>Admin</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} className="text-destructive">

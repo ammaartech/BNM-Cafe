@@ -63,6 +63,7 @@ function AdminDashboard() {
   }
 
   if (error) {
+    // This will catch security rule errors if they occur
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
@@ -188,7 +189,7 @@ function PinEntry({ onPinVerified }: { onPinVerified: () => void }) {
   );
 }
 
-export default function AdminPage() {
+export default function Admin2Page() {
   const [isVerified, setIsVerified] = useState(false);
 
   if (!isVerified) {
