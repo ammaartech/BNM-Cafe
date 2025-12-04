@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Campus Cafe Connect",
+  title: "B.N.M Cafe",
   description: "Your university cafe companion",
 };
 
@@ -23,11 +23,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
       </head>
-      <body className={`font-sans antialiased ${inter.variable}`}>
-        <FirebaseClientProvider>
-            {children}
-        </FirebaseClientProvider>
-        <Toaster />
+      <body className={`font-sans antialiased ${inter.variable} bg-background`}>
+        <div className="max-w-md mx-auto bg-card min-h-screen flex flex-col shadow-2xl">
+            <FirebaseClientProvider>
+                {children}
+            </FirebaseClientProvider>
+            <Toaster />
+        </div>
       </body>
     </html>
   );

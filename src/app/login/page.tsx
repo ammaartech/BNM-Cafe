@@ -3,17 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Utensils, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { useAuth, useUser } from "@/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
@@ -46,6 +38,13 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+function AppleIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg {...props} viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12.01,2.02c-1.3,0-2.54,0.52-3.46,1.44c-0.95,0.95-1.5,2.23-1.5,3.58c0,1.47,0.61,2.8,1.62,3.7c0.97,0.85,2.26,1.26,3.48,1.26c0.1,0,0.2,0,0.3,0c-0.1,0.2-0.2,0.4-0.3,0.6c-0.5,1.1-1.2,2.2-2.1,3.3c-0.8,0.9-1.6,1.8-2.5,2.7c-1.9,1.9-3.8,3.8-3.8,5.8c0,0.1,0.1,0.2,0.2,0.2c1.9,0,3.3-0.8,4.7-2.2c1.3-1.3,2.4-2.8,3.5-4.5c1.1,1.7,2.2,3.2,3.5,4.5c1.4,1.4,2.8,2.2,4.7,2.2c0.1,0,0.2-0.1,0.2-0.2c0-2-1.9-3.9-3.8-5.8c-0.9-0.9-1.7-1.8-2.5-2.7c-0.9-1.1-1.6-2.2-2.1-3.3c-0.1-0.2-0.2-0.4-0.3-0.6c0.1,0,0.2,0,0.3,0c1.22,0,2.51-0.41,3.48-1.26c1.01-0.9,1.62-2.23,1.62-3.7c0-1.35-0.55-2.63-1.5-3.58C14.55,2.54,13.31,2.02,12.01,2.02z M12.01,3.22c0.91,0,1.76,0.36,2.39,0.99c0.63,0.63,1.01,1.5,1.01,2.43c0,0.94-0.38,1.82-1.03,2.47c-0.61,0.61-1.44,0.91-2.37,0.91c-0.93,0-1.76-0.3-2.37-0.91c-0.65-0.65-1.03-1.53-1.03-2.47c0-0.93,0.38-1.8,1.01-2.43C10.25,3.58,11.1,3.22,12.01,3.22z"></path>
+        </svg>
+    )
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -53,6 +52,7 @@ export default function LoginPage() {
   const { user, isUserLoading } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -87,75 +87,91 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <Card className="w-full max-w-sm mx-4">
-        <form onSubmit={handleLogin}>
-          <CardHeader className="text-center">
-            <div className="flex justify-center items-center gap-2 mb-4">
-              <Utensils className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold font-headline">
-                Campus Cafe Connect
-              </h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4">
+      <div className="w-full max-w-sm text-center">
+        <h1 className="text-3xl font-bold mb-8">B.N.M Cafe</h1>
+        <div className="bg-card p-6 rounded-lg shadow-sm w-full">
+            <div className="text-left mb-6">
+                <h2 className="text-3xl font-bold">Heyyy There!</h2>
+                <p className="text-muted-foreground text-sm mt-1">Food is symbolic of love when words are inadequate watchya waiting for?</p>
             </div>
-            <CardTitle className="text-2xl">Welcome Back!</CardTitle>
-            <CardDescription>
-              Enter your credentials to access your account.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
+            
             {error && (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="mb-4 text-left">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Login Failed</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading}/>
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
-            </Button>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <div className="relative w-full">
+
+            <form onSubmit={handleLogin} className="space-y-4">
+                <div className="grid gap-2 text-left">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                        id="email"
+                        type="email"
+                        placeholder="m@example.com"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={isLoading}
+                        className="bg-muted border-0"
+                    />
+                </div>
+                <div className="grid gap-2 text-left relative">
+                    <Label htmlFor="password">Password</Label>
+                    <Input 
+                        id="password" 
+                        type={showPassword ? "text" : "password"} 
+                        required 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)} 
+                        disabled={isLoading}
+                        className="bg-muted border-0 pr-10"
+                    />
+                     <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-9 text-muted-foreground"
+                    >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                </div>
+                <Button type="submit" className="w-full h-12 text-base" disabled={isLoading}>
+                    {isLoading ? "Signing in..." : "Sign in"}
+                </Button>
+            </form>
+            
+            <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground">
-                  Or continue with
+                  Or sign in with
                 </span>
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-2 w-full">
-              <Button variant="outline" disabled={isLoading}>
-                <GoogleIcon className="mr-2 h-4 w-4" />
+
+            <div className="grid grid-cols-2 gap-4">
+              <Button variant="outline" className="h-12" disabled={isLoading}>
+                <GoogleIcon className="mr-2 h-5 w-5" />
                 Google
               </Button>
+               <Button variant="outline" className="h-12" disabled={isLoading}>
+                <AppleIcon className="mr-2 h-5 w-5" />
+                Apple
+              </Button>
             </div>
-            <div className="text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="underline text-primary">
-                Sign up
-              </Link>
-            </div>
-          </CardFooter>
-        </form>
-      </Card>
+        </div>
+
+        <div className="mt-6 text-sm">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="font-semibold text-primary">
+            Sign up here
+            </Link>
+        </div>
+      </div>
     </div>
   );
 }

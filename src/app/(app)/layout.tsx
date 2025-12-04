@@ -10,14 +10,9 @@ export default function AppLayout({
     <CartProvider>
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-grow container mx-auto px-4 py-8">
+        <main className="flex-grow container mx-auto px-4 py-6 flex flex-col">
           {children}
         </main>
-        <footer className="bg-card text-card-foreground border-t">
-            <div className="container mx-auto py-4 text-center text-sm text-muted-foreground">
-                <p>&copy; {new Date().getFullYear()} Campus Cafe Connect. All rights reserved.</p>
-            </div>
-        </footer>
       </div>
     </CartProvider>
   );

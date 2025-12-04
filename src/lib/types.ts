@@ -34,14 +34,10 @@ export interface Order {
   items: OrderItem[];
 }
 
-export interface CartItem {
-  id: string;
-  name: string;
-  price: number;
+export interface CartItem extends MenuItem {
   quantity: number;
-  image: string;
-  stock: number;
 }
+
 
 export interface UserProfile {
     id: string;
