@@ -1,0 +1,214 @@
+"use client";
+
+import { useCart } from "@/context/CartContext";
+import { useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { AlertCircle, CreditCard, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { UserProfile } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+function CheckoutSkeleton() {
+    return (
+      <div className="grid md:grid-cols-3 gap-8">
+        <div className="md:col-span-2 space-y-6">
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-64 mt-2" />
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+                            <Skeleton className="h-16 w-16 rounded-md" />
+                            <div className="flex-grow space-y-2">
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-4 w-1/2" />
+                            </div>
+                            <Skeleton className="h-5 w-16" />
+                        </div>
+                         <div className="flex items-center gap-4">
+                            <Skeleton className="h-16 w-16 rounded-md" />
+                            <div className="flex-grow space-y-2">
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-4 w-1/2" />
+                            </div>
+                            <Skeleton className="h-5 w-16" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+         <div className="md:col-span-1">
+             <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-3/4" />
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                    <div className="flex justify-between"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-16" /></div>
+                    <div className="flex justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-12" /></div>
+                    <Separator />
+                    <div className="flex justify-between"><Skeleton className="h-5 w-16" /><Skeleton className="h-5 w-20" /></div>
+                </CardContent>
+                <CardFooter>
+                    <Skeleton className="h-12 w-full" />
+                </CardFooter>
+             </Card>
+        </div>
+      </div>
+    );
+}
+
+export default function CheckoutPage() {
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, "users", user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+  const { state, totalPrice, totalItems, placeOrder } = useCart();
+  
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+        router.push('/login');
+    }
+  }, [user, isUserLoading, router])
+  
+  const handlePlaceOrder = async () => {
+    setIsPlacingOrder(true);
+    await placeOrder();
+    setIsPlacingOrder(false);
+  }
+
+  const isLoading = isUserLoading || isProfileLoading;
+
+  if (isLoading) {
+    return <CheckoutSkeleton />;
+  }
+
+  if(!user) {
+    return null; // Should be redirected
+  }
+
+  if (totalItems === 0 && !isPlacingOrder) {
+    return (
+        <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Your cart is empty</AlertTitle>
+            <AlertDescription>
+               You cannot checkout with an empty cart. Please add items from the menu.
+            </AlertDescription>
+        </Alert>
+    )
+  }
+
+  return (
+    <div className="grid md:grid-cols-3 gap-8 items-start">
+      <div className="md:col-span-2 space-y-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>Customer Information</CardTitle>
+                <CardDescription>Review your details below.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                        <dt className="text-sm font-medium text-muted-foreground">Name</dt>
+                        <dd className="mt-1 font-semibold">{userProfile?.name}</dd>
+                    </div>
+                     <div>
+                        <dt className="text-sm font-medium text-muted-foreground">Email</dt>
+                        <dd className="mt-1 font-semibold">{userProfile?.email}</dd>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle>Items in Order</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+                <ul className="divide-y">
+                    {state.items.map(item => {
+                        const itemImage = PlaceHolderImages.find(img => img.id === item.image);
+                        return (
+                             <li key={item.id} className="flex items-center gap-4 p-4">
+                                {itemImage && (
+                                <Image
+                                    src={itemImage.imageUrl}
+                                    alt={item.name}
+                                    width={64}
+                                    height={64}
+                                    className="rounded-md object-cover"
+                                />
+                                )}
+                                <div className="flex-grow grid gap-1">
+                                    <h3 className="font-semibold">{item.name}</h3>
+                                    <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
+                                </div>
+                                <div className="text-right font-semibold">
+                                    ${(item.price * item.quantity).toFixed(2)}
+                                </div>
+                            </li>
+                        )
+                    })}
+                </ul>
+            </CardContent>
+        </Card>
+
+      </div>
+      <div className="md:col-span-1 sticky top-24">
+        <Card>
+          <CardHeader>
+            <CardTitle>Order Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <div className="flex justify-between">
+              <span>Subtotal ({totalItems} items)</span>
+              <span>${totalPrice.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Taxes & Fees</span>
+              <span>$0.00</span>
+            </div>
+            <Separator />
+            <div className="flex justify-between font-bold text-lg">
+              <span>Total</span>
+              <span>${totalPrice.toFixed(2)}</span>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
+              {isPlacingOrder ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
+              {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    </div>
+  );
+}

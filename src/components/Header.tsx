@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ShoppingCart, User, Utensils, Menu, X } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ShoppingCart, User, Utensils, Menu, X, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
+import { useAuth, useUser } from "@/firebase";
+import { signOut } from "firebase/auth";
 
 const navLinks = [
   { href: "/menu", label: "Menu" },
@@ -25,7 +27,15 @@ const navLinks = [
 export default function Header() {
   const { totalItems } = useCart();
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user } = useUser();
+  const auth = useAuth();
+  
+  const handleLogout = async () => {
+      await signOut(auth);
+      router.push('/login');
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
@@ -50,6 +60,15 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
+           {user && <Link
+              href="/admin"
+              className={cn(
+                "transition-colors hover:text-primary",
+                pathname === "/admin" ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              Admin
+            </Link>}
         </nav>
 
         <div className="flex items-center gap-4">
@@ -64,7 +83,7 @@ export default function Header() {
               <span className="sr-only">Shopping Cart</span>
             </Button>
           </Link>
-          <div className="hidden md:block">
+          
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon">
@@ -73,17 +92,32 @@ export default function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/login">Logout</Link>
-                </DropdownMenuItem>
+                { user ? (
+                    <>
+                    <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                     <DropdownMenuItem asChild>
+                       <Link href="/admin"><LayoutDashboard className="mr-2"/>Admin</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>
+                        <LogOut className="mr-2"/> Logout
+                    </DropdownMenuItem>
+                    </>
+                ) : (
+                    <>
+                    <DropdownMenuItem asChild>
+                        <Link href="/login">Login</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                        <Link href="/register">Sign Up</Link>
+                    </DropdownMenuItem>
+                    </>
+                )
+                }
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+
           <div className="md:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -114,27 +148,29 @@ export default function Header() {
                         {link.label}
                       </Link>
                     ))}
+                    {user && <Link
+                      href="/admin"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={cn(
+                          "text-lg font-medium transition-colors hover:text-primary",
+                          pathname === "/admin" ? "text-primary" : "text-muted-foreground"
+                        )}
+                    >
+                      Admin
+                    </Link>}
                   </nav>
                   <div className="border-t pt-6">
-                     <DropdownMenu>
-                        <DropdownMenuTrigger className="flex items-center gap-2 w-full">
-                           <Button variant="outline" size="icon">
-                            <User className="h-5 w-5" />
-                            <span className="sr-only">User Menu</span>
-                           </Button>
-                           <span className="font-medium text-foreground">My Account</span>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="mt-2 w-56">
-                            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>Profile</DropdownMenuItem>
-                            <DropdownMenuItem>Settings</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild>
-                            <Link href="/login">Logout</Link>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {user ? (
+                        <div className="flex flex-col gap-4">
+                            <p className="text-muted-foreground">{user.email}</p>
+                            <Button onClick={() => {handleLogout(); setIsMobileMenuOpen(false);}}>Logout</Button>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-4">
+                            <Button asChild onClick={() => setIsMobileMenuOpen(false)}><Link href="/login">Login</Link></Button>
+                            <Button variant="outline" asChild onClick={() => setIsMobileMenuOpen(false)}><Link href="/register">Sign Up</Link></Button>
+                        </div>
+                    )}
                   </div>
                 </div>
               </SheetContent>

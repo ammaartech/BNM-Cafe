@@ -13,7 +13,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Utensils } from "lucide-react";
+import { Utensils, AlertCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useAuth, useUser, useFirestore } from "@/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -44,13 +50,53 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user && !isUserLoading) {
+      router.push("/menu");
+    }
+  }, [user, isUserLoading, router]);
+
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd handle registration here.
-    // For this demo, we'll just navigate to the menu.
-    router.push("/menu");
+    setIsLoading(true);
+    setError(null);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      // Create a user document in Firestore
+      await setDoc(doc(firestore, "users", firebaseUser.uid), {
+        id: firebaseUser.uid,
+        name: name,
+        email: firebaseUser.email
+      });
+
+      router.push("/menu");
+    } catch (error: any) {
+      console.error("Registration Error: ", error);
+      setError(error.message);
+    } finally {
+        setIsLoading(false);
+    }
   };
+
+  if (isUserLoading || user) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <p>Loading...</p>
+        </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
@@ -69,9 +115,16 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
+             {error && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Registration Failed</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" placeholder="John Doe" required />
+              <Input id="name" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} disabled={isLoading} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
@@ -80,14 +133,17 @@ export default function RegisterPage() {
                 type="email"
                 placeholder="m@example.com"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required />
+              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading}/>
             </div>
-            <Button type="submit" className="w-full">
-              Create Account
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
@@ -102,7 +158,7 @@ export default function RegisterPage() {
               </div>
             </div>
             <div className="grid grid-cols-1 gap-2 w-full">
-              <Button variant="outline">
+              <Button variant="outline" disabled={isLoading}>
                 <GoogleIcon className="mr-2 h-4 w-4" />
                 Google
               </Button>

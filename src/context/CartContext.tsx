@@ -1,8 +1,13 @@
 "use client";
 
-import type { CartItem, MenuItem } from "@/lib/types";
+import type { CartItem, MenuItem, Order, OrderItem } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
+import { addDocumentNonBlocking } from "@/firebase";
+import { useFirestore, useUser } from "@/firebase";
+import { collection, serverTimestamp } from "firebase/firestore";
+import { useRouter } from "next/navigation";
+
 
 type CartState = {
   items: CartItem[];
@@ -23,11 +28,13 @@ const CartContext = createContext<{
   dispatch: React.Dispatch<CartAction>;
   totalItems: number;
   totalPrice: number;
+  placeOrder: () => Promise<void>;
 }>({
   state: initialState,
   dispatch: () => null,
   totalItems: 0,
   totalPrice: 0,
+  placeOrder: async () => {},
 });
 
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -82,14 +89,82 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const router = useRouter();
+
   const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = state.items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
+  const placeOrder = async () => {
+    if (!user) {
+        toast({
+            title: "Not signed in",
+            description: "Please log in to place an order.",
+            variant: "destructive"
+        })
+        router.push('/login');
+        return;
+    }
+
+    if(state.items.length === 0) {
+        toast({
+            title: "Cart is empty",
+            description: "Add items to your cart before placing an order.",
+            variant: "destructive"
+        })
+        return;
+    }
+
+    const orderItems: OrderItem[] = state.items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity
+    }));
+
+    const newOrder: Omit<Order, 'id'> = {
+        userId: user.uid,
+        orderDate: new Date().toISOString(),
+        totalAmount: totalPrice,
+        status: "Pending",
+        items: orderItems,
+    }
+
+    try {
+        const ordersCollectionRef = collection(firestore, 'users', user.uid, 'orders');
+        const docRef = await addDocumentNonBlocking(ordersCollectionRef, newOrder);
+        
+        // The addDocumentNonBlocking does not return the docRef immediately.
+        // We will clear cart and navigate optimistically. 
+        // For getting the new order ID, we would need to adjust the logic or listen for changes.
+        // For now, we navigate to the general orders page.
+
+        dispatch({type: 'CLEAR_CART' });
+
+        toast({
+            title: "Order Placed!",
+            description: "Your order has been successfully placed.",
+        });
+
+        router.push('/orders');
+
+    } catch(error) {
+        console.error("Error placing order:", error);
+        toast({
+            title: "Order Failed",
+            description: "There was an issue placing your order. Please try again.",
+            variant: "destructive"
+        })
+    }
+  }
+
   return (
-    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice }}>
+    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice, placeOrder }}>
       {children}
     </CartContext.Provider>
   );

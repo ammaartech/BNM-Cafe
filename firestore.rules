@@ -19,10 +19,11 @@
  *   disabled pending implementation of an admin role.
  * - Admin Access Consideration: The user request mentioned an admin page to view all orders.
  *   The current structure (`/users/{userId}/orders/{orderId}`) is highly secure for user privacy
- *   but makes it impossible for an admin to query orders across all users. For an admin feature,
- *   it is recommended to denormalize orders into a separate top-level `/orders` collection
- *   where each order document contains the `userId`. This ruleset strictly implements the
- *   provided structure.
+ *   but makes it impossible for an admin to query orders across all users with a collection group query. 
+ *   For a real admin feature, it is recommended to denormalize orders into a separate top-level `/orders` collection
+ *   where each order document contains the `userId` and use custom claims for admin role.
+ *   For this implementation, we will allow any authenticated user to list all orders via a collection group query
+ *   for demonstration purposes. This is NOT recommended for production.
  *
  * Denormalization for Authorization: The rules enforce that documents created within a user's
  * data tree (e.g., an Order) must contain a `userId` field that matches the user ID in the path.
@@ -148,6 +149,14 @@ service cloud.firestore {
           allow delete: if isExistingOwner(userId);
         }
       }
+    }
+    
+    // This rule allows any authenticated user to query the 'orders' collection group.
+    // This is required for the admin page to see all orders.
+    // WARNING: In a production app, you should restrict this to admin users
+    // using custom claims, e.g. `if request.auth.token.isAdmin == true;`
+    match /{path=**}/orders/{orderId} {
+        allow list: if isSignedIn();
     }
 
     /**

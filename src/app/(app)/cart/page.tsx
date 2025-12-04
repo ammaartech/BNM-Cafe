@@ -9,19 +9,9 @@ import { Minus, Plus, Trash2, ShoppingCart, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
 
 export default function CartPage() {
-  const { state, removeItem, updateQuantity, totalPrice, totalItems, clearCart } = useCart();
-  const { toast } = useToast();
-
-  const handleCheckout = () => {
-    toast({
-        title: "Order Placed!",
-        description: "Thank you for your order. It is being prepared.",
-    });
-    clearCart();
-  }
+  const { state, removeItem, updateQuantity, totalPrice, totalItems } = useCart();
 
   if (totalItems === 0) {
     return (
@@ -106,9 +96,11 @@ export default function CartPage() {
                 </div>
             </CardContent>
             <CardFooter>
-                 <Button className="w-full" size="lg" onClick={handleCheckout}>
-                    <CreditCard className="mr-2 h-5 w-5" />
-                    Proceed to Checkout
+                 <Button className="w-full" size="lg" asChild>
+                    <Link href="/checkout">
+                        <CreditCard className="mr-2 h-5 w-5" />
+                        Proceed to Checkout
+                    </Link>
                 </Button>
             </CardFooter>
         </Card>

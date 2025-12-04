@@ -18,16 +18,20 @@ export interface Category {
   icon: LucideIcon;
 }
 
-export interface Order {
-  id: string;
-  date: string;
-  total: number;
-  status: "Delivered" | "Pending" | "Cancelled";
-  items: {
+export interface OrderItem {
+    id: string;
     name: string;
     quantity: number;
     price: number;
-  }[];
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  orderDate: string;
+  totalAmount: number;
+  status: "Pending" | "Delivered" | "Cancelled";
+  items: OrderItem[];
 }
 
 export interface CartItem {
@@ -37,4 +41,10 @@ export interface CartItem {
   quantity: number;
   image: string;
   stock: number;
+}
+
+export interface UserProfile {
+    id: string;
+    name: string;
+    email: string;
 }
