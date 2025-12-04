@@ -1,3 +1,100 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "south-indian-category",
+      "description": "A selection of South Indian dishes.",
+      "imageUrl": "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzb3V0aCUyMGluZGlhbnxlbnwwfHx8fDE3NjQ4NzI2MzN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "south indian"
+    },
+    {
+      "id": "north-indian-category",
+      "description": "A selection of North Indian dishes.",
+      "imageUrl": "https://images.unsplash.com/photo-1709964521991-5f0f7de0f8d1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxub3J0aCUyMGluZGlhbnxlbnwwfHx8fDE3NjQ4NzczOTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "north indian"
+    },
+    {
+      "id": "refreshments-category",
+      "description": "Cool and refreshing drinks.",
+      "imageUrl": "https://images.unsplash.com/photo-1592858167090-2473780d894d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxkcmlua3N8ZW58MHx8fHwxNzY0ODc3Mzk3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "drinks"
+    },
+    {
+      "id": "chats-category",
+      "description": "A variety of savory snacks.",
+      "imageUrl": "https://images.unsplash.com/photo-1569420067112-b57b4f024595?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxzbmFja3N8ZW58MHx8fHwxNzY0ODQyODQ3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "snacks"
+    },
+    {
+      "id": "dosa",
+      "description": "A crispy dosa.",
+      "imageUrl": "https://images.unsplash.com/photo-1743517894265-c86ab035adef?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxkb3NhfGVufDB8fHx8MTc2NDgxMzg3NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "dosa"
+    },
+    {
+      "id": "idli",
+      "description": "Steamed idli.",
+      "imageUrl": "https://images.unsplash.com/photo-1730191843435-073792ba22bc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxpZGxpfGVufDB8fHx8MTc2NDgxMzg3NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "idli"
+    },
+    {
+      "id": "vada",
+      "description": "Crispy vada.",
+      "imageUrl": "https://images.unsplash.com/photo-1603554593710-89285666b691?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8dmFkYXxlbnwwfHx8fDE3NjQ4NzczOTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "vada"
+    },
+    {
+      "id": "butter-chicken",
+      "description": "Creamy butter chicken.",
+      "imageUrl": "https://images.unsplash.com/photo-1631452180539-96aca7d48617?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjdXJyeXxlbnwwfHx8fDE3NjQ4NzczOTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "curry"
+    },
+    {
+      "id": "paneer-tikka",
+      "description": "Grilled paneer tikka.",
+      "imageUrl": "https://images.unsplash.com/photo-1633321702518-7feccafb94d5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxrZWJhYnxlbnwwfHx8fDE3NjQ4NzczOTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "kebab"
+    },
+    {
+      "id": "chole-bhature",
+      "description": "Spicy chole bhature.",
+      "imageUrl": "https://images.unsplash.com/photo-1651779472865-9f4b7389b7b1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxjaG9sZSUyMGJoYXR1cmV8ZW58MHx8fHwxNzY0ODc3Mzk3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "chole bhature"
+    },
+    {
+      "id": "lemonade",
+      "description": "Fresh lemonade.",
+      "imageUrl": "https://images.unsplash.com/photo-1575596510825-f748919a2bf7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxsZW1vbmFkZXxlbnwwfHx8fDE3NjQ4NzczOTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "lemonade"
+    },
+    {
+      "id": "iced-tea",
+      "description": "Cool iced tea.",
+      "imageUrl": "https://images.unsplash.com/photo-1499961024600-ad094db305cc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxpY2VkJTIwdGVhfGVufDB8fHx8MTc2NDc5NzgzN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "iced tea"
+    },
+    {
+      "id": "coffee",
+      "description": "Hot coffee.",
+      "imageUrl": "https://images.unsplash.com/photo-1447933601403-0c6688de566e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjb2ZmZWV8ZW58MHx8fHwxNzY0NzgyMzE1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "coffee"
+    },
+    {
+      "id": "pani-puri",
+      "description": "Tangy pani puri.",
+      "imageUrl": "https://images.unsplash.com/photo-1714892208649-7fb5fce74231?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwYW5pJTIwcHVyaXxlbnwwfHx8fDE3NjQ4NzczOTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pani puri"
+    },
+    {
+      "id": "bhel-puri",
+      "description": "Savory bhel puri.",
+      "imageUrl": "https://images.unsplash.com/photo-1702191748490-c56ad426eba0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxiaGVsJTIwcHVyaXxlbnwwfHx8fDE3NjQ4NzczOTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "bhel puri"
+    },
+    {
+      "id": "samosa-chaat",
+      "description": "Spicy samosa chaat.",
+      "imageUrl": "https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzYW1vc2F8ZW58MHx8fHwxNzY0Nzc2NzAyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "samosa"
+    }
+  ]
 }
