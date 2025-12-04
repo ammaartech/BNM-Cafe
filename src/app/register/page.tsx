@@ -7,17 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { useAuth, useUser, useFirestore } from "@/firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { useAuth, useUser, useFirestore, initiateEmailSignUp } from "@/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { onAuthStateChanged, User } from "firebase/auth";
 
 
 export default function RegisterPage() {
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, userError } = useUser();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,6 +33,35 @@ export default function RegisterPage() {
     }
   }, [user, isUserLoading, router]);
 
+  useEffect(() => {
+    if(userError) {
+      setError(userError.message);
+      setIsLoading(false);
+    }
+  }, [userError])
+
+  useEffect(() => {
+    if (!auth) return;
+
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
+      if (firebaseUser && name) { // Check if name is set, indicating registration flow
+        try {
+          await setDoc(doc(firestore, "users", firebaseUser.uid), {
+            id: firebaseUser.uid,
+            name: name,
+            email: firebaseUser.email
+          });
+          // The main useUser hook will handle redirection
+        } catch (docError: any) {
+           setError(docError.message);
+           setIsLoading(false);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [auth, firestore, name, router]);
+
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,23 +71,7 @@ export default function RegisterPage() {
     }
     setIsLoading(true);
     setError(null);
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-
-      await setDoc(doc(firestore, "users", firebaseUser.uid), {
-        id: firebaseUser.uid,
-        name: name,
-        email: firebaseUser.email
-      });
-
-      router.push("/menu");
-    } catch (error: any) {
-      console.error("Registration Error: ", error);
-      setError(error.message);
-    } finally {
-        setIsLoading(false);
-    }
+    initiateEmailSignUp(auth, email, password);
   };
 
   if (isUserLoading || user) {
