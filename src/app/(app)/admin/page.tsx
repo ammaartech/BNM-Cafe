@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collectionGroup, query, orderBy } from "firebase/firestore";
-import type { Order } from "@/lib/types";
+import type { Order, OrderItem } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
@@ -42,31 +42,16 @@ function AdminOrderSkeleton() {
     );
 }
 
-export default function AdminPage() {
+function AdminView() {
     const firestore = useFirestore();
-    const [isVerified, setIsVerified] = useState(false);
 
     const allOrdersQuery = useMemoFirebase(() => {
-        // Only construct the query if the user is verified and firestore is available
-        if (!isVerified || !firestore) return null;
+        if (!firestore) return null;
         return query(collectionGroup(firestore, 'orders'), orderBy('orderDate', 'desc'));
-    }, [firestore, isVerified]);
+    }, [firestore]);
 
     const { data: orders, isLoading, error } = useCollection<Order>(allOrdersQuery);
     
-    if (!isVerified) {
-        return (
-            <>
-                <AdminPinDialog isOpen={!isVerified} onPinVerified={setIsVerified} />
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                    <Lock className="h-16 w-16 text-muted-foreground mb-4" />
-                    <h2 className="text-xl font-semibold">Admin Area Locked</h2>
-                    <p className="text-muted-foreground">Please enter the PIN to continue.</p>
-                </div>
-            </>
-        )
-    }
-
     return (
         <div className="space-y-8">
             <div className="text-center">
@@ -115,7 +100,7 @@ export default function AdminPage() {
                                                 {order.status}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>{order.items.reduce((acc, item) => acc + item.quantity, 0)}</TableCell>
+                                    <TableCell>{order.items.reduce((acc, item: OrderItem) => acc + item.quantity, 0)}</TableCell>
                                     <TableCell className="text-right font-bold">${order.totalAmount.toFixed(2)}</TableCell>
                                  </TableRow>
                             )) : (
@@ -130,5 +115,24 @@ export default function AdminPage() {
                 </Card>
             )}
         </div>
-    )
+    );
+}
+
+export default function AdminPage() {
+    const [isVerified, setIsVerified] = useState(false);
+    
+    if (!isVerified) {
+        return (
+            <>
+                <AdminPinDialog isOpen={!isVerified} onPinVerified={setIsVerified} />
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                    <Lock className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h2 className="text-xl font-semibold">Admin Area Locked</h2>
+                    <p className="text-muted-foreground">Please enter the PIN to continue.</p>
+                </div>
+            </>
+        )
+    }
+
+    return <AdminView />;
 }
