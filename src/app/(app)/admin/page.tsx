@@ -100,7 +100,7 @@ function AdminView() {
                                                 {order.status}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>{order.items.reduce((acc, item: OrderItem) => acc + item.quantity, 0)}</TableCell>
+                                    <TableCell>{order.items.reduce((acc: number, item: OrderItem) => acc + item.quantity, 0)}</TableCell>
                                     <TableCell className="text-right font-bold">${order.totalAmount.toFixed(2)}</TableCell>
                                  </TableRow>
                             )) : (
@@ -121,18 +121,18 @@ function AdminView() {
 export default function AdminPage() {
     const [isVerified, setIsVerified] = useState(false);
     
-    if (!isVerified) {
-        return (
-            <>
-                <AdminPinDialog isOpen={!isVerified} onPinVerified={setIsVerified} />
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                    <Lock className="h-16 w-16 text-muted-foreground mb-4" />
-                    <h2 className="text-xl font-semibold">Admin Area Locked</h2>
-                    <p className="text-muted-foreground">Please enter the PIN to continue.</p>
-                </div>
-            </>
-        )
+    if (isVerified) {
+        return <AdminView />;
     }
 
-    return <AdminView />;
+    return (
+        <>
+            <AdminPinDialog isOpen={!isVerified} onPinVerified={setIsVerified} />
+            <div className="flex flex-col items-center justify-center h-full text-center">
+                <Lock className="h-16 w-16 text-muted-foreground mb-4" />
+                <h2 className="text-xl font-semibold">Admin Area Locked</h2>
+                <p className="text-muted-foreground">Please enter the PIN to continue.</p>
+            </div>
+        </>
+    );
 }
