@@ -1,3 +1,4 @@
+
 "use client";
 
 import { menuItems } from "@/lib/data";
@@ -37,6 +38,11 @@ export default function MenuItemDetailPage() {
   if (!item) {
     notFound();
   }
+
+  const handleAddToCart = () => {
+    addItem(item);
+    router.push('/menu');
+  };
 
   const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
   const rating = 4; // Static rating for now
@@ -79,7 +85,7 @@ export default function MenuItemDetailPage() {
       <div className="mt-auto p-6 bg-card">
         <Button
           className="w-full h-14 text-lg font-bold"
-          onClick={() => addItem(item)}
+          onClick={handleAddToCart}
           disabled={isOutOfStock}
         >
           <PlusCircle className="mr-2 h-6 w-6" />
