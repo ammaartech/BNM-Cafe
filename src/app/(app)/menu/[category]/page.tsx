@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { categories, menuItems } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Link from "next/link";
