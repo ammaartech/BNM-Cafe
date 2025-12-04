@@ -151,14 +151,6 @@ service cloud.firestore {
       }
     }
     
-    // This rule allows any authenticated user to query the 'orders' collection group.
-    // This is required for the admin page to see all orders.
-    // WARNING: In a production app, you should restrict this to admin users
-    // using custom claims, e.g. `if request.auth.token.isAdmin == true;`
-    match /{path=**}/orders/{orderId} {
-        allow list: if isSignedIn();
-    }
-
     /**
      * @description Provides public, read-only access to menu items. Anyone can view the menu.
      * Writes are disabled until an admin role or ownership model is defined.
@@ -171,6 +163,14 @@ service cloud.firestore {
       allow get, list: if true;
       // CRITICAL: Cannot implement owner-only or admin-only writes. The 'MenuItem' entity is missing an 'ownerId' or an admin role check.
       allow create, update, delete: if false; // TODO: Implement admin-only write access once an admin system is in place.
+    }
+
+    // This rule allows any authenticated user to query the 'orders' collection group.
+    // This is required for the admin page to see all orders.
+    // WARNING: In a production app, you should restrict this to admin users
+    // using custom claims, e.g. `if request.auth.token.isAdmin == true;`
+    match /{path=**}/orders/{order} {
+      allow list: if isSignedIn();
     }
   }
 }
