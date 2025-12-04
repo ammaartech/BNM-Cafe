@@ -1,15 +1,15 @@
 "use client";
 
 import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { doc, collection } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { useParams } from "next/navigation";
-import type { Order, OrderItem, UserProfile } from "@/lib/types";
+import type { Order, OrderItem } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, FileText, ShoppingBag, User as UserIcon } from "lucide-reac";
+import { AlertCircle, FileText, ShoppingBag, User as UserIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
