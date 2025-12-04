@@ -28,9 +28,10 @@ export interface OrderItem {
 export interface Order {
   id: string;
   userId: string;
+  userName: string; // Add userName to store the user's name with the order
   orderDate: string;
   totalAmount: number;
-  status: "Pending" | "Delivered" | "Cancelled";
+  status: "Pending" | "Ready for Pickup" | "Delivered" | "Cancelled";
   items: OrderItem[];
 }
 

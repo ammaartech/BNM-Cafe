@@ -96,8 +96,13 @@ export default function OrdersPage() {
                         <p className="text-sm text-muted-foreground">Date: {new Date(order.orderDate).toLocaleDateString()}</p>
                     </div>
                     <div className="text-right">
-                        <Badge variant={order.status === 'Delivered' ? 'default' : order.status === 'Cancelled' ? 'destructive' : 'secondary'}
-                          className={cn(order.status === 'Delivered' && 'bg-green-600 text-white')}>
+                        <Badge
+                            variant={order.status === 'Delivered' ? 'default' : order.status === 'Cancelled' ? 'destructive' : 'secondary'}
+                            className={cn('font-semibold', {
+                                'bg-green-600 text-white': order.status === 'Delivered',
+                                'bg-yellow-500 text-white': order.status === 'Ready for Pickup',
+                            })}
+                        >
                             {order.status}
                         </Badge>
                         <p className="font-bold mt-1">${order.totalAmount.toFixed(2)}</p>

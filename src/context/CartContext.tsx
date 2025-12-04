@@ -1,11 +1,11 @@
 "use client";
 
-import type { CartItem, MenuItem, Order, OrderItem } from "@/lib/types";
+import type { CartItem, MenuItem, Order, OrderItem, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
 import { addDocumentNonBlocking } from "@/firebase";
 import { useFirestore, useUser } from "@/firebase";
-import { collection, serverTimestamp } from "firebase/firestore";
+import { collection, doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 
@@ -101,7 +101,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const placeOrder = async () => {
-    if (!user) {
+    if (!user || !firestore) {
         toast({
             title: "Not signed in",
             description: "Please log in to place an order.",
@@ -120,29 +120,29 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
 
-    const orderItems: OrderItem[] = state.items.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity
-    }));
-
-    const newOrder: Omit<Order, 'id'> = {
-        userId: user.uid,
-        orderDate: new Date().toISOString(),
-        totalAmount: totalPrice,
-        status: "Pending",
-        items: orderItems,
-    }
-
     try {
+        const userProfileRef = doc(firestore, "users", user.uid);
+        const userProfileSnap = await getDoc(userProfileRef);
+        const userProfile = userProfileSnap.data() as UserProfile;
+
+        const orderItems: OrderItem[] = state.items.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity
+        }));
+
+        const newOrder: Omit<Order, 'id'> = {
+            userId: user.uid,
+            userName: userProfile?.name || user.email || 'Unknown User',
+            orderDate: new Date().toISOString(),
+            totalAmount: totalPrice,
+            status: "Pending",
+            items: orderItems,
+        }
+
         const ordersCollectionRef = collection(firestore, 'users', user.uid, 'orders');
-        const docRef = await addDocumentNonBlocking(ordersCollectionRef, newOrder);
-        
-        // The addDocumentNonBlocking does not return the docRef immediately.
-        // We will clear cart and navigate optimistically. 
-        // For getting the new order ID, we would need to adjust the logic or listen for changes.
-        // For now, we navigate to the general orders page.
+        await addDocumentNonBlocking(ordersCollectionRef, newOrder);
 
         dispatch({type: 'CLEAR_CART' });
 

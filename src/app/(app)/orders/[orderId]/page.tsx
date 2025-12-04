@@ -116,8 +116,13 @@ export default function OrderTicketPage() {
              <div>
                 <dt className="text-muted-foreground font-semibold">Status</dt>
                 <dd className="mt-1">
-                     <Badge variant={order.status === 'Delivered' ? 'default' : order.status === 'Cancelled' ? 'destructive' : 'secondary'}
-                          className={cn('font-semibold', order.status === 'Delivered' && 'bg-green-600 text-white')}>
+                     <Badge 
+                          variant={order.status === 'Delivered' ? 'default' : order.status === 'Cancelled' ? 'destructive' : 'secondary'}
+                          className={cn('font-semibold', {
+                              'bg-green-600 text-white': order.status === 'Delivered',
+                              'bg-yellow-500 text-white': order.status === 'Ready for Pickup',
+                          })}
+                        >
                             {order.status}
                         </Badge>
                 </dd>
