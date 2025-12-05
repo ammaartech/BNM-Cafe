@@ -229,11 +229,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   useEffect(() => {
     // This check runs only on the client-side
     const isAdmin = localStorage.getItem('isAdminAuthenticated') === 'true';
     setIsAuthenticated(isAdmin);
+    setIsAuthChecked(true); // Mark that we've checked auth status
   }, []);
 
   const handleLogin = () => {
@@ -245,8 +247,9 @@ export default function AdminPage() {
     setIsAuthenticated(false);
   };
 
-  if (typeof window === 'undefined') {
-    // Render nothing on the server to avoid hydration mismatch
+  if (!isAuthChecked) {
+    // While we're checking auth status on the client, render nothing.
+    // This ensures the server and initial client render are the same.
     return null;
   }
 
