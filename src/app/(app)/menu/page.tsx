@@ -8,7 +8,8 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import {
   Card,
   CardHeader,
-  CardContent
+  CardContent,
+  CardTitle
 } from "@/components/ui/card";
 import { ArrowRight, ShoppingCart, Menu as MenuIcon, LogOut, LayoutDashboard, Search, Heart, Plus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
