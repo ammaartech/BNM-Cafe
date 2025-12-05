@@ -6,12 +6,19 @@ import { FavoritesProvider } from "@/context/FavoritesContext";
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
-import { CheckCircle, ClipboardList } from "lucide-react";
+import { CheckCircle, ClipboardList, PackageCheck } from "lucide-react";
 import { usePathname } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Home, ShoppingCart, User, Heart } from "lucide-react";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
+import type { Order } from "@/lib/types";
+import { useState, useEffect } from "react";
 
 function CartSuccessDialog() {
     const { addedItemPopup, setAddedItemPopup } = useCart();
@@ -29,6 +36,55 @@ function CartSuccessDialog() {
             </DialogContent>
         </Dialog>
     )
+}
+
+function OrderReadyNotifier() {
+    const { user } = useUser();
+    const firestore = useFirestore();
+    const [notifiedOrderIds, setNotifiedOrderIds] = useState<string[]>([]);
+    const [orderReady, setOrderReady] = useState<Order | null>(null);
+
+    const readyOrdersQuery = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return query(
+            collection(firestore, 'users', user.uid, 'orders'),
+            where('status', '==', 'Ready for Pickup')
+        );
+    }, [user, firestore]);
+
+    const { data: readyOrders } = useCollection<Order>(readyOrdersQuery);
+
+    useEffect(() => {
+        if (readyOrders && readyOrders.length > 0) {
+            const newReadyOrder = readyOrders.find(order => !notifiedOrderIds.includes(order.id));
+            if (newReadyOrder) {
+                setOrderReady(newReadyOrder);
+                setNotifiedOrderIds(prev => [...prev, newReadyOrder.id]);
+            }
+        }
+    }, [readyOrders, notifiedOrderIds]);
+
+    const handleClose = () => {
+        setOrderReady(null);
+    }
+
+    return (
+        <Dialog open={!!orderReady} onOpenChange={(isOpen) => !isOpen && handleClose()}>
+            <DialogContent className="max-w-xs rounded-2xl">
+                <DialogHeader className="text-center items-center">
+                    <PackageCheck className="h-16 w-16 text-primary mb-4" />
+                    <DialogTitle className="text-xl font-bold">Your Order is Ready!</DialogTitle>
+                    <DialogDescription>
+                        Order #{orderReady?.id.slice(0, 7)} is now ready for pickup at B.N.M Cafe.
+                    </DialogDescription>
+                </DialogHeader>
+                <Button onClick={handleClose}>Got it!</Button>
+                 <Button variant="outline" asChild onClick={handleClose}>
+                    <Link href="/orders">View My Orders</Link>
+                </Button>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 function BottomNavBar() {
@@ -78,6 +134,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             </main>
             <BottomNavBar />
             <CartSuccessDialog />
+            <OrderReadyNotifier />
         </>
     );
 }
