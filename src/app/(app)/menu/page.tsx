@@ -136,7 +136,7 @@ export default function MenuPage() {
         </div>
         <div className="space-y-2 text-left">
             <h1 className="text-3xl font-bold tracking-tight">
-                Good Morning, {userProfile?.name || 'Bestie'}!
+                Good Morning{userProfile?.name ? `, ${userProfile.name}!` : ','}
             </h1>
         </div>
         <div className="relative mt-4">
