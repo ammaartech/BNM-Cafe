@@ -2,6 +2,7 @@
 
 "use client";
 import { useCart, CartProvider } from "@/context/CartContext";
+import { FavoritesProvider } from "@/context/FavoritesContext";
 import {
   Dialog,
   DialogContent,
@@ -87,7 +88,9 @@ export default function AppLayout({
 }) {
   return (
     <CartProvider>
-      <AppLayoutContent>{children}</AppLayoutContent>
+      <FavoritesProvider>
+        <AppLayoutContent>{children}</AppLayoutContent>
+      </FavoritesProvider>
     </CartProvider>
   );
 }

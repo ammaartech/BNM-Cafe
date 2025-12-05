@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { ArrowRight, ShoppingCart, Menu as MenuIcon, LogOut, LayoutDashboard, Search, Heart, Plus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useFavorites } from "@/context/FavoritesContext";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,10 +30,22 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import type { MenuItem, UserProfile } from "@/lib/types";
 import { doc } from "firebase/firestore";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+
 
 function MenuItemGridCard({ item }: { item: MenuItem }) {
   const { addItem } = useCart();
+  const { isFavorited, toggleFavorite } = useFavorites();
   const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
+
+  const favorited = isFavorited(item.id);
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFavorite(item.id);
+  }
 
   return (
     <Card className="overflow-hidden h-full flex flex-col text-left">
@@ -47,8 +60,8 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
               data-ai-hint={itemImage.imageHint}
             />
           )}
-          <Button size="icon" variant="secondary" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-card/70 hover:bg-card">
-            <Heart className="h-4 w-4 text-primary" />
+          <Button size="icon" variant="secondary" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-card/70 hover:bg-card" onClick={handleFavoriteClick}>
+            <Heart className={cn("h-4 w-4 text-primary", favorited && "fill-red-500 text-red-500")} />
           </Button>
         </div>
       </Link>
@@ -74,6 +87,8 @@ export default function MenuPage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
+  const { favoriteIds } = useFavorites();
+  const [activeFilter, setActiveFilter] = useState('all');
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -88,6 +103,12 @@ export default function MenuPage() {
       }
       router.push('/login');
   }
+  
+  const displayedItems = activeFilter === 'favorites' 
+    ? menuItems.filter(item => favoriteIds.includes(item.id))
+    : activeFilter === 'all'
+    ? menuItems
+    : menuItems.filter(item => item.category === activeFilter);
 
   return (
     <div className="space-y-6 flex flex-col h-full">
@@ -103,7 +124,7 @@ export default function MenuPage() {
               <DropdownMenuContent align="start" className="w-56">
                 { user ? (
                     <>
-                    <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                    <DropdownMenuLabel>{userProfile?.name || user.email}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                         <Link href="/menu">Menu</Link>
@@ -158,8 +179,10 @@ export default function MenuPage() {
       
       <div className="px-2 overflow-x-auto pb-2">
         <div className="flex gap-2">
-            {categories.map((category, index) => (
-              <Button key={category.id} variant={index === 0 ? 'default' : 'secondary'} className="rounded-full" asChild>
+            <Button variant={activeFilter === 'all' ? 'default' : 'secondary'} className="rounded-full" onClick={() => setActiveFilter('all')}>All</Button>
+            <Button variant={activeFilter === 'favorites' ? 'default' : 'secondary'} className="rounded-full" onClick={() => setActiveFilter('favorites')}>Favorites</Button>
+            {categories.map((category) => (
+              <Button key={category.id} variant={activeFilter === category.id ? 'default' : 'secondary'} className="rounded-full" asChild>
                 <Link href={`/menu/${category.id}`}>{category.name}</Link>
               </Button>
             ))}
@@ -168,10 +191,15 @@ export default function MenuPage() {
 
       <main className="flex-grow px-2 overflow-y-auto">
         <div className="grid grid-cols-2 gap-4">
-            {menuItems.map((item) => (
+            {displayedItems.map((item) => (
               <MenuItemGridCard key={item.id} item={item} />
             ))}
         </div>
+        {activeFilter === 'favorites' && displayedItems.length === 0 && (
+            <div className="text-center py-16">
+                <p className="text-muted-foreground">You haven't favorited any items yet!</p>
+            </div>
+        )}
       </main>
 
     </div>
