@@ -2,13 +2,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collectionGroup, query, orderBy } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Lock, AlertCircle, Loader2, DollarSign, ShoppingBag, Users } from 'lucide-react';
+import { Lock, AlertCircle, Loader2, DollarSign, ShoppingBag, Users, LogIn } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -18,11 +18,13 @@ const ADMIN_PIN = 'admin123';
 
 function AdminDashboard() {
   const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
 
   const allOrdersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    // Only run the query if we have a firestore instance AND a user
+    if (!firestore || !user) return null;
     return query(collectionGroup(firestore, 'orders'), orderBy('orderDate', 'desc'));
-  }, [firestore]);
+  }, [firestore, user]);
 
   const { data: orders, isLoading, error } = useCollection<Order>(allOrdersQuery);
 
@@ -40,12 +42,32 @@ function AdminDashboard() {
     return customerIds.size;
   }, [orders]);
 
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
+  }
+
+  if (!user) {
+    return (
+        <div className="flex flex-col items-center justify-center h-full text-center p-4">
+            <Card className="w-full max-w-sm">
+                <CardHeader>
+                    <CardTitle>Authentication Required</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <p className="text-muted-foreground">
+                        Please sign in to view the admin dashboard.
+                    </p>
+                    <Button asChild className="w-full">
+                        <Link href="/login"><LogIn className="mr-2 h-4 w-4"/> Sign In</Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+    )
   }
 
   if (error) {
