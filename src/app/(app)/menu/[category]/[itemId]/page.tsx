@@ -42,7 +42,7 @@ export default function MenuItemDetailPage() {
          <Button variant="ghost" size="icon" onClick={() => router.back()} className="hover:bg-white/10">
             <ArrowLeft className="h-6 w-6"/>
         </Button>
-        <h2 className="font-semibold text-lg">Detail item</h2>
+        <h2 className="font-semibold text-lg">BNM Cafe</h2>
          <Button variant="ghost" size="icon" className="hover:bg-white/10">
             <Heart className="h-6 w-6"/>
         </Button>
