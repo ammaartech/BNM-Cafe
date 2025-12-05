@@ -17,7 +17,7 @@ export default function SplashPage() {
         <div className="space-y-4">
             <h1 className="text-4xl font-bold">B.N.M Cafe</h1>
             <p className="text-lg text-primary-foreground/80 max-w-md mx-auto">
-                Delicious meals and refreshing drinks, right on campus. Skip the line and order ahead.
+                Campus cravings, sorted.
             </p>
         </div>
       </div>
