@@ -2,16 +2,29 @@
 "use client";
 
 import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import type { Order, OrderItem } from "@/lib/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, FileText, ShoppingBag, User as UserIcon } from "lucide-react";
+import { AlertCircle, FileText, ShoppingBag, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 
 function TicketSkeleton() {
@@ -65,6 +78,9 @@ export default function OrderTicketPage() {
   const { orderId } = useParams();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
+  const [isCancelAlertOpen, setIsCancelAlertOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const orderRef = useMemoFirebase(() => {
     if (!firestore || !user || !orderId) return null;
@@ -72,6 +88,30 @@ export default function OrderTicketPage() {
   }, [firestore, user, orderId]);
 
   const { data: order, isLoading, error } = useDoc<Order>(orderRef);
+
+  const handleCancelOrder = async () => {
+    if (!orderRef) return;
+    
+    setIsCancelling(true);
+    try {
+        await updateDoc(orderRef, { status: 'Cancelled' });
+        toast({
+            title: "Order Cancelled",
+            description: `Your order has been cancelled.`
+        })
+    } catch (e) {
+        console.error("Error cancelling order: ", e);
+        toast({
+            title: "Cancellation Failed",
+            description: "Could not cancel the order. Please try again.",
+            variant: "destructive"
+        })
+    } finally {
+        setIsCancelling(false);
+        setIsCancelAlertOpen(false);
+    }
+  }
+
 
   if (isLoading || isUserLoading) {
     return <TicketSkeleton />;
@@ -98,6 +138,7 @@ export default function OrderTicketPage() {
   }
 
   return (
+    <>
     <Card className="max-w-2xl mx-auto shadow-lg">
       <CardHeader className="bg-muted/50">
         <div className="flex items-center gap-3">
@@ -171,8 +212,34 @@ export default function OrderTicketPage() {
                 </div>
             </div>
         </div>
-
       </CardContent>
+
+       {order.status === 'Pending' && (
+        <CardFooter className="bg-muted/50 p-4">
+            <Button variant="destructive" className="w-full" onClick={() => setIsCancelAlertOpen(true)}>
+                Cancel Order
+            </Button>
+        </CardFooter>
+       )}
     </Card>
+
+    <AlertDialog open={isCancelAlertOpen} onOpenChange={setIsCancelAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to cancel this order?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This action cannot be undone. This will permanently cancel your order #{order?.id.slice(0,7)}.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling}>Back</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelOrder} disabled={isCancelling} className="bg-destructive hover:bg-destructive/90">
+                {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Cancel Order
+            </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

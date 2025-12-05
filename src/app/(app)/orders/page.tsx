@@ -1,21 +1,34 @@
 
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useCollection, useUser, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, where } from "firebase/firestore";
+import { collection, query, orderBy, doc, updateDoc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Order } from "@/lib/types";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Loader2 } from "lucide-react";
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+
 
 function OrderSkeleton() {
     return (
@@ -52,6 +65,9 @@ function OrderSkeleton() {
 export default function OrdersPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const userOrdersQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -62,6 +78,30 @@ export default function OrdersPage() {
   }, [firestore, user]);
 
   const { data: orders, isLoading: isOrdersLoading } = useCollection<Order>(userOrdersQuery);
+
+  const handleCancelOrder = async () => {
+    if (!orderToCancel || !user || !firestore) return;
+    
+    setIsCancelling(true);
+    try {
+        const orderRef = doc(firestore, 'users', user.uid, 'orders', orderToCancel.id);
+        await updateDoc(orderRef, { status: 'Cancelled' });
+        toast({
+            title: "Order Cancelled",
+            description: `Order #${orderToCancel.id.slice(0,7)} has been cancelled.`
+        })
+    } catch (e) {
+        console.error("Error cancelling order: ", e);
+        toast({
+            title: "Cancellation Failed",
+            description: "Could not cancel the order. Please try again.",
+            variant: "destructive"
+        })
+    } finally {
+        setIsCancelling(false);
+        setOrderToCancel(null);
+    }
+  }
 
   const isLoading = isUserLoading || isOrdersLoading;
 
@@ -111,22 +151,50 @@ export default function OrdersPage() {
                 </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                    <ul className="divide-y bg-muted/50 p-4 rounded-md">
-                        {order.items.map((item, index) => (
-                            <li key={index} className="py-2 flex justify-between">
-                                <div>
-                                    <span className="font-medium">{item.name}</span>
-                                    <span className="text-muted-foreground text-sm"> (x{item.quantity})</span>
-                                </div>
-                                <span>₹{(item.price * item.quantity).toFixed(2)}</span>
-                            </li>
-                        ))}
-                    </ul>
+                    <div className="bg-muted/50 p-4 rounded-md space-y-4">
+                        <ul className="divide-y">
+                            {order.items.map((item, index) => (
+                                <li key={index} className="py-2 flex justify-between">
+                                    <div>
+                                        <span className="font-medium">{item.name}</span>
+                                        <span className="text-muted-foreground text-sm"> (x{item.quantity})</span>
+                                    </div>
+                                    <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                                </li>
+                            ))}
+                        </ul>
+                         {order.status === 'Pending' && (
+                            <div className="flex justify-end pt-2">
+                                <Button variant="destructive" size="sm" onClick={() => setOrderToCancel(order)}>
+                                    Cancel Order
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 </AccordionContent>
             </AccordionItem>
             ))}
         </Accordion>
       )}
+
+        <AlertDialog open={!!orderToCancel} onOpenChange={(isOpen) => !isOpen && setOrderToCancel(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure you want to cancel this order?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently cancel your order #{orderToCancel?.id.slice(0,7)}.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel disabled={isCancelling}>Back</AlertDialogCancel>
+                <AlertDialogAction onClick={handleCancelOrder} disabled={isCancelling} className="bg-destructive hover:bg-destructive/90">
+                    {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Cancel Order
+                </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
     </div>
   );
 }
