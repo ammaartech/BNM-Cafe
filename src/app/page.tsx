@@ -1,24 +1,19 @@
 
 import { Button } from "@/components/ui/button";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from "next/image";
 import Link from "next/link";
-import { Utensils } from "lucide-react";
 
 export default function SplashPage() {
-  const splashImage = PlaceHolderImages.find((img) => img.id === "coffee");
   return (
     <div className="flex flex-col h-screen bg-primary text-primary-foreground text-center">
       <div className="flex-grow flex flex-col justify-center items-center p-8 space-y-8">
-        {splashImage && (
-          <Image
-            src={splashImage.imageUrl}
-            alt="Coffee cup"
-            width={200}
-            height={200}
-            data-ai-hint="coffee"
-          />
-        )}
+        <Image
+          src="/bnm-logo.png"
+          alt="B.N.M Cafe Logo"
+          width={250}
+          height={250}
+          priority
+        />
         <div className="space-y-4">
             <h1 className="text-4xl font-bold">B.N.M Cafe</h1>
             <p className="text-lg text-primary-foreground/80 max-w-md mx-auto">
