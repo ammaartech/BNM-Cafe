@@ -1,8 +1,9 @@
+
 "use client";
 
 import type { CartItem, MenuItem, Order, OrderItem, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import React, { createContext, useContext, useReducer, ReactNode } from "react";
+import React, { createContext, useContext, useReducer, ReactNode, useState } from "react";
 import { addDocumentNonBlocking } from "@/firebase";
 import { useFirestore, useUser } from "@/firebase";
 import { collection, doc, getDoc } from "firebase/firestore";
@@ -29,12 +30,16 @@ const CartContext = createContext<{
   totalItems: number;
   totalPrice: number;
   placeOrder: () => Promise<void>;
+  addedItemPopup: MenuItem | null;
+  setAddedItemPopup: (item: MenuItem | null) => void;
 }>({
   state: initialState,
   dispatch: () => null,
   totalItems: 0,
   totalPrice: 0,
   placeOrder: async () => {},
+  addedItemPopup: null,
+  setAddedItemPopup: () => {},
 });
 
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -89,6 +94,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [addedItemPopup, setAddedItemPopup] = useState<MenuItem | null>(null);
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -164,7 +170,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice, placeOrder }}>
+    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice, placeOrder, addedItemPopup, setAddedItemPopup }}>
       {children}
     </CartContext.Provider>
   );
@@ -198,11 +204,10 @@ export const useCart = () => {
     }
 
     context.dispatch({ type: "ADD_ITEM", payload: item });
-    toast({
-      title: "Added to cart",
-      description: `${item.name} has been added to your cart.`,
-      duration: 1000,
-    });
+    context.setAddedItemPopup(item);
+    setTimeout(() => {
+        context.setAddedItemPopup(null);
+    }, 1000);
   };
   
   const removeItem = (id: string) => {
