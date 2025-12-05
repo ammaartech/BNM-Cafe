@@ -56,7 +56,7 @@ export default function Header() {
       <div className="container mx-auto flex h-16 items-center px-4 relative">
         
         <div className="absolute left-4">
-            {showBackArrow ? (
+            {showBackArrow && !pathname.startsWith('/menu/category') ? (
                 <Button variant="ghost" size="icon" onClick={() => router.back()}>
                     <ArrowLeft className="h-6 w-6" />
                 </Button>

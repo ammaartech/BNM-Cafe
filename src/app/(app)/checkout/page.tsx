@@ -6,7 +6,7 @@ import { doc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, CreditCard, Loader2 } from "lucide-react";
+import { AlertCircle, CreditCard, Loader2, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { UserProfile } from "@/lib/types";
@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 function CheckoutSkeleton() {
     return (
@@ -129,6 +130,14 @@ export default function CheckoutPage() {
 
   return (
      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-4 mb-6">
+            <Button variant="ghost" size="icon" asChild>
+                <Link href="/cart">
+                    <ArrowLeft />
+                </Link>
+            </Button>
+            <h1 className="text-2xl font-bold">Checkout</h1>
+        </div>
         <div className="flex-grow space-y-6">
             <Card>
                 <CardHeader>

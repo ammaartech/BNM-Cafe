@@ -7,6 +7,7 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { CheckCircle } from "lucide-react";
+import { usePathname } from 'next/navigation';
 
 function CartSuccessDialog() {
     const { addedItemPopup, setAddedItemPopup } = useCart();
@@ -27,6 +28,10 @@ function CartSuccessDialog() {
 }
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const noHeaderPages = ['/cart', '/checkout'];
+    const showHeader = !noHeaderPages.includes(pathname);
+
     return (
         <>
             <div className="min-h-screen flex flex-col">
