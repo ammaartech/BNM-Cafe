@@ -10,11 +10,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowRight, ShoppingCart } from "lucide-react";
-import { useCart } from "@/context/CartContext";
+import { ArrowRight } from "lucide-react";
 
 export default function MenuCategoriesPage() {
-    const { totalItems } = useCart();
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -26,17 +24,6 @@ export default function MenuCategoriesPage() {
             Our menu is below
             </p>
         </div>
-         <Link href="/cart">
-            <div className="relative">
-              <ShoppingCart className="h-6 w-6" />
-              {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                  {totalItems}
-                </span>
-              )}
-              <span className="sr-only">Shopping Cart</span>
-            </div>
-          </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4">
