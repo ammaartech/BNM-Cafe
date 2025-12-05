@@ -12,18 +12,10 @@ import {
   CardContent,
   CardTitle
 } from "@/components/ui/card";
-import { ArrowRight, ShoppingCart, Menu as MenuIcon, LogOut, LayoutDashboard, Search, Heart, Plus } from "lucide-react";
+import { ArrowRight, ShoppingCart, LogOut, Search, Heart, Plus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useAuth, useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -120,45 +112,15 @@ export default function MenuPage() {
     <div className="space-y-6 flex flex-col h-full">
       <header className="px-2">
         <div className="flex justify-between items-center mb-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MenuIcon className="h-6 w-6" />
-                  <span className="sr-only">User Menu</span>
+            { user ? (
+                <Button variant="ghost" size="icon" onClick={handleLogout} className="text-destructive">
+                  <LogOut className="h-6 w-6" />
+                  <span className="sr-only">Logout</span>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                { user ? (
-                    <>
-                    <DropdownMenuLabel>{userProfile?.name || user.email}</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                        <Link href="/menu">Menu</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                        <Link href="/orders">My Orders</Link>
-                    </DropdownMenuItem>
-                     <DropdownMenuItem asChild>
-                       <Link href="/admin"><LayoutDashboard className="mr-2 h-4 w-4"/>Admin</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                        <LogOut className="mr-2 h-4 w-4"/> Logout
-                    </DropdownMenuItem>
-                    </>
-                ) : (
-                    <>
-                    <DropdownMenuItem asChild>
-                        <Link href="/login">Login</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                        <Link href="/register">Sign Up</Link>
-                    </DropdownMenuItem>
-                    </>
-                )
-                }
-              </DropdownMenuContent>
-            </DropdownMenu>
+            ) : (
+                <div className="w-10"></div> // Placeholder for spacing
+            )}
+
 
             <Link href="/cart">
                 <Button variant="ghost" size="icon" className="relative">
