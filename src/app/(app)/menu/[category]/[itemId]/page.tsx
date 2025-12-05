@@ -51,7 +51,7 @@ export default function MenuItemDetailPage() {
   const isOutOfStock = item.stock <= 0;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full animate-fade-in-slide-up">
       <div className="relative">
         {itemImage && (
             <div className="relative h-64 w-full">
