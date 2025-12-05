@@ -69,7 +69,7 @@ export default function MenuItemsPage({
                             <p className="text-sm text-muted-foreground line-clamp-1">{item.description}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <p className="font-bold text-muted-foreground">${item.price.toFixed(2)}</p>
+                            <p className="font-bold text-muted-foreground">₹{item.price.toFixed(2)}</p>
                             <ChevronRight className="h-5 w-5 text-muted-foreground" />
                         </div>
                     </div>

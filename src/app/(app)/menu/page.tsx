@@ -71,7 +71,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
         </Link>
       </CardHeader>
       <CardContent className="flex-grow flex justify-between items-end">
-        <p className="text-lg font-bold text-foreground">${item.price.toFixed(2)}</p>
+        <p className="text-lg font-bold text-foreground">₹{item.price.toFixed(2)}</p>
         <Button size="icon" className="h-8 w-8" onClick={() => addItem(item)}>
             <Plus className="h-4 w-4" />
         </Button>

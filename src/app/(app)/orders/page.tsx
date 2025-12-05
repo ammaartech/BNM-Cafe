@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo } from 'react';
@@ -105,7 +106,7 @@ export default function OrdersPage() {
                         >
                             {order.status}
                         </Badge>
-                        <p className="font-bold mt-1">${order.totalAmount.toFixed(2)}</p>
+                        <p className="font-bold mt-1">₹{order.totalAmount.toFixed(2)}</p>
                     </div>
                 </div>
                 </AccordionTrigger>
@@ -117,7 +118,7 @@ export default function OrdersPage() {
                                     <span className="font-medium">{item.name}</span>
                                     <span className="text-muted-foreground text-sm"> (x{item.quantity})</span>
                                 </div>
-                                <span>${(item.price * item.quantity).toFixed(2)}</span>
+                                <span>₹{(item.price * item.quantity).toFixed(2)}</span>
                             </li>
                         ))}
                     </ul>

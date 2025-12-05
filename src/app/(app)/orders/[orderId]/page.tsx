@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
@@ -129,7 +130,7 @@ export default function OrderTicketPage() {
             </div>
             <div>
                 <dt className="text-muted-foreground font-semibold">Total</dt>
-                <dd className="mt-1 font-bold text-lg text-primary">${order.totalAmount.toFixed(2)}</dd>
+                <dd className="mt-1 font-bold text-lg text-primary">₹{order.totalAmount.toFixed(2)}</dd>
             </div>
         </div>
 
@@ -143,10 +144,10 @@ export default function OrderTicketPage() {
                         <div>
                             <p className="font-medium">{item.name}</p>
                             <p className="text-sm text-muted-foreground">
-                                {item.quantity} x ${item.price.toFixed(2)}
+                                {item.quantity} x ₹{item.price.toFixed(2)}
                             </p>
                         </div>
-                        <p className="font-medium">${(item.quantity * item.price).toFixed(2)}</p>
+                        <p className="font-medium">₹{(item.quantity * item.price).toFixed(2)}</p>
                     </li>
                 ))}
             </ul>
@@ -158,15 +159,15 @@ export default function OrderTicketPage() {
             <div className="w-full sm:w-1/2 space-y-2 text-sm">
                 <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">${order.totalAmount.toFixed(2)}</span>
+                    <span className="font-medium">₹{order.totalAmount.toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Taxes & Fees</span>
-                    <span className="font-medium">$0.00</span>
+                    <span className="font-medium">₹0.00</span>
                 </div>
                  <div className="flex justify-between font-bold text-base border-t pt-2 mt-2">
                     <span>Total</span>
-                    <span>${order.totalAmount.toFixed(2)}</span>
+                    <span>₹{order.totalAmount.toFixed(2)}</span>
                 </div>
             </div>
         </div>

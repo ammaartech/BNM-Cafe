@@ -51,9 +51,9 @@ export default function CartPage() {
                             }
                             <div className="flex-grow">
                                 <p className="font-semibold">{item.name}</p>
-                                <p className="text-sm text-primary font-bold">${item.price.toFixed(2)}</p>
+                                <p className="text-sm text-primary font-bold">₹{item.price.toFixed(2)}</p>
                             </div>
-                            <p className="font-bold">${(item.price * item.quantity).toFixed(2)}</p>
+                            <p className="font-bold">₹{(item.price * item.quantity).toFixed(2)}</p>
                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => removeItem(item.id)}>
                                 <Trash2 className="h-5 w-5" />
                             </Button>
@@ -67,16 +67,16 @@ export default function CartPage() {
                     <CardContent className="p-4 space-y-3">
                          <div className="flex justify-between text-muted-foreground">
                             <span>Items ({totalItems})</span>
-                            <span>${totalPrice.toFixed(2)}</span>
+                            <span>₹{totalPrice.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
                             <span>Delivery fee</span>
-                            <span>$0.00</span>
+                            <span>₹0.00</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between font-bold text-lg">
                             <span>Total</span>
-                            <span>${totalPrice.toFixed(2)}</span>
+                            <span>₹{totalPrice.toFixed(2)}</span>
                         </div>
                     </CardContent>
                 </Card>

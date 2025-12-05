@@ -94,7 +94,7 @@ function AdminDashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">₹{totalRevenue.toFixed(2)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -142,7 +142,7 @@ function AdminDashboard() {
                             >
                                 {order.status}
                             </Badge>
-                            <p className="font-bold text-foreground mt-1">${order.totalAmount.toFixed(2)}</p>
+                            <p className="font-bold text-foreground mt-1">₹{order.totalAmount.toFixed(2)}</p>
                         </div>
                     </div>
                 </Link>

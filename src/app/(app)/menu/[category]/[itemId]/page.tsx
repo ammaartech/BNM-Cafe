@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { menuItems } from "@/lib/data";
@@ -91,7 +92,7 @@ export default function MenuItemDetailPage() {
                     <PlusCircle className="h-5 w-5" />
                 </Button>
             </div>
-            <p className="text-3xl font-bold text-foreground">${(item.price * quantity).toFixed(2)}</p>
+            <p className="text-3xl font-bold text-foreground">₹{(item.price * quantity).toFixed(2)}</p>
         </div>
 
 

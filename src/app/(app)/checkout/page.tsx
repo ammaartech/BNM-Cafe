@@ -180,7 +180,7 @@ export default function CheckoutPage() {
                                         <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
                                     </div>
                                     <div className="text-right font-semibold">
-                                        ${(item.price * item.quantity).toFixed(2)}
+                                        ₹{(item.price * item.quantity).toFixed(2)}
                                     </div>
                                 </li>
                             )
@@ -198,23 +198,23 @@ export default function CheckoutPage() {
                 <CardContent className="space-y-3">
                     <div className="flex justify-between text-muted-foreground">
                         <span>Subtotal</span>
-                        <span>${totalPrice.toFixed(2)}</span>
+                        <span>₹{totalPrice.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
                         <span>Taxes & Fees</span>
-                        <span>$0.00</span>
+                        <span>₹0.00</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
-                        <span>${totalPrice.toFixed(2)}</span>
+                        <span>₹{totalPrice.toFixed(2)}</span>
                     </div>
                 </CardContent>
             </Card>
 
             <Button className="w-full h-14 text-lg font-bold" size="lg" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
               {isPlacingOrder ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
-              {isPlacingOrder ? 'Placing Order...' : `Pay $${totalPrice.toFixed(2)}`}
+              {isPlacingOrder ? 'Placing Order...' : `Pay ₹${totalPrice.toFixed(2)}`}
             </Button>
         </div>
     </div>
