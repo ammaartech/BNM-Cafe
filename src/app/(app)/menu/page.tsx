@@ -7,10 +7,8 @@ import { categories, menuItems } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import {
   Card,
-  CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
+  CardContent
 } from "@/components/ui/card";
 import { ArrowRight, ShoppingCart, Menu as MenuIcon, LogOut, LayoutDashboard, Search, Heart, Plus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
@@ -150,9 +148,9 @@ export default function MenuPage() {
       <div className="px-2 overflow-x-auto pb-2">
         <div className="flex gap-2">
             {categories.map((category, index) => (
-                <Button key={category.id} variant={index === 0 ? 'default' : 'secondary'} className="rounded-full">
-                    {category.name}
-                </Button>
+              <Button key={category.id} variant={index === 0 ? 'default' : 'secondary'} className="rounded-full" asChild>
+                <Link href={`/menu/${category.id}`}>{category.name}</Link>
+              </Button>
             ))}
         </div>
       </div>
