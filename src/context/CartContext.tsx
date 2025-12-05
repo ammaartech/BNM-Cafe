@@ -178,33 +178,31 @@ export const useCart = () => {
   const { toast } = useToast();
 
   const addItem = (item: MenuItem) => {
-    // Simulate inventory check
-    setTimeout(() => {
-      if (item.stock <= 0) {
+    if (item.stock <= 0) {
+      toast({
+        title: "Out of Stock",
+        description: `${item.name} is currently unavailable.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const cartItem = context.state.items.find(i => i.id === item.id);
+    if (cartItem && cartItem.quantity >= item.stock) {
         toast({
-          title: "Out of Stock",
-          description: `${item.name} is currently unavailable.`,
-          variant: "destructive",
+            title: "Stock limit reached",
+            description: `You cannot add more of ${item.name}.`,
+            variant: "destructive",
         });
         return;
-      }
-      
-      const cartItem = context.state.items.find(i => i.id === item.id);
-      if (cartItem && cartItem.quantity >= item.stock) {
-          toast({
-              title: "Stock limit reached",
-              description: `You cannot add more of ${item.name}.`,
-              variant: "destructive",
-          });
-          return;
-      }
+    }
 
-      context.dispatch({ type: "ADD_ITEM", payload: item });
-      toast({
-        title: "Added to cart",
-        description: `${item.name} has been added to your cart.`,
-      });
-    }, 300); // Simulate network delay
+    context.dispatch({ type: "ADD_ITEM", payload: item });
+    toast({
+      title: "Added to cart",
+      description: `${item.name} has been added to your cart.`,
+      duration: 1000,
+    });
   };
   
   const removeItem = (id: string) => {

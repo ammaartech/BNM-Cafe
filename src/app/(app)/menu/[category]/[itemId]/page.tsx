@@ -41,7 +41,9 @@ export default function MenuItemDetailPage() {
 
   const handleAddToCart = () => {
     addItem(item);
-    router.push('/menu');
+    setTimeout(() => {
+        router.push('/menu');
+    }, 1000); // Wait for the toast to show
   };
 
   const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
