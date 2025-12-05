@@ -45,7 +45,7 @@ export default function MenuItemsPage({
         </div>
 
       {items.length > 0 ? (
-        <div className="space-y-3 px-4">
+        <div className="space-y-4 px-4">
           {items.map((item) => {
               const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
 
