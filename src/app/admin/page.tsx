@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-const ADMIN_PIN = '1234';
+const ADMIN_PIN = 'admin123';
 
 function AdminDashboard() {
   const firestore = useFirestore();
@@ -139,57 +139,4 @@ function PinEntry({ onPinVerified }: { onPinVerified: () => void }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
 
-  const handleVerify = () => {
-    if (pin === ADMIN_PIN) {
-      onPinVerified();
-    } else {
-      setError('Invalid PIN. Please try again.');
-    }
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center h-full text-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>
-            <Lock className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            Admin Access Required
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
-            Please enter the PIN to view the dashboard.
-          </p>
-          <Input
-            type="password"
-            placeholder="Enter PIN"
-            value={pin}
-            onChange={(e) => {
-              setPin(e.target.value);
-              if (error) setError('');
-            }}
-            onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
-          />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button onClick={handleVerify} className="w-full">
-            Unlock
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-export default function AdminPage() {
-  const [isVerified, setIsVerified] = useState(false);
-
-  if (!isVerified) {
-    return <PinEntry onPinVerified={() => setIsVerified(true)} />;
-  }
-
-  return (
-    <div className="container mx-auto py-6">
-        <AdminDashboard />
-    </div>
-  );
-}
+  const handleVerify = ().Got it. The PIN has now been set to `admin123`.
