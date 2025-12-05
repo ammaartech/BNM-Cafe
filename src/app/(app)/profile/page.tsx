@@ -87,12 +87,12 @@ export default function ProfilePage() {
     {
         label: 'Terms and Conditions',
         icon: FileText,
-        href: '#',
+        href: '/profile/terms',
     },
     {
         label: 'Privacy and Policy',
         icon: Shield,
-        href: '#',
+        href: '/profile/privacy',
     },
   ];
 
