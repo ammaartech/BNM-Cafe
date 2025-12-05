@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collectionGroup, query } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -86,7 +87,12 @@ function DashboardSkeleton() {
 
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const firestore = useFirestore();
-  const allOrdersQuery = query(collectionGroup(firestore, 'orders'));
+  
+  const allOrdersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collectionGroup(firestore, 'orders'))
+  }, [firestore]);
+
   const { data: orders, isLoading, error } = useCollection<Order>(allOrdersQuery);
 
   const stats = {
