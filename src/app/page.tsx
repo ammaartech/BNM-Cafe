@@ -8,7 +8,7 @@ export default function SplashPage() {
     <div className="flex flex-col h-screen bg-primary text-primary-foreground text-center">
       <div className="flex-grow flex flex-col justify-center items-center p-8 space-y-8">
         <Image
-          src="/bnm-logo.png"
+          src="https://img.freepik.com/free-vector/coffee-cup-tan-colour_78370-3051.jpg?w=2000"
           alt="B.N.M Cafe Logo"
           width={250}
           height={250}
