@@ -30,15 +30,15 @@ function CartSuccessDialog() {
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const noHeaderPages = ['/cart', '/checkout', '/menu'];
-    const showHeader = !noHeaderPages.includes(pathname);
-
+    const noFlexGrowPages = ['/menu'];
+    const flexGrow = !noFlexGrowPages.some(p => pathname.startsWith(p));
+    
     return (
         <>
             <div className="min-h-screen flex flex-col">
-                {showHeader && <Header />}
-                <main className="flex-grow container mx-auto px-4 py-6 flex flex-col">
-                {children}
+                <Header />
+                <main className={`container mx-auto px-4 py-6 flex flex-col ${flexGrow ? 'flex-grow' : ''}`}>
+                    {children}
                 </main>
             </div>
             <CartSuccessDialog />
