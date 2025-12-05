@@ -89,6 +89,7 @@ export default function MenuPage() {
   const router = useRouter();
   const { favoriteIds } = useFavorites();
   const [activeFilter, setActiveFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -104,11 +105,16 @@ export default function MenuPage() {
       router.push('/login');
   }
   
-  const displayedItems = activeFilter === 'favorites' 
-    ? menuItems.filter(item => favoriteIds.includes(item.id))
-    : activeFilter === 'all'
-    ? menuItems
-    : menuItems.filter(item => item.category === activeFilter);
+  const displayedItems = menuItems.filter(item => {
+    const matchesFilter = 
+        activeFilter === 'all'
+        || (activeFilter === 'favorites' && favoriteIds.includes(item.id))
+        || (activeFilter === item.category);
+
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesFilter && matchesSearch;
+  });
 
   return (
     <div className="space-y-6 flex flex-col h-full">
@@ -172,7 +178,12 @@ export default function MenuPage() {
             </h1>
         </div>
         <div className="relative mt-4">
-            <Input placeholder="Search your favorite coffee" className="h-12 pl-10 bg-input" />
+            <Input 
+                placeholder="Search your favorite coffee" 
+                className="h-12 pl-10 bg-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
         </div>
       </header>
@@ -195,9 +206,14 @@ export default function MenuPage() {
               <MenuItemGridCard key={item.id} item={item} />
             ))}
         </div>
-        {activeFilter === 'favorites' && displayedItems.length === 0 && (
+         {displayedItems.length === 0 && searchQuery && (
             <div className="text-center py-16">
-                <p className="text-muted-foreground">You haven't favorited any items yet!</p>
+                <p className="text-muted-foreground">No items found for &quot;{searchQuery}&quot;.</p>
+            </div>
+        )}
+        {activeFilter === 'favorites' && displayedItems.length === 0 && !searchQuery && (
+            <div className="text-center py-16">
+                <p className="text-muted-foreground">You haven&apos;t favorited any items yet!</p>
             </div>
         )}
       </main>
