@@ -182,8 +182,8 @@ export default function MenuPage() {
             <Button variant={activeFilter === 'all' ? 'default' : 'secondary'} className="rounded-full" onClick={() => setActiveFilter('all')}>All</Button>
             <Button variant={activeFilter === 'favorites' ? 'default' : 'secondary'} className="rounded-full" onClick={() => setActiveFilter('favorites')}>Favorites</Button>
             {categories.map((category) => (
-              <Button key={category.id} variant={activeFilter === category.id ? 'default' : 'secondary'} className="rounded-full" asChild>
-                <Link href={`/menu/${category.id}`}>{category.name}</Link>
+              <Button key={category.id} variant={activeFilter === category.id ? 'default' : 'secondary'} className="rounded-full" onClick={() => setActiveFilter(category.id)}>
+                {category.name}
               </Button>
             ))}
         </div>
