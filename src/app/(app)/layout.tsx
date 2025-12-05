@@ -36,6 +36,7 @@ function BottomNavBar() {
     const navItems = [
         { href: '/menu', icon: Home, label: 'Home' },
         { href: '/orders', icon: ClipboardList, label: 'My Orders' },
+        { href: '/profile/favorites', icon: Heart, label: 'Favorites' },
         { href: '/cart', icon: ShoppingCart, label: 'Cart' },
         { href: '/profile', icon: User, label: 'Profile' },
     ];
@@ -67,7 +68,7 @@ function BottomNavBar() {
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const noPaddingPages = ['/menu', '/login', '/register', '/admin'];
+    const noPaddingPages = ['/menu', '/login', '/register', '/admin', '/profile'];
     const addPadding = !noPaddingPages.some(p => pathname.startsWith(p));
     
     return (
