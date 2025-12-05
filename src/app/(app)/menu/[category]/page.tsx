@@ -3,27 +3,11 @@ import * as React from 'react';
 import { categories, menuItems } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-
-function StarRating({ rating }: { rating: number }) {
-    return (
-        <div className="flex gap-0.5">
-            {[...Array(5)].map((_, i) => (
-                <Star
-                key={i}
-                className={`h-4 w-4 ${
-                    i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
-                }`}
-                />
-            ))}
-        </div>
-    )
-}
 
 export default function MenuItemsPage({
   params,
@@ -39,34 +23,38 @@ export default function MenuItemsPage({
 
   return (
     <div className="space-y-6">
-       <div className="flex items-center gap-4 mb-6">
+       <div className="flex items-center justify-between gap-4 mb-6 px-4">
             <Button variant="ghost" size="icon" asChild>
                 <Link href="/menu">
-                    <ChevronLeft className="h-5 w-5" />
+                    <ChevronLeft className="h-6 w-6" />
                 </Link>
             </Button>
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">
+            <div className="text-center">
+                <h1 className="text-2xl font-bold tracking-tight">
                 {category.name}
                 </h1>
-                <p className="mt-1 text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                 Our menu is below
                 </p>
             </div>
+            <Button variant="ghost" size="icon" asChild>
+                <Link href="/cart">
+                    <ShoppingCart className="h-6 w-6" />
+                </Link>
+            </Button>
         </div>
 
       {items.length > 0 ? (
-        <div className="space-y-4">
-          {items.map((item, index) => {
+        <div className="space-y-3 px-4">
+          {items.map((item) => {
               const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
-              const rating = Math.floor(Math.random() * 3) + 3; // Random rating between 3 and 5
 
               return (
-              <React.Fragment key={item.id}>
-                <Link href={`/menu/${category.id}/${item.id}`}>
-                    <div className="flex gap-4 py-2">
+              <Link href={`/menu/${category.id}/${item.id}`} key={item.id}>
+                <Card className="p-3">
+                    <div className="flex items-center gap-4">
                         {itemImage && (
-                            <div className="relative h-20 w-20 flex-shrink-0 rounded-md overflow-hidden">
+                            <div className="relative h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden">
                                 <Image
                                 src={itemImage.imageUrl}
                                 alt={item.name}
@@ -78,22 +66,19 @@ export default function MenuItemsPage({
                         )}
                         <div className="flex-grow">
                             <h3 className="font-semibold">{item.name}</h3>
-                            <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
-                             <div className="flex items-center gap-2 mt-1">
-                                <StarRating rating={rating} />
-                             </div>
+                            <p className="text-sm text-muted-foreground line-clamp-1">{item.description}</p>
                         </div>
-                        <div className="text-right">
-                            <p className="font-bold text-lg">${item.price.toFixed(2)}</p>
+                        <div className="flex items-center gap-2">
+                            <p className="font-bold text-muted-foreground">${item.price.toFixed(2)}</p>
+                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
                         </div>
                     </div>
-                </Link>
-                {index < items.length - 1 && <Separator />}
-              </React.Fragment>
+                </Card>
+              </Link>
           )})}
         </div>
       ) : (
-        <div className="text-center py-16">
+        <div className="text-center py-16 px-4">
             <p className="text-muted-foreground">No items found in this category yet. Please check back later!</p>
         </div>
       )}
