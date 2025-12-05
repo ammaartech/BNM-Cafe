@@ -38,35 +38,44 @@ export default function Header() {
   }
 
   // Simple pages without the full header
-  const simplePages = ['/cart'];
+  const simplePages = ['/cart', '/checkout'];
   if (simplePages.includes(pathname)) {
       return null;
   }
-  const isMenuItemPage = pathname.startsWith('/menu/') && pathname.split('/').length > 2;
+  const isMenuItemPage = pathname.startsWith('/menu/') && pathname.split('/').length > 3;
 
   if (isMenuItemPage) {
     return null;
   }
+  
+  const showBackArrow = pathname.startsWith('/menu/') || pathname.startsWith('/orders/');
 
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <div className="container mx-auto flex h-16 items-center px-4 relative">
         
-        {pathname.startsWith('/menu/') ? (
-             <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                <ArrowLeft className="h-6 w-6" />
-             </Button>
-        ): (
-            <Link href="/menu" className="flex items-center gap-2">
-            <Utensils className="h-7 w-7 text-primary" />
-            <span className="text-xl font-bold text-foreground">
-                B.N.M Cafe
-            </span>
-            </Link>
-        )}
+        <div className="absolute left-4">
+            {showBackArrow ? (
+                <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                    <ArrowLeft className="h-6 w-6" />
+                </Button>
+            ) : (
+                 <Link href="/menu" className="flex items-center gap-2">
+                    <Utensils className="h-7 w-7 text-primary" />
+                </Link>
+            )}
+        </div>
 
-        <div className="flex items-center gap-2">
+        <div className="mx-auto flex items-center gap-2">
+             <Link href="/menu" className="flex items-center gap-2">
+                <span className="text-xl font-bold text-foreground">
+                    B.N.M Cafe
+                </span>
+            </Link>
+        </div>
+
+        <div className="absolute right-4 flex items-center gap-2">
           <Link href="/cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
