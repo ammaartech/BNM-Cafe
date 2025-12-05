@@ -42,7 +42,7 @@ function BottomNavBar() {
     ];
     
     // Don't show nav bar on certain pages
-    const noNavPages = ['/login', '/register', '/admin', '/admin2'];
+    const noNavPages = ['/login', '/register', '/admin'];
      if (noNavPages.some(p => pathname.startsWith(p))) {
         return null;
     }

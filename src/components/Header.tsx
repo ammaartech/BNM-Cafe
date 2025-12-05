@@ -12,7 +12,7 @@ export default function Header() {
   const router = useRouter();
   
   // Pages that have their own custom header or no header
-  const noHeaderPages = ['/login', '/register', '/', '/menu', '/admin2'];
+  const noHeaderPages = ['/login', '/register', '/', '/menu', '/admin'];
   if (noHeaderPages.some(p => pathname.startsWith(p))) {
     return null;
   }
