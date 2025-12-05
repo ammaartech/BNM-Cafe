@@ -10,26 +10,6 @@ import { useCart } from "@/context/CartContext";
 import { ArrowLeft, PlusCircle, Star, Heart, Minus } from "lucide-react";
 import { useState } from "react";
 
-function SizeSelector() {
-    const sizes = ["Small", "Medium", "Large"];
-    const [selectedSize, setSelectedSize] = useState("Small");
-
-    return (
-        <div className="flex gap-2">
-            {sizes.map(size => (
-                <Button 
-                    key={size}
-                    variant={selectedSize === size ? 'default' : 'secondary'}
-                    onClick={() => setSelectedSize(size)}
-                    className="rounded-full flex-grow"
-                >
-                    {size}
-                </Button>
-            ))}
-        </div>
-    )
-}
-
 export default function MenuItemDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -89,11 +69,6 @@ export default function MenuItemDetailPage() {
                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                 <span className="font-semibold text-sm">{rating}</span>
             </div>
-        </div>
-
-        <div className="space-y-2">
-            <h3 className="font-semibold">Size</h3>
-            <SizeSelector />
         </div>
 
         <div className="flex-grow"></div>
