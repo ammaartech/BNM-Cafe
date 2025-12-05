@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { IndianRupee, ShoppingBag, CheckCircle, LogOut, AlertCircle, Check } from 'lucide-react';
+import { IndianRupee, ShoppingBag, CheckCircle, LogOut, AlertCircle, Check, Lock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -34,7 +34,8 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
   return (
     <div className="flex items-center justify-center h-screen bg-muted/50">
       <Card className="w-full max-w-sm p-6">
-        <CardHeader className="p-2 text-center">
+        <CardHeader className="p-2 text-center items-center">
+          <Lock className="h-8 w-8 mb-2" />
           <CardTitle className="text-2xl">Admin Access</CardTitle>
         </CardHeader>
         <CardContent className="p-2">
