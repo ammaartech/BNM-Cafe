@@ -114,7 +114,7 @@ export default function MenuPage() {
         <div className="flex justify-between items-center mb-4">
             { user ? (
                 <Button variant="ghost" size="icon" onClick={handleLogout} className="text-destructive">
-                  <LogOut className="h-6 w-6" />
+                  <LogOut className="h-6 w-6 scale-x-[-1]" />
                   <span className="sr-only">Logout</span>
                 </Button>
             ) : (
