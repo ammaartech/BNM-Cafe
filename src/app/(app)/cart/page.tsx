@@ -9,17 +9,17 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function CartPage() {
   const { state, removeItem, totalPrice, totalItems } = useCart();
+  const router = useRouter();
 
   return (
     <div className="flex flex-col h-full">
         <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="icon" asChild>
-                <Link href="/menu">
-                    <ArrowLeft />
-                </Link>
+            <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                <ArrowLeft />
             </Button>
             <h1 className="text-2xl font-bold">My Cart</h1>
         </div>
@@ -60,13 +60,18 @@ export default function CartPage() {
                         </Card>
                     )
                 })}
-
-                <Card className="mt-8">
+            </div>
+            
+            <div className="mt-auto pt-6">
+                 <Card className="mb-6">
                     <CardContent className="p-4 space-y-3">
-                         <h2 className="font-semibold text-lg">Price Breakdown</h2>
                          <div className="flex justify-between text-muted-foreground">
-                            <span>Subtotal</span>
+                            <span>Items ({totalItems})</span>
                             <span>${totalPrice.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground">
+                            <span>Delivery fee</span>
+                            <span>$0.00</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between font-bold text-lg">
@@ -75,12 +80,9 @@ export default function CartPage() {
                         </div>
                     </CardContent>
                 </Card>
-            </div>
-            
-            <div className="mt-auto pt-6">
                 <Button className="w-full h-14 text-lg font-bold" asChild>
                     <Link href="/checkout">
-                       Pay ${totalPrice.toFixed(2)}
+                       Checkout
                     </Link>
                 </Button>
             </div>

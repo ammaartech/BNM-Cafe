@@ -23,8 +23,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
       </head>
-      <body className={`font-sans antialiased ${inter.variable} bg-background`}>
-        <div className="max-w-md mx-auto bg-card min-h-screen flex flex-col shadow-2xl">
+      <body className={`font-sans antialiased ${inter.variable}`}>
+        <div className="max-w-md mx-auto bg-background min-h-dvh flex flex-col shadow-2xl">
             <FirebaseClientProvider>
                 {children}
             </FirebaseClientProvider>
