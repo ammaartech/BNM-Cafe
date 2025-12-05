@@ -32,6 +32,8 @@ const CartContext = createContext<{
   placeOrder: () => Promise<void>;
   addedItemPopup: MenuItem | null;
   setAddedItemPopup: (item: MenuItem | null) => void;
+  orderSuccessPopup: boolean;
+  setOrderSuccessPopup: (status: boolean) => void;
 }>({
   state: initialState,
   dispatch: () => null,
@@ -40,6 +42,8 @@ const CartContext = createContext<{
   placeOrder: async () => {},
   addedItemPopup: null,
   setAddedItemPopup: () => {},
+  orderSuccessPopup: false,
+  setOrderSuccessPopup: () => {},
 });
 
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -95,6 +99,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const [addedItemPopup, setAddedItemPopup] = useState<MenuItem | null>(null);
+  const [orderSuccessPopup, setOrderSuccessPopup] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -151,13 +156,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         await addDocumentNonBlocking(ordersCollectionRef, newOrder);
 
         dispatch({type: 'CLEAR_CART' });
-
-        toast({
-            title: "Order Placed!",
-            description: "Your order has been successfully placed.",
-        });
-
-        router.push('/orders');
+        setOrderSuccessPopup(true);
 
     } catch(error) {
         console.error("Error placing order:", error);
@@ -170,7 +169,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice, placeOrder, addedItemPopup, setAddedItemPopup }}>
+    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice, placeOrder, addedItemPopup, setAddedItemPopup, orderSuccessPopup, setOrderSuccessPopup }}>
       {children}
     </CartContext.Provider>
   );

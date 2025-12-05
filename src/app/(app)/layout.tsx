@@ -10,8 +10,8 @@ import {
   DialogTitle,
   DialogDescription
 } from "@/components/ui/dialog";
-import { CheckCircle, ClipboardList, PackageCheck } from "lucide-react";
-import { usePathname } from 'next/navigation';
+import { CheckCircle, ClipboardList, PackageCheck, PartyPopper } from "lucide-react";
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Home, ShoppingCart, User, Heart } from "lucide-react";
@@ -32,6 +32,34 @@ function CartSuccessDialog() {
                     {addedItemPopup && (
                         <p className="text-muted-foreground">{addedItemPopup.name}</p>
                     )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function OrderSuccessDialog() {
+    const { orderSuccessPopup, setOrderSuccessPopup } = useCart();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (orderSuccessPopup) {
+            const timer = setTimeout(() => {
+                setOrderSuccessPopup(false);
+                router.push('/orders');
+            }, 2000); // Wait 2 seconds before redirecting
+            return () => clearTimeout(timer);
+        }
+    }, [orderSuccessPopup, setOrderSuccessPopup, router]);
+
+
+    return (
+        <Dialog open={orderSuccessPopup} onOpenChange={(isOpen) => !isOpen && setOrderSuccessPopup(false)}>
+            <DialogContent className="max-w-xs rounded-2xl">
+                 <div className="flex flex-col items-center justify-center text-center p-8">
+                    <PartyPopper className="h-16 w-16 text-primary mb-4" />
+                    <h2 className="text-xl font-semibold">Order Placed!</h2>
+                    <p className="text-muted-foreground">Your order has been successfully placed.</p>
                 </div>
             </DialogContent>
         </Dialog>
@@ -134,6 +162,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             </main>
             <BottomNavBar />
             <CartSuccessDialog />
+            <OrderSuccessDialog />
             <OrderReadyNotifier />
         </>
     );
