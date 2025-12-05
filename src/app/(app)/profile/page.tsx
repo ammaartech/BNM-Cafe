@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronRight, Heart, ClipboardList, LogOut, Loader2, User as UserIcon } from 'lucide-react';
+import { ChevronRight, Heart, ClipboardList, LogOut, User as UserIcon, UserCog, Mail, FileText, Shield } from 'lucide-react';
 import Link from 'next/link';
 
 function ProfileSkeleton() {
@@ -74,6 +74,26 @@ export default function ProfilePage() {
       icon: Heart,
       href: '/profile/favorites',
     },
+    {
+        label: 'Edit Profile Details',
+        icon: UserCog,
+        href: '#',
+    },
+    {
+        label: 'Edit Email',
+        icon: Mail,
+        href: '#',
+    },
+    {
+        label: 'Terms and Conditions',
+        icon: FileText,
+        href: '#',
+    },
+    {
+        label: 'Privacy and Policy',
+        icon: Shield,
+        href: '#',
+    },
   ];
 
   return (
@@ -95,7 +115,7 @@ export default function ProfilePage() {
         <Card>
             <ul className="divide-y">
                 {menuItems.map((item) => (
-                    <li key={item.href}>
+                    <li key={item.label}>
                         <Link href={item.href}>
                             <div className="flex items-center p-4 hover:bg-muted/50 cursor-pointer transition-colors">
                                 <item.icon className="h-5 w-5 mr-4 text-primary" />
