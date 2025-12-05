@@ -23,11 +23,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth, useUser } from "@/firebase";
+import { useAuth, useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import type { MenuItem } from "@/lib/types";
+import type { MenuItem, UserProfile } from "@/lib/types";
+import { doc } from "firebase/firestore";
 
 function MenuItemGridCard({ item }: { item: MenuItem }) {
   const { addItem } = useCart();
@@ -71,7 +72,15 @@ export default function MenuPage() {
   const { totalItems } = useCart();
   const { user } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, "users", user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   const handleLogout = async () => {
       if(auth) {
@@ -138,7 +147,7 @@ export default function MenuPage() {
         </div>
         <div className="space-y-2 text-left">
             <h1 className="text-3xl font-bold tracking-tight">
-                Good Morning, {user?.displayName || 'Bestie'}!
+                Good Morning, {userProfile?.name || 'Bestie'}!
             </h1>
         </div>
         <div className="relative mt-4">
