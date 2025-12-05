@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -6,6 +7,7 @@ import { categories, menuItems } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
