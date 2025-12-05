@@ -10,12 +10,40 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowRight, ShoppingCart } from "lucide-react";
+import { ArrowRight, ShoppingCart, Menu as MenuIcon, LogOut, LayoutDashboard } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth, useUser } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
+
+
+const navLinks = [
+  { href: "/menu", label: "Menu" },
+  { href: "/orders", label: "My Orders" },
+];
 
 export default function MenuCategoriesPage() {
   const { totalItems } = useCart();
+  const { user } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+      if(auth) {
+        await signOut(auth);
+      }
+      router.push('/login');
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -27,17 +55,57 @@ export default function MenuCategoriesPage() {
             Our menu is below
             </p>
         </div>
-        <Link href="/cart">
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="h-6 w-6" />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                  {totalItems}
-                </span>
-              )}
-              <span className="sr-only">Shopping Cart</span>
-            </Button>
-          </Link>
+        <div className="flex items-center gap-2">
+            <Link href="/cart">
+                <Button variant="ghost" size="icon" className="relative">
+                <ShoppingCart className="h-6 w-6" />
+                {totalItems > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                    {totalItems}
+                    </span>
+                )}
+                <span className="sr-only">Shopping Cart</span>
+                </Button>
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MenuIcon className="h-6 w-6" />
+                  <span className="sr-only">User Menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                { user ? (
+                    <>
+                    <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {navLinks.map(link => (
+                         <DropdownMenuItem key={link.href} asChild>
+                           <Link href={link.href}>{link.label}</Link>
+                        </DropdownMenuItem>
+                    ))}
+                     <DropdownMenuItem asChild>
+                       <Link href="/admin2"><LayoutDashboard className="mr-2 h-4 w-4"/>Admin</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                        <LogOut className="mr-2 h-4 w-4"/> Logout
+                    </DropdownMenuItem>
+                    </>
+                ) : (
+                    <>
+                    <DropdownMenuItem asChild>
+                        <Link href="/login">Login</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                        <Link href="/register">Sign Up</Link>
+                    </DropdownMenuItem>
+                    </>
+                )
+                }
+              </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4">
