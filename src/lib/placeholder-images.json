@@ -15,7 +15,7 @@
     {
       "id": "refreshments-category",
       "description": "Cool and refreshing drinks.",
-      "imageUrl": "https://images.unsplash.com/photo-1592858167090-2473780d894d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxkcmlua3N8ZW58MHx8fHwxNzY0ODc3Mzk3fDA&ixlib-rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1592858167090-2473780d894d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxkcmlua3N8ZW58MHx8fHwxNzY0ODc3Mzk3fDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "drinks"
     },
     {
@@ -33,7 +33,7 @@
     {
       "id": "chole-bhature",
       "description": "Spicy chickpea curry with fluffy fried bread.",
-      "imageUrl": "https://images.unsplash.com/photo-1604383435804-d421a868a25c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjaG9sZSUyMGJoYXR1cmV8ZW58MHx8fHwxNzY1MzA1NzA5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://plus.unsplash.com/premium_photo-1695456064603-aa7568121827?q=80&w=764&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       "imageHint": "chickpea dish"
     },
     {
@@ -45,19 +45,19 @@
     {
       "id": "pulao",
       "description": "Aromatic basmati rice cooked with mixed vegetables.",
-      "imageUrl": "https://images.unsplash.com/photo-1627482265910-5c0ff6bee088?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwdWxhbyUyMHJpY2V8ZW58MHx8fHwxNzY0OTA2NjU2fDA&ixlib-rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1627482265910-5c0ff6bee088?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwdWxhbyUyMHJpY2V8ZW58MHx8fHwxNzY0OTA2NjU2fDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "pulao rice"
     },
     {
       "id": "dosa",
       "description": "A crispy dosa.",
-      "imageUrl": "https://images.unsplash.com/photo-1743517894265-c86ab035adef?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxkb3NhfGVufDB8fHx8MTc2NDgxMzg3NXww&ixlib-rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1743517894265-c86ab035adef?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxkb3NhfGVufDB8fHx8MTc2NDgxMzg3NXww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "dosa"
     },
     {
       "id": "set-dosa",
       "description": "A set of three soft and spongy dosas.",
-      "imageUrl": "https://images.unsplash.com/photo-1723203331190-438284c94752?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzZXQlMjBkb3NhfGVufDB8fHx8MTc2NDkwNjY1Nnww&ixlib-rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1723203331190-438284c94752?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzZXQlMjBkb3NhfGVufDB8fHx8MTc2NDkwNjY1Nnww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "set dosa"
     },
     {
@@ -69,19 +69,19 @@
     {
       "id": "bisi-bele-bath",
       "description": "Spicy rice and lentil dish with vegetables.",
-      "imageUrl": "https://images.unsplash.com/photo-1627482265910-5c0ff6bee088?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxsZW50aWwlMjByaWNlfGVufDB8fHx8MTc2NDkwNjY1Nnww&ixlib-rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1627482265910-5c0ff6bee088?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxsZW50aWwlMjByaWNlfGVufDB8fHx8MTc2NDkwNjY1Nnww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "lentil rice"
     },
     {
       "id": "chai",
       "description": "Aromatic spiced tea with milk.",
-      "imageUrl": "https://images.unsplash.com/photo-1561336526-2914f13ceb36?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjaGFpJTIwdGVhfGVufDB8fHx8MTc2NDkwNjY1Nnww&ixlib-rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1561336526-2914f13ceb36?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjaGFpJTIwdGVhfGVufDB8fHx8MTc2NDkwNjY1Nnww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "chai tea"
     },
     {
       "id": "coffee",
       "description": "Hot coffee.",
-      "imageUrl": "https://images.unsplash.com/photo-1447933601403-0c6688de566e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjb2ZmZWV8ZW58MHx8fHwxNzY0NzgyMzE1fDA&ixlib-rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1447933601403-0c6688de566e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjb2ZmZWV8ZW58MHx8fHwxNzY0NzgyMzE1fDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "coffee"
     },
     {
@@ -93,7 +93,7 @@
     {
       "id": "pani-puri",
       "description": "Tangy pani puri.",
-      "imageUrl": "https://images.unsplash.com/photo-1714892208649-7fb5fce74231?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwYW5pJTIwcHVyaXxlbnwwfHx8fDE3NjQ4NzczOTd8MA&ixlib-rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1714892208649-7fb5fce74231?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwYW5pJTIwcHVyaXxlbnwwfHx8fDE3NjQ4NzczOTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "pani puri"
     },
     {
@@ -105,7 +105,7 @@
     {
       "id": "bhel-puri",
       "description": "Savory bhel puri.",
-      "imageUrl": "https://images.unsplash.com/photo-1702191748490-c56ad426eba0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxiaGVsJTIwcHVyaXxlbnwwfHx8fDE3NjQ4NzczOTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1702191748490-c56ad426eba0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxiaGVsJTIwcHVyaXxlbnwwfHx8fDE3NjQ4NzczOTd8MA&ixlib-rb-4.1.0&q=80&w=1080",
       "imageHint": "bhel puri"
     }
   ]
