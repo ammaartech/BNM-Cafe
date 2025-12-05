@@ -132,7 +132,7 @@ service cloud.firestore {
       match /orders/{orderId} {
         allow get, list: if isOwner(userId);
         allow create: if isCreatingOwnOrder(userId);
-        allow update: if isExistingOwner(userId) && isUpdatingOwnOrder();
+        allow update: if (isOwner(userId) || isSignedIn()) && isUpdatingOwnOrder();
         allow delete: if isExistingOwner(userId);
         
         /**
