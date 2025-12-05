@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { IndianRupee, ShoppingBag, CheckCircle, LogOut, AlertCircle, Check, Lock } from 'lucide-react';
+import { IndianRupee, ShoppingBag, CheckCircle, LogOut, AlertCircle, Check, Lock, CheckCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -99,14 +99,14 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
   const { data: orders, isLoading, error } = useCollection<Order>(allOrdersQuery);
 
-  const handleUpdateStatus = async (order: Order) => {
+  const handleUpdateStatus = async (order: Order, status: 'Ready for Pickup' | 'Delivered') => {
     if (!firestore) return;
     try {
         const orderRef = doc(firestore, 'users', order.userId, 'orders', order.id);
-        await updateDoc(orderRef, { status: 'Ready for Pickup' });
+        await updateDoc(orderRef, { status });
         toast({
             title: 'Order Updated',
-            description: `Order #${order.id.slice(0, 7)} is now ready for pickup.`
+            description: `Order #${order.id.slice(0, 7)} marked as ${status}.`
         })
     } catch(e) {
         console.error("Failed to update order status: ", e);
@@ -199,7 +199,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <TableCell>
                        <Badge 
                           variant={order.status === 'Delivered' ? 'default' : order.status === 'Cancelled' ? 'destructive' : 'secondary'}
-                          className={cn({
+                          className={cn('font-semibold', {
                               'bg-green-600 text-white': order.status === 'Delivered',
                               'bg-yellow-500 text-white': order.status === 'Ready for Pickup',
                           })}
@@ -209,8 +209,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     </TableCell>
                     <TableCell>
                         {order.status === 'Pending' && (
-                            <Button size="sm" onClick={() => handleUpdateStatus(order)}>
+                            <Button size="sm" onClick={() => handleUpdateStatus(order, 'Ready for Pickup')}>
                                <Check className="mr-2 h-4 w-4" /> Ready
+                            </Button>
+                        )}
+                        {order.status === 'Ready for Pickup' && (
+                            <Button size="sm" variant="secondary" onClick={() => handleUpdateStatus(order, 'Delivered')}>
+                               <CheckCheck className="mr-2 h-4 w-4" /> Completed
                             </Button>
                         )}
                     </TableCell>
