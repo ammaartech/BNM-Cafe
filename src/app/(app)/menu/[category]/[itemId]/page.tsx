@@ -52,6 +52,11 @@ export default function MenuItemDetailPage() {
 
   return (
     <div className="flex flex-col h-full animate-fade-in-slide-up">
+       <div className="p-2">
+         <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-6 w-6"/>
+        </Button>
+       </div>
       <div className="relative">
         {itemImage && (
             <div className="relative h-64 w-full">
@@ -65,9 +70,6 @@ export default function MenuItemDetailPage() {
                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             </div>
         )}
-        <Button variant="ghost" size="icon" className="absolute top-4 left-4 bg-background/50 hover:bg-background/80" onClick={() => router.back()}>
-            <ArrowLeft className="h-6 w-6"/>
-        </Button>
          {isOutOfStock && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                 <Badge variant="destructive" className="text-lg">Out of Stock</Badge>
