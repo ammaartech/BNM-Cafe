@@ -6,7 +6,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, ClipboardList } from "lucide-react";
 import { usePathname } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -34,13 +34,13 @@ function BottomNavBar() {
     const pathname = usePathname();
     const navItems = [
         { href: '/menu', icon: Home, label: 'Home' },
-        { href: '/orders', icon: Heart, label: 'Orders' },
+        { href: '/orders', icon: ClipboardList, label: 'My Orders' },
         { href: '/cart', icon: ShoppingCart, label: 'Cart' },
         { href: '/profile', icon: User, label: 'Profile' },
     ];
     
     // Don't show nav bar on certain pages
-    const noNavPages = ['/login', '/register', '/admin2'];
+    const noNavPages = ['/login', '/register', '/admin', '/admin2'];
      if (noNavPages.some(p => pathname.startsWith(p))) {
         return null;
     }
@@ -66,7 +66,7 @@ function BottomNavBar() {
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const noPaddingPages = ['/menu', '/login', '/register'];
+    const noPaddingPages = ['/menu', '/login', '/register', '/admin'];
     const addPadding = !noPaddingPages.some(p => pathname.startsWith(p));
     
     return (
