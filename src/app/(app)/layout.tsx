@@ -1,7 +1,7 @@
 
 
 "use client";
-import { useCart } from "@/context/CartContext";
+import { useCart, CartProvider } from "@/context/CartContext";
 import {
   Dialog,
   DialogContent,
