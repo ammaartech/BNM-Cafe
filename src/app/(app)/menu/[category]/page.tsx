@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import { categories, menuItems } from "@/lib/data";
 import { notFound } from "next/navigation";
@@ -7,6 +8,7 @@ import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Button } from '@/components/ui/button';
 
 function StarRating({ rating }: { rating: number }) {
     return (
@@ -37,18 +39,21 @@ export default function MenuItemsPage({
 
   return (
     <div className="space-y-6">
-       <Link href="/menu" className="flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            <ChevronLeft className="h-5 w-5 mr-1" />
-            Menu
-      </Link>
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          {category.name}
-        </h1>
-        <p className="mt-1 text-muted-foreground">
-          Our menu is below
-        </p>
-      </div>
+       <div className="flex items-center gap-4 mb-6">
+            <Button variant="ghost" size="icon" asChild>
+                <Link href="/menu">
+                    <ChevronLeft className="h-5 w-5" />
+                </Link>
+            </Button>
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">
+                {category.name}
+                </h1>
+                <p className="mt-1 text-muted-foreground">
+                Our menu is below
+                </p>
+            </div>
+        </div>
 
       {items.length > 0 ? (
         <div className="space-y-4">

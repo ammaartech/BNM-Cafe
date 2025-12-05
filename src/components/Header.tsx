@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -33,7 +34,9 @@ export default function Header() {
   const auth = useAuth();
   
   const handleLogout = async () => {
-      await signOut(auth);
+      if(auth) {
+        await signOut(auth);
+      }
       router.push('/login');
   }
 
@@ -54,20 +57,16 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-card">
       <div className="container mx-auto flex h-16 items-center px-4 relative">
         
-        <div className="absolute left-4">
+        <div className="absolute left-4 flex items-center">
             {showBackArrow && !pathname.startsWith('/menu/category') && !isSimplePage ? (
                 <Button variant="ghost" size="icon" onClick={() => router.back()}>
                     <ArrowLeft className="h-6 w-6" />
                 </Button>
-            ) : (
-                 !isSimplePage && <Link href="/menu" className="flex items-center gap-2">
+            ) : null}
+             {!isSimplePage && !showBackArrow && (
+                 <Link href="/menu" className="flex items-center gap-2">
                     <Utensils className="h-7 w-7 text-primary" />
                 </Link>
-            )}
-             {isSimplePage && (
-                 <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                    <ArrowLeft className="h-6 w-6" />
-                </Button>
             )}
         </div>
 
@@ -80,6 +79,17 @@ export default function Header() {
         </div>
 
         <div className="absolute right-4 flex items-center gap-2">
+            <Link href="/cart">
+                <Button variant="ghost" size="icon" className="relative">
+                <ShoppingCart className="h-6 w-6" />
+                {totalItems > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                    {totalItems}
+                    </span>
+                )}
+                <span className="sr-only">Shopping Cart</span>
+                </Button>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
