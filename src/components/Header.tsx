@@ -39,9 +39,8 @@ export default function Header() {
 
   // Simple pages without the full header
   const simplePages = ['/cart', '/checkout'];
-  if (simplePages.includes(pathname)) {
-      return null;
-  }
+  const isSimplePage = simplePages.includes(pathname);
+  
   const isMenuItemPage = pathname.startsWith('/menu/') && pathname.split('/').length > 3;
 
   if (isMenuItemPage) {
@@ -56,14 +55,19 @@ export default function Header() {
       <div className="container mx-auto flex h-16 items-center px-4 relative">
         
         <div className="absolute left-4">
-            {showBackArrow && !pathname.startsWith('/menu/category') ? (
+            {showBackArrow && !pathname.startsWith('/menu/category') && !isSimplePage ? (
                 <Button variant="ghost" size="icon" onClick={() => router.back()}>
                     <ArrowLeft className="h-6 w-6" />
                 </Button>
             ) : (
-                 <Link href="/menu" className="flex items-center gap-2">
+                 !isSimplePage && <Link href="/menu" className="flex items-center gap-2">
                     <Utensils className="h-7 w-7 text-primary" />
                 </Link>
+            )}
+             {isSimplePage && (
+                 <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                    <ArrowLeft className="h-6 w-6" />
+                </Button>
             )}
         </div>
 
@@ -76,18 +80,6 @@ export default function Header() {
         </div>
 
         <div className="absolute right-4 flex items-center gap-2">
-          <Link href="/cart">
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="h-5 w-5" />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                  {totalItems}
-                </span>
-              )}
-              <span className="sr-only">Shopping Cart</span>
-            </Button>
-          </Link>
-          
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
