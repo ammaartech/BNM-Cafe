@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collectionGroup, query } from 'firebase/firestore';
+import { collectionGroup, query, doc, updateDoc } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,8 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { IndianRupee, ShoppingBag, CheckCircle, LogOut, AlertCircle } from 'lucide-react';
+import { IndianRupee, ShoppingBag, CheckCircle, LogOut, AlertCircle, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 function AdminLogin({ onLogin }: { onLogin: () => void }) {
   const [password, setPassword] = useState('');
@@ -87,13 +89,33 @@ function DashboardSkeleton() {
 
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const firestore = useFirestore();
+  const { toast } = useToast();
   
   const allOrdersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collectionGroup(firestore, 'orders'))
+    return query(collectionGroup(firestore, 'orders'));
   }, [firestore]);
 
   const { data: orders, isLoading, error } = useCollection<Order>(allOrdersQuery);
+
+  const handleUpdateStatus = async (order: Order) => {
+    if (!firestore) return;
+    try {
+        const orderRef = doc(firestore, 'users', order.userId, 'orders', order.id);
+        await updateDoc(orderRef, { status: 'Ready for Pickup' });
+        toast({
+            title: 'Order Updated',
+            description: `Order #${order.id.slice(0, 7)} is now ready for pickup.`
+        })
+    } catch(e) {
+        console.error("Failed to update order status: ", e);
+        toast({
+            title: 'Update Failed',
+            description: 'Could not update the order status.',
+            variant: 'destructive'
+        })
+    }
+  }
 
   const stats = {
     totalRevenue: orders?.filter(o => o.status === 'Delivered').reduce((sum, o) => sum + o.totalAmount, 0) || 0,
@@ -163,6 +185,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   <TableHead>Items</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -173,9 +196,22 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <TableCell>{order.items.map(item => `${item.name} (x${item.quantity})`).join(', ')}</TableCell>
                     <TableCell>₹{order.totalAmount.toFixed(2)}</TableCell>
                     <TableCell>
-                       <Badge variant={order.status === 'Delivered' ? 'default' : 'destructive'} className={order.status === 'Delivered' ? 'bg-green-600' : ''}>
+                       <Badge 
+                          variant={order.status === 'Delivered' ? 'default' : order.status === 'Cancelled' ? 'destructive' : 'secondary'}
+                          className={cn({
+                              'bg-green-600 text-white': order.status === 'Delivered',
+                              'bg-yellow-500 text-white': order.status === 'Ready for Pickup',
+                          })}
+                        >
                         {order.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                        {order.status === 'Pending' && (
+                            <Button size="sm" onClick={() => handleUpdateStatus(order)}>
+                               <Check className="mr-2 h-4 w-4" /> Ready
+                            </Button>
+                        )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -195,6 +231,7 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    // This check runs only on the client-side
     const isAdmin = localStorage.getItem('isAdminAuthenticated') === 'true';
     setIsAuthenticated(isAdmin);
   }, []);
@@ -207,6 +244,11 @@ export default function AdminPage() {
     localStorage.removeItem('isAdminAuthenticated');
     setIsAuthenticated(false);
   };
+
+  if (typeof window === 'undefined') {
+    // Render nothing on the server to avoid hydration mismatch
+    return null;
+  }
 
   if (!isAuthenticated) {
     return <AdminLogin onLogin={handleLogin} />;
