@@ -32,16 +32,19 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
         if (error) {
           console.error("Error fetching user favorites:", error);
+          setFavoriteIds([]);
         } else {
           setFavoriteIds(data?.favorites || []);
         }
         setIsPreferencesLoading(false);
       } else {
-        // For anonymous users, favorites are not stored in DB
+        // For anonymous or logged-out users, clear favorites and finish loading
         setFavoriteIds([]);
         setIsPreferencesLoading(false);
       }
     };
+    
+    // This condition ensures we only fetch when the user loading process is complete.
     if(!isUserLoading) {
         fetchFavorites();
     }
@@ -49,7 +52,8 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
   const toggleFavorite = async (itemId: string) => {
     if (!user || user.is_anonymous) {
-      // Handle favorites for anonymous users if needed (e.g., in localStorage)
+      // For now, we don't support favorites for anonymous users.
+      console.log("Favorites are only available for logged-in users.");
       return;
     }
 
@@ -68,7 +72,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
     if (error) {
       console.error('Failed to update favorites:', error);
-      // Optionally revert state if DB update fails by re-fetching from DB
+      // Revert state if DB update fails to keep UI in sync with the database
       setFavoriteIds(favoriteIds);
     }
   };
