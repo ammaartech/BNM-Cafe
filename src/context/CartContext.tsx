@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { CartItem, MenuItem, Order, OrderItem } from "@/lib/types";
+import type { CartItem, MenuItem, Order, OrderItem, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import React, { createContext, useContext, useReducer, ReactNode, useState, useEffect } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
@@ -30,8 +30,6 @@ const CartContext = createContext<{
   placeOrder: () => Promise<void>;
   addedItemPopup: MenuItem | null;
   setAddedItemPopup: (item: MenuItem | null) => void;
-  customerName: string;
-  setCustomerName: (name: string) => void;
 }>({
   state: initialState,
   dispatch: () => null,
@@ -40,8 +38,6 @@ const CartContext = createContext<{
   placeOrder: async () => {},
   addedItemPopup: null,
   setAddedItemPopup: () => {},
-  customerName: "",
-  setCustomerName: () => {},
 });
 
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -95,8 +91,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const [addedItemPopup, setAddedItemPopup] = useState<MenuItem | null>(null);
-  const [customerName, setCustomerName] = useState("");
-  const { supabase, user, isUserLoading } = useSupabase();
+  const { supabase, user, userProfile, isUserLoading } = useSupabase();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -119,7 +114,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (!user || !supabase) {
         toast({
             title: "Connection Error",
-            description: "Anonymous user not found or could not connect to the database. Please refresh.",
+            description: "User not found or could not connect to the database. Please refresh.",
             variant: "destructive"
         })
         return;
@@ -133,16 +128,36 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         })
         return;
     }
-
-     if (!customerName.trim()) {
+    
+    let customerName = "Guest";
+    if (userProfile?.name) {
+        customerName = userProfile.name;
+    } else if (user && !user.is_anonymous) {
+        // Fallback for registered user if profile is slow to load
+        const { data: profileData, error: profileError } = await supabase
+            .from('users')
+            .select('name')
+            .eq('id', user.id)
+            .single();
+        if (profileError) {
+             toast({
+                title: "Could not find user profile",
+                description: "Please try again.",
+                variant: "destructive"
+            });
+            return;
+        }
+        customerName = profileData.name;
+    } else {
         toast({
-            title: "Name is required",
-            description: "Please enter a name for the order in your cart.",
+            title: "Please Log In",
+            description: "You need to be logged in to place an order.",
             variant: "destructive"
         });
-        router.push('/cart');
+        router.push('/');
         return;
     }
+
 
     try {
         // 1. Insert the order
@@ -150,7 +165,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             .from('orders')
             .insert({
                 user_id: user.id,
-                user_name: customerName.trim(),
+                user_name: customerName,
                 total_amount: totalPrice,
                 status: "Pending",
             })
@@ -177,7 +192,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         if (itemsError) throw itemsError;
 
         dispatch({type: 'CLEAR_CART' });
-        setCustomerName(""); // Clear name after order
         router.push(`/orders/${newOrderId}`);
 
     } catch(error: any) {
@@ -191,7 +205,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice, placeOrder, addedItemPopup, setAddedItemPopup, customerName, setCustomerName }}>
+    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice, placeOrder, addedItemPopup, setAddedItemPopup }}>
       {children}
     </CartContext.Provider>
   );

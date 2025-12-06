@@ -9,6 +9,7 @@ import type { UserProfile } from '@/lib/types';
 interface SupabaseContextType {
   supabase: SupabaseClient | null;
   user: User | null;
+  userProfile: UserProfile | null;
   userRole: UserProfile['role'] | null;
   isUserLoading: boolean;
 }
@@ -17,6 +18,7 @@ const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined
 
 export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userRole, setUserRole] = useState<UserProfile['role'] | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
 
@@ -27,12 +29,13 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
       setUser(currentUser);
       
       if (currentUser) {
-        // Fetch user role
+        // Fetch user profile
         const { data: profile } = await supabase
           .from('users')
-          .select('role')
+          .select('*')
           .eq('id', currentUser.id)
           .single();
+        setUserProfile(profile);
         setUserRole(profile?.role || 'customer');
       } else {
         // Handle anonymous user sign in
@@ -41,6 +44,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
              console.error("Error signing in anonymously:", anonError);
          } else {
              setUser(anonData.user);
+             setUserProfile(null); // Anonymous users don't have a profile
              setUserRole('customer'); // Default role for anonymous users
          }
       }
@@ -58,11 +62,13 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
         if (currentUser) {
           const { data: profile } = await supabase
             .from('users')
-            .select('role')
+            .select('*')
             .eq('id', currentUser.id)
             .single();
+          setUserProfile(profile);
           setUserRole(profile?.role || 'customer');
         } else {
+          setUserProfile(null);
           setUserRole(null);
         }
         setIsUserLoading(false);
@@ -77,6 +83,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     supabase,
     user,
+    userProfile,
     userRole,
     isUserLoading,
   };

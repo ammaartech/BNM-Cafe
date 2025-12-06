@@ -4,16 +4,15 @@
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { ArrowLeft, Trash2, Plus, Minus, User } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Minus } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
-import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 
 export default function CartPage() {
-  const { state, updateQuantity, removeItem, totalPrice, totalItems, customerName, setCustomerName } = useCart();
+  const { state, updateQuantity, removeItem, totalPrice, totalItems } = useCart();
   const router = useRouter();
   
   const subTotal = totalPrice / 1.05;
@@ -21,9 +20,7 @@ export default function CartPage() {
   const finalTotal = totalPrice;
 
   const handleCheckout = () => {
-    if (customerName.trim()) {
-        router.push('/checkout');
-    }
+    router.push('/checkout');
   }
 
   return (
@@ -46,19 +43,7 @@ export default function CartPage() {
             </div>
         ) : (
             <>
-            <div className="mb-6">
-                <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input 
-                        placeholder="Enter your name for the order" 
-                        className="h-12 pl-10 bg-input"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                    />
-                </div>
-            </div>
-
-            <div className="flex-grow space-y-4">
+            <div className="flex-grow space-y-4 pt-6">
                 {state.items.map((item) => {
                     const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
                     return (
@@ -115,7 +100,7 @@ export default function CartPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Button className="w-full h-14 text-lg font-bold" onClick={handleCheckout} disabled={!customerName.trim()}>
+                <Button className="w-full h-14 text-lg font-bold" onClick={handleCheckout}>
                     Checkout
                 </Button>
             </div>
