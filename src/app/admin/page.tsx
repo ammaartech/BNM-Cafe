@@ -372,12 +372,20 @@ export default function AdminPage() {
     
     return (
         <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen">
-            <header className="mb-6">
-                <h1 className="text-3xl font-bold tracking-tight text-foreground text-center">
-                    Admin Dashboard
-                </h1>
-            </header>
-            {isAdmin ? <AdminDashboard /> : <AdminLoginPage />}
+            {isAdmin ? (
+                <>
+                    <header className="mb-6">
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground text-center">
+                            Admin Dashboard
+                        </h1>
+                    </header>
+                    <AdminDashboard />
+                </>
+            ) : (
+                <AdminLoginPage />
+            )}
         </div>
     );
 }
+
+    
