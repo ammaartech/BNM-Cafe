@@ -24,15 +24,16 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     const fetchFavorites = async () => {
       if (user && !user.is_anonymous) {
         setIsPreferencesLoading(true);
+        // Use .single() as we expect only one user profile.
+        // It's safe because user profiles are created on sign-up.
         const { data, error } = await supabase
           .from('users')
           .select('favorites')
           .eq('id', user.id)
           .single();
 
-        if (error) {
-          console.error("Error fetching user favorites:", error);
-          setFavoriteIds([]);
+        if (error && error.code !== 'PGRST116') { // PGRST116 means "not found"
+          // Don't log "not found" as an error, it's expected for new users.
         } else {
           setFavoriteIds(data?.favorites || []);
         }
