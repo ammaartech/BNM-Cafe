@@ -1,7 +1,7 @@
 
 "use client";
 import { useCart, CartProvider } from "@/context/CartContext";
-import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
+import { UserPreferencesProvider, useUserPreferences } from "@/context/UserPreferencesContext";
 import {
   Dialog,
   DialogContent,
@@ -59,7 +59,7 @@ function BottomNavBar() {
         <nav className="sticky bottom-0 z-50 bg-card border-t mt-auto">
             <div className="flex justify-around items-center h-16">
                 {navItems.map(item => {
-                    const isActive = pathname === item.href;
+                    const isActive = pathname === item.href || (pathname === '/menu' && item.href.startsWith('/menu?filter=favorites') && new URLSearchParams(window.location.search).get('filter') === 'favorites');
                     return (
                         <Link href={item.href} key={item.href} className="relative">
                              <div className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
