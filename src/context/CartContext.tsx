@@ -3,10 +3,9 @@
 
 import type { CartItem, MenuItem, Order, OrderItem, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import React, { createContext, useContext, useReducer, ReactNode, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useReducer, ReactNode, useState, useEffect } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
 import { useRouter } from "next/navigation";
-import { useUserPreferences } from "./UserPreferencesContext";
 
 
 type CartState = {
@@ -24,7 +23,7 @@ type CartAction =
 const getInitialState = (): CartState => {
   if (typeof window !== 'undefined') {
     try {
-      const storedCart = localStorage.getItem('anonymous_cart');
+      const storedCart = localStorage.getItem('cart');
       if (storedCart) {
         return JSON.parse(storedCart);
       }
@@ -107,57 +106,29 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 }
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [state, dispatch] = useReducer(cartReducer, { items: [] });
+  const [state, dispatch] = useReducer(cartReducer, getInitialState());
   const [isInitialized, setIsInitialized] = useState(false);
   const [addedItemPopup, setAddedItemPopup] = useState<MenuItem | null>(null);
   const { supabase, user, userProfile, isUserLoading } = useSupabase();
-  const { preferences, updatePreference, isPreferencesLoading } = useUserPreferences();
   const { toast } = useToast();
   const router = useRouter();
 
-  const isCartLoading = isUserLoading || isPreferencesLoading;
+  const isCartLoading = isUserLoading;
   
   useEffect(() => {
-    if (isCartLoading) return;
-
-    let initialState: CartState = { items: [] };
-    if (user && !user.is_anonymous) {
-        // Logged-in user: load from preferences (database)
-        if (preferences?.cart) {
-            initialState = { items: preferences.cart };
-        }
-    } else {
-        // Anonymous user: load from localStorage
-        try {
-            const storedCart = localStorage.getItem('anonymous_cart');
-            if (storedCart) {
-                initialState = JSON.parse(storedCart);
-            }
-        } catch (error) {
-            console.error("Failed to load anonymous cart from localStorage", error);
-        }
-    }
-    dispatch({ type: 'SET_STATE', payload: initialState });
+    dispatch({ type: 'SET_STATE', payload: getInitialState() });
     setIsInitialized(true);
-
-  }, [isCartLoading, user, preferences]);
+  }, []);
 
 
   useEffect(() => {
-    if (!isInitialized || isCartLoading) return;
-
-    if (user && !user.is_anonymous) {
-      // Logged-in user: save to DB
-      updatePreference('cart', state.items);
-    } else {
-      // Anonymous user: save to localStorage
-      try {
-        localStorage.setItem('anonymous_cart', JSON.stringify(state));
-      } catch (error) {
-        console.error("Failed to save anonymous cart to localStorage", error);
-      }
+    if (!isInitialized) return;
+    try {
+      localStorage.setItem('cart', JSON.stringify(state));
+    } catch (error) {
+      console.error("Failed to save cart to localStorage", error);
     }
-  }, [state, isInitialized, isCartLoading, user, updatePreference]);
+  }, [state, isInitialized]);
 
 
   const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
