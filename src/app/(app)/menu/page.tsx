@@ -132,7 +132,7 @@ export default function MenuPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="px-2 pt-4 pb-2">
+      <header className="px-2 pt-4 pb-4">
         <div className="flex justify-between items-center mb-2">
             { user && !user.is_anonymous ? (
                 <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground">
