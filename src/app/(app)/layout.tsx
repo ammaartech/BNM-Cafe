@@ -10,7 +10,7 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { CheckCircle } from "lucide-react";
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import Link from "next/link";
 import { Home, ShoppingCart, ClipboardList, Heart } from "lucide-react";
 
@@ -35,6 +35,7 @@ function CartSuccessDialog() {
 
 function BottomNavBar() {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const { totalItems } = useCart();
     const { favoriteIds } = useUserPreferences();
 
@@ -59,9 +60,11 @@ function BottomNavBar() {
         <nav className="sticky bottom-0 z-50 bg-card border-t mt-auto">
             <div className="flex justify-around items-center h-16">
                 {navItems.map(item => {
-                    const isActive = pathname === item.href || 
-                                     (item.href === '/menu?filter=all' && pathname === '/menu' && (!window.location.search || window.location.search === '?filter=all')) ||
-                                     (item.href.startsWith('/menu?filter=') && pathname === '/menu' && new URLSearchParams(window.location.search).get('filter') === item.href.split('=')[1]);
+                    const filterParam = searchParams.get('filter');
+                    const isActive = (item.href === '/menu?filter=all' && (pathname === '/menu' && (!filterParam || filterParam === 'all'))) ||
+                                     (item.href === `/menu?filter=${filterParam}` && pathname === '/menu') ||
+                                     (item.href !== '/menu?filter=all' && pathname === item.href);
+
                     return (
                         <Link href={item.href} key={item.href} className="relative">
                              <div className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
