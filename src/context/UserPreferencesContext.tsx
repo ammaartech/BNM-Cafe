@@ -19,33 +19,31 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [isPreferencesLoading, setIsPreferencesLoading] = useState(true);
 
-  // Fetch initial favorites
+  // Fetch favorites when user loading is complete
   useEffect(() => {
     const fetchFavorites = async () => {
       if (user && !user.is_anonymous) {
         setIsPreferencesLoading(true);
-        // Use .single() as we expect only one user profile.
-        // It's safe because user profiles are created on sign-up.
         const { data, error } = await supabase
           .from('users')
           .select('favorites')
           .eq('id', user.id)
           .single();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 means "not found"
-          // Don't log "not found" as an error, it's expected for new users.
+        if (error && error.code !== 'PGRST116') { // PGRST116: "not found"
+            // This case is for potential network or db errors, not for "no user"
         } else {
           setFavoriteIds(data?.favorites || []);
         }
         setIsPreferencesLoading(false);
       } else {
-        // For anonymous or logged-out users, clear favorites and finish loading
+        // For anonymous or logged-out users, clear favorites.
         setFavoriteIds([]);
         setIsPreferencesLoading(false);
       }
     };
     
-    // This condition ensures we only fetch when the user loading process is complete.
+    // Only run fetchFavorites when the user loading state is definitively finished.
     if(!isUserLoading) {
         fetchFavorites();
     }
@@ -53,28 +51,29 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
   const toggleFavorite = async (itemId: string) => {
     if (!user || user.is_anonymous) {
-      // For now, we don't support favorites for anonymous users.
-      console.log("Favorites are only available for logged-in users.");
+      // Favorites are only for logged-in users.
+      // A toast message could be added here in the future.
       return;
     }
 
     const isCurrentlyFavorited = favoriteIds.includes(itemId);
+    
+    // Optimistically update the UI
     const newFavorites = isCurrentlyFavorited
       ? favoriteIds.filter(id => id !== itemId)
       : [...favoriteIds, itemId];
-    
-    // Update local state immediately for a responsive UI
     setFavoriteIds(newFavorites);
 
+    // Persist the change to the database
     const { error } = await supabase
       .from('users')
       .update({ favorites: newFavorites })
       .eq('id', user.id);
 
     if (error) {
-      console.error('Failed to update favorites:', error);
-      // Revert state if DB update fails to keep UI in sync with the database
+      // If the database update fails, revert the UI to the previous state
       setFavoriteIds(favoriteIds);
+      // A toast message for the error could be useful here.
     }
   };
   
