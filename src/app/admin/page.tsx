@@ -319,7 +319,7 @@ function AdminLoginPage() {
     };
 
     return (
-        <div className="flex items-center justify-center h-full">
+        <div className="flex items-center justify-center h-full w-full">
             <Card className="w-full max-w-sm">
                 <CardHeader>
                     <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
@@ -371,7 +371,7 @@ export default function AdminPage() {
     }
     
     return (
-        <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen">
+        <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
             {isAdmin ? (
                 <>
                     <header className="mb-6">
@@ -382,10 +382,10 @@ export default function AdminPage() {
                     <AdminDashboard />
                 </>
             ) : (
-                <AdminLoginPage />
+                <div className="flex-grow flex items-center justify-center">
+                    <AdminLoginPage />
+                </div>
             )}
         </div>
     );
 }
-
-    
