@@ -1,5 +1,4 @@
 
-
 "use client";
 import { useCart, CartProvider } from "@/context/CartContext";
 import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
@@ -13,7 +12,7 @@ import {
 import { CheckCircle } from "lucide-react";
 import { usePathname } from 'next/navigation';
 import Link from "next/link";
-import { Home, ShoppingCart, ClipboardList } from "lucide-react";
+import { Home, ShoppingCart, ClipboardList, Heart } from "lucide-react";
 
 
 function CartSuccessDialog() {
@@ -37,9 +36,12 @@ function CartSuccessDialog() {
 function BottomNavBar() {
     const pathname = usePathname();
     const { totalItems } = useCart();
+    const { favoriteIds } = useUserPreferences();
+
     const navItems = [
         { href: '/menu', icon: Home, label: 'Home' },
         { href: '/orders', icon: ClipboardList, label: 'My Orders' },
+        { href: '/menu?filter=favorites', icon: Heart, label: 'Favorites', badge: favoriteIds.length > 0 ? favoriteIds.length : null },
         { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
     ];
     

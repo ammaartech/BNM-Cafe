@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -16,7 +15,7 @@ import { ArrowRight, ShoppingCart, LogOut, Search, Heart, Plus, X, Minus } from 
 import { useCart } from "@/context/CartContext";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import type { MenuItem, UserProfile } from "@/lib/types";
 import { useState, useEffect } from "react";
@@ -90,11 +89,19 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
 export default function MenuPage() {
   const { user } = useSupabase();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { favoriteIds } = useUserPreferences();
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    const filterParam = searchParams.get('filter');
+    if (filterParam) {
+      setActiveFilter(filterParam);
+    }
+  }, [searchParams]);
 
    useEffect(() => {
     const fetchUserProfile = async () => {
@@ -118,6 +125,7 @@ export default function MenuPage() {
     await supabase.auth.signOut();
     // Use replace and then reload to ensure all state is cleared.
     router.replace('/');
+    router.refresh();
   }
   
   const displayedItems = menuItems.filter(item => {
