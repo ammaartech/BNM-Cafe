@@ -87,7 +87,7 @@ function AuthForm() {
     <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
       <div className="w-full max-w-md animate-fade-in-slide-up">
         <div className="text-center mb-6 flex flex-col items-center">
-            <Image src="/logo.png" alt="B.N.M Cafe Logo" width={150} height={150} priority className="mb-4" />
+            <Image src="/bnmlogoB.png" alt="B.N.M Cafe Logo" width={150} height={150} priority className="mb-4" />
             <p className="text-muted-foreground mt-2">Your campus coffee companion.</p>
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
