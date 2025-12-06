@@ -1,18 +1,19 @@
 
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import type { Order, OrderItem } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, FileText, ShoppingBag } from "lucide-react";
+import { AlertCircle, FileText, ShoppingBag, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useSupabase } from "@/lib/supabase/provider";
+import { Button } from "@/components/ui/button";
 
 function TicketSkeleton() {
     return (
@@ -63,6 +64,7 @@ function TicketSkeleton() {
 
 export default function OrderTicketPage() {
   const params = useParams();
+  const router = useRouter();
   const orderId = params.orderId as string;
   const { user } = useSupabase();
 
@@ -140,6 +142,12 @@ export default function OrderTicketPage() {
 
   return (
     <>
+    <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft />
+        </Button>
+        <h1 className="text-2xl font-bold">Order Details</h1>
+    </div>
     <Card className="max-w-2xl mx-auto shadow-lg">
       <CardHeader className="bg-muted/50">
         <div className="flex items-center gap-3">
