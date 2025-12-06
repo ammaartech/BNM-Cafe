@@ -12,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, LogIn, UserPlus } from 'lucide-react';
 import { useSupabase } from '@/lib/supabase/provider';
 import Image from 'next/image';
+import logo from '@/logo.png';
 
 function AuthForm() {
   const router = useRouter();
@@ -87,7 +88,7 @@ function AuthForm() {
     <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
       <div className="w-full max-w-md animate-fade-in-slide-up">
         <div className="text-center mb-6 flex flex-col items-center">
-            <Image src="/logo.png" alt="B.N.M Cafe Logo" width={150} height={150} priority className="mb-4" />
+            <Image src={logo} alt="B.N.M Cafe Logo" width={150} height={150} priority className="mb-4" />
             <p className="text-muted-foreground mt-2">Your campus coffee companion.</p>
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -115,7 +116,7 @@ function AuthForm() {
                         type="password"
                         placeholder="Password"
                         value={password}
-                        onChange={(e) => setPassword(e.targe.value)}
+                        onChange={(e) => setPassword(e.target.value)}
                         required
                         className="h-12"
                     />
