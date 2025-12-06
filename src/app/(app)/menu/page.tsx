@@ -100,6 +100,8 @@ export default function MenuPage() {
     const filterParam = searchParams.get('filter');
     if (filterParam) {
       setActiveFilter(filterParam);
+    } else {
+      setActiveFilter('all');
     }
   }, [searchParams]);
 
@@ -126,6 +128,11 @@ export default function MenuPage() {
     // Use replace and then reload to ensure all state is cleared.
     router.replace('/');
     router.refresh();
+  }
+
+  const handleFilterClick = (filter: string) => {
+    setActiveFilter(filter);
+    router.push(`/menu?filter=${filter}`, { scroll: false });
   }
   
   const displayedItems = menuItems.filter(item => {
@@ -182,10 +189,10 @@ export default function MenuPage() {
       
       <div className="overflow-x-auto py-2 no-scrollbar px-2">
         <div className="flex gap-2">
-            <Button variant={activeFilter === 'all' ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => setActiveFilter('all')}>All</Button>
-            <Button variant={activeFilter === 'favorites' ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => setActiveFilter('favorites')}>Favorites</Button>
+            <Button variant={activeFilter === 'all' ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => handleFilterClick('all')}>All</Button>
+            <Button variant={activeFilter === 'favorites' ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => handleFilterClick('favorites')}>Favorites</Button>
             {categories.map((category) => (
-              <Button key={category.id} variant={activeFilter === category.id ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => setActiveFilter(category.id)}>
+              <Button key={category.id} variant={activeFilter === category.id ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => handleFilterClick(category.id)}>
                 {category.name}
               </Button>
             ))}

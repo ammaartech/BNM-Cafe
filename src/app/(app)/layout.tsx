@@ -39,7 +39,7 @@ function BottomNavBar() {
     const { favoriteIds } = useUserPreferences();
 
     const navItems = [
-        { href: '/menu', icon: Home, label: 'Home' },
+        { href: '/menu?filter=all', icon: Home, label: 'Home' },
         { href: '/orders', icon: ClipboardList, label: 'My Orders' },
         { href: '/menu?filter=favorites', icon: Heart, label: 'Favorites', badge: favoriteIds.length > 0 ? favoriteIds.length : null },
         { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
@@ -59,7 +59,9 @@ function BottomNavBar() {
         <nav className="sticky bottom-0 z-50 bg-card border-t mt-auto">
             <div className="flex justify-around items-center h-16">
                 {navItems.map(item => {
-                    const isActive = pathname === item.href || (pathname === '/menu' && item.href.startsWith('/menu?filter=favorites') && new URLSearchParams(window.location.search).get('filter') === 'favorites');
+                    const isActive = pathname === item.href || 
+                                     (item.href === '/menu?filter=all' && pathname === '/menu' && (!window.location.search || window.location.search === '?filter=all')) ||
+                                     (item.href.startsWith('/menu?filter=') && pathname === '/menu' && new URLSearchParams(window.location.search).get('filter') === item.href.split('=')[1]);
                     return (
                         <Link href={item.href} key={item.href} className="relative">
                              <div className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
