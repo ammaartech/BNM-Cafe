@@ -25,15 +25,14 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
       if (user && !user.is_anonymous) {
         setIsPreferencesLoading(true);
         const { data, error } = await supabase
-          .from('users')
-          .select('favorites')
-          .eq('id', user.id)
-          .single();
+          .from('user_favorites')
+          .select('menu_item_id')
+          .eq('user_id', user.id);
 
-        if (error && error.code !== 'PGRST116') { // PGRST116: "not found"
-            // This case is for potential network or db errors, not for "no user"
+        if (error) {
+            // This case is for potential network or db errors
         } else {
-          setFavoriteIds(data?.favorites || []);
+          setFavoriteIds(data ? data.map(fav => fav.menu_item_id) : []);
         }
         setIsPreferencesLoading(false);
       } else {
@@ -50,30 +49,43 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
   }, [user, isUserLoading, supabase]);
 
   const toggleFavorite = async (itemId: string) => {
-    if (!user || user.is_anonymous) {
+    if (!user || user.is_anonymous || !supabase) {
       // Favorites are only for logged-in users.
-      // A toast message could be added here in the future.
       return;
     }
 
     const isCurrentlyFavorited = favoriteIds.includes(itemId);
     
     // Optimistically update the UI
-    const newFavorites = isCurrentlyFavorited
-      ? favoriteIds.filter(id => id !== itemId)
-      : [...favoriteIds, itemId];
-    setFavoriteIds(newFavorites);
+    if (isCurrentlyFavorited) {
+        setFavoriteIds(favoriteIds.filter(id => id !== itemId));
+    } else {
+        setFavoriteIds([...favoriteIds, itemId]);
+    }
 
     // Persist the change to the database
-    const { error } = await supabase
-      .from('users')
-      .update({ favorites: newFavorites })
-      .eq('id', user.id);
+    if (isCurrentlyFavorited) {
+      // Remove from favorites
+      const { error } = await supabase
+        .from('user_favorites')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('menu_item_id', itemId);
 
-    if (error) {
-      // If the database update fails, revert the UI to the previous state
-      setFavoriteIds(favoriteIds);
-      // A toast message for the error could be useful here.
+      if (error) {
+        // Revert UI on error
+        setFavoriteIds([...favoriteIds, itemId]);
+      }
+    } else {
+      // Add to favorites
+      const { error } = await supabase
+        .from('user_favorites')
+        .insert({ user_id: user.id, menu_item_id: itemId });
+
+      if (error) {
+        // Revert UI on error
+        setFavoriteIds(favoriteIds.filter(id => id !== itemId));
+      }
     }
   };
   
