@@ -116,7 +116,8 @@ export default function MenuPage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/');
+    // Use replace and then reload to ensure all state is cleared.
+    router.replace('/');
   }
   
   const displayedItems = menuItems.filter(item => {
