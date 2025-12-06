@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { useSupabase } from "./supabase/provider";
+import { useSupabase } from "@/lib/supabase/provider";
 import type { UserProfile } from "@/lib/types";
 import { useDebounce } from "@/hooks/use-debounce";
 
