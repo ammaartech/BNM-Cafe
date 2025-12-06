@@ -13,7 +13,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useUser } from "@/firebase";
+import { useSupabase } from "@/lib/supabase/provider";
 
 function CheckoutSkeleton() {
     return (
@@ -66,7 +66,7 @@ function CheckoutSkeleton() {
 }
 
 export default function CheckoutPage() {
-  const { isUserLoading } = useUser();
+  const { isUserLoading } = useSupabase();
   const router = useRouter();
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 

@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collectionGroup, query, updateDoc, doc } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase } from "@/lib/supabase/hooks";
+import { supabase } from "@/lib/supabase/client";
 import type { Order } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -15,11 +15,15 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, IndianRupee, ShoppingCart } from "lucide-react";
+import { Package, IndianRupee, ShoppingCart, LogIn, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useSupabase } from "@/lib/supabase/provider";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 type OrderFilter = "live" | "delivered" | "all";
 
@@ -30,48 +34,47 @@ const filterOptions: { label: string; value: OrderFilter }[] = [
 ];
 
 function AdminDashboard() {
-  const firestore = useFirestore();
   const [filter, setFilter] = useState<OrderFilter>("live");
   const { toast } = useToast();
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const allOrdersQuery = useMemoFirebase(
-    () => (firestore ? query(collectionGroup(firestore, "orders")) : null),
-    [firestore]
-  );
-
-  const { data: allOrders, isLoading } = useCollection<Order>(allOrdersQuery);
+  useEffect(() => {
+    const fetchOrders = async () => {
+        setIsLoading(true);
+        const { data, error } = await supabase.from('orders').select('*, order_items(*)');
+        if (error) {
+            console.error("Error fetching orders:", error);
+            toast({ title: "Error", description: "Could not fetch orders.", variant: "destructive" });
+            setAllOrders([]);
+        } else {
+            // Shape the data to match the Order type
+            const orders = data.map((order: any) => ({
+                ...order,
+                orderDate: order.order_date,
+                totalAmount: order.total_amount,
+                userName: order.user_name,
+                items: order.order_items.map((item: any) => ({
+                    id: item.menu_item_id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price
+                }))
+            }));
+            setAllOrders(orders);
+        }
+        setIsLoading(false);
+    }
+    fetchOrders();
+  }, []);
+  
 
   const handleStatusChange = async (order: Order, status: Order['status']) => {
-    if (!firestore) return;
-
-    if (!order.userId) {
-      console.error(`Cannot update status for order #${order.id.slice(0, 7)} because it is missing a userId.`);
-      toast({
-        title: "Update Failed",
-        description: `Order #${order.id.slice(0, 7)} is an old record and cannot be updated.`,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      const orderRef = doc(firestore, "users", order.userId, "orders", order.id);
-      await updateDoc(orderRef, { status });
-    } catch (error: any) {
-      console.error("Failed to update order status:", error);
-      if (error.code === 'not-found') {
-        toast({
-          title: "Update Failed: Not Found",
-          description: `The order document for #${order.id.slice(0, 7)} could not be found. It may be an old or invalid record.`,
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Update Failed",
-          description: "An unexpected error occurred. Please check the console.",
-          variant: "destructive"
-        });
-      }
+    const { error } = await supabase.from('orders').update({ status }).eq('id', order.id);
+    if(error) {
+        toast({ title: "Update Failed", description: error.message, variant: "destructive"});
+    } else {
+        setAllOrders(prevOrders => prevOrders.map(o => o.id === order.id ? {...o, status} : o));
     }
   };
   
@@ -293,7 +296,80 @@ function AdminDashboard() {
 }
 
 
+function AdminLoginPage() {
+    const { supabase } = useSupabase();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setIsLoading(true);
+        if (!supabase) return;
+
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (error) {
+            setError(error.message);
+        }
+        // On success, the main AdminPage component will detect the user and role change, and re-render.
+        setIsLoading(false);
+    };
+
+    return (
+        <div className="flex items-center justify-center h-full">
+            <Card className="w-full max-w-sm">
+                <CardHeader>
+                    <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <Input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                        <Input
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                        {error && (
+                             <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Login Failed</AlertTitle>
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading ? 'Signing In...' : 'Sign In'}
+                             <LogIn className="ml-2 h-4 w-4" />
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
 export default function AdminPage() {
+    const { user, userRole, isUserLoading } = useSupabase();
+    const isAdmin = user && userRole === 'admin';
+
+    if (isUserLoading) {
+         return (
+             <div className="flex items-center justify-center h-full">
+                <Skeleton className="h-96 w-full max-w-sm" />
+            </div>
+         );
+    }
+    
     return (
         <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen">
             <header className="mb-6">
@@ -301,9 +377,7 @@ export default function AdminPage() {
                     Admin Dashboard
                 </h1>
             </header>
-            <AdminDashboard />
+            {isAdmin ? <AdminDashboard /> : <AdminLoginPage />}
         </div>
     );
 }
-
-    

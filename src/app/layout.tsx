@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { FirebaseClientProvider } from "@/firebase";
+import { SupabaseProvider } from "@/lib/supabase/provider";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -40,9 +40,9 @@ function RootLayoutContent({
                     "mx-auto bg-background min-h-dvh flex flex-col shadow-2xl",
                     isAdminPage ? "max-w-7xl" : "max-w-md"
                 )}>
-                    <FirebaseClientProvider>
+                    <SupabaseProvider>
                         {children}
-                    </FirebaseClientProvider>
+                    </SupabaseProvider>
                     <Toaster />
                 </div>
             </body>

@@ -1,8 +1,6 @@
 
 "use client";
 
-import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { doc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import type { Order, OrderItem } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +10,9 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, FileText, ShoppingBag } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase/provider";
 
 function TicketSkeleton() {
     return (
@@ -64,15 +64,49 @@ function TicketSkeleton() {
 export default function OrderTicketPage() {
   const params = useParams();
   const orderId = params.orderId as string;
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const { user } = useSupabase();
 
-  const orderRef = useMemoFirebase(() => {
-    if (!firestore || !orderId || !user) return null;
-    return doc(firestore, 'users', user.uid, 'orders', orderId);
-  }, [firestore, orderId, user]);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
 
-  const { data: order, isLoading, error } = useDoc<Order>(orderRef);
+  useEffect(() => {
+    const fetchOrder = async () => {
+        if (!orderId || !user) return;
+        setIsLoading(true);
+
+        const { data, error } = await supabase
+            .from('orders')
+            .select('*, order_items(*)')
+            .eq('id', orderId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (error) {
+            setError(error);
+            setOrder(null);
+        } else {
+             const formattedOrder: Order = {
+                id: data.id,
+                userId: data.user_id,
+                userName: data.user_name,
+                orderDate: data.order_date,
+                totalAmount: data.total_amount,
+                status: data.status,
+                items: data.order_items.map((item: any) => ({
+                    id: item.menu_item_id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                }))
+            };
+            setOrder(formattedOrder);
+        }
+        setIsLoading(false);
+    };
+
+    fetchOrder();
+  }, [orderId, user]);
 
 
   if (isLoading) {

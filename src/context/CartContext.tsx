@@ -4,8 +4,7 @@
 import type { CartItem, MenuItem, Order, OrderItem } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import React, { createContext, useContext, useReducer, ReactNode, useState, useEffect } from "react";
-import { useFirestore, useUser } from "@/firebase";
-import { collection, setDoc, doc } from "firebase/firestore";
+import { useSupabase } from "@/lib/supabase/provider";
 import { useRouter } from "next/navigation";
 
 
@@ -97,8 +96,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const [addedItemPopup, setAddedItemPopup] = useState<MenuItem | null>(null);
   const [customerName, setCustomerName] = useState("");
-  const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
+  const { supabase, user, isUserLoading } = useSupabase();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -118,19 +116,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
 
-    if (!user) {
-        toast({
-            title: "Not signed in",
-            description: "Anonymous user not found. Please refresh.",
-             variant: "destructive"
-        })
-        return;
-    }
-
-    if (!firestore) {
+    if (!user || !supabase) {
         toast({
             title: "Connection Error",
-            description: "Could not connect to the database.",
+            description: "Anonymous user not found or could not connect to the database. Please refresh.",
             variant: "destructive"
         })
         return;
@@ -156,37 +145,46 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
+        // 1. Insert the order
+        const { data: orderData, error: orderError } = await supabase
+            .from('orders')
+            .insert({
+                user_id: user.id,
+                user_name: customerName.trim(),
+                total_amount: totalPrice,
+                status: "Pending",
+            })
+            .select()
+            .single();
 
-        const orderItems: OrderItem[] = state.items.map(item => ({
-            id: item.id,
-            name: item.name,
+        if (orderError) throw orderError;
+
+        const newOrderId = orderData.id;
+
+        // 2. Prepare and insert order items
+        const orderItemsToInsert = state.items.map(item => ({
+            order_id: newOrderId,
+            menu_item_id: item.id,
+            quantity: item.quantity,
             price: item.price,
-            quantity: item.quantity
+            name: item.name
         }));
 
-        const newOrderRef = doc(collection(firestore, 'users', user.uid, 'orders'));
+        const { error: itemsError } = await supabase
+            .from('order_items')
+            .insert(orderItemsToInsert);
 
-        const newOrder: Order = {
-            id: newOrderRef.id,
-            userId: user.uid,
-            userName: customerName.trim(),
-            orderDate: new Date().toISOString(),
-            totalAmount: totalPrice,
-            status: "Pending",
-            items: orderItems,
-        }
-
-        await setDoc(newOrderRef, newOrder);
+        if (itemsError) throw itemsError;
 
         dispatch({type: 'CLEAR_CART' });
         setCustomerName(""); // Clear name after order
-        router.push(`/orders/${newOrderRef.id}`);
+        router.push(`/orders/${newOrderId}`);
 
-    } catch(error) {
+    } catch(error: any) {
         console.error("Error placing order:", error);
         toast({
             title: "Order Failed",
-            description: "There was an issue placing your order. Please try again.",
+            description: error.message || "There was an issue placing your order. Please try again.",
             variant: "destructive"
         })
     }

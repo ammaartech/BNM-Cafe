@@ -16,14 +16,13 @@ import { ArrowRight, ShoppingCart, LogOut, Search, Heart, Plus, X, Minus } from 
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { Button } from "@/components/ui/button";
-import { useAuth, useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
-import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import type { MenuItem, UserProfile } from "@/lib/types";
-import { doc } from "firebase/firestore";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useSupabase } from "@/lib/supabase/provider";
+import { supabase } from "@/lib/supabase/client";
 
 
 function MenuItemGridCard({ item }: { item: MenuItem }) {
@@ -89,27 +88,35 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
 
 
 export default function MenuPage() {
-  const { user } = useUser();
-  const auth = useAuth();
-  const firestore = useFirestore();
+  const { user } = useSupabase();
   const router = useRouter();
   const { favoriteIds } = useFavorites();
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
-  const userProfileRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, "users", user.uid);
-  }, [firestore, user]);
-
-  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+   useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        if (error) {
+          console.error('Error fetching user profile:', error);
+        } else {
+          setUserProfile(data);
+        }
+      }
+    };
+    fetchUserProfile();
+  }, [user]);
 
   const handleLogout = async () => {
-      if(auth) {
-        await signOut(auth);
-      }
-      router.push('/login');
+    await supabase.auth.signOut();
+    router.push('/login');
   }
   
   const displayedItems = menuItems.filter(item => {
@@ -125,9 +132,9 @@ export default function MenuPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="px-2 pt-4 pb-2 mb-2">
+      <header className="px-2 pt-4 pb-2">
         <div className="flex justify-between items-center mb-2">
-            { user && !user.isAnonymous ? (
+            { user && !user.is_anonymous ? (
                 <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground">
                   <LogOut className="h-6 w-6 scale-x-[-1]" />
                   <span className="sr-only">Logout</span>

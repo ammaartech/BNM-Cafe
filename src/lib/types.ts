@@ -20,7 +20,7 @@ export interface Category {
 }
 
 export interface OrderItem {
-    id: string;
+    id: string; // This will be the menu_item_id
     name: string;
     quantity: number;
     price: number;
@@ -29,7 +29,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   userId: string;
-  userName: string; // Add userName to store the user's name with the order
+  userName: string;
   orderDate: string;
   totalAmount: number;
   status: "Pending" | "Ready for Pickup" | "Delivered" | "Cancelled";
@@ -45,5 +45,5 @@ export interface UserProfile {
     id: string;
     name: string;
     email: string;
-    favorites?: string[];
+    role?: 'customer' | 'admin';
 }
