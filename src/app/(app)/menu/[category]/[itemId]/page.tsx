@@ -37,6 +37,7 @@ export default function MenuItemDetailPage() {
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     toggleFavorite(item.id);
   }
 

@@ -31,6 +31,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
         if (error) {
             // This case is for potential network or db errors
+            setFavoriteIds([]);
         } else {
           setFavoriteIds(data ? data.map(fav => fav.menu_item_id) : []);
         }
@@ -51,16 +52,20 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
   const toggleFavorite = async (itemId: string) => {
     if (!user || user.is_anonymous || !supabase) {
       // Favorites are only for logged-in users.
+      // Optionally, show a toast message here to prompt login.
       return;
     }
 
     const isCurrentlyFavorited = favoriteIds.includes(itemId);
-    
+    let previousFavorites = favoriteIds;
+
     // Optimistically update the UI
     if (isCurrentlyFavorited) {
-        setFavoriteIds(favoriteIds.filter(id => id !== itemId));
+        const newFavorites = favoriteIds.filter(id => id !== itemId);
+        setFavoriteIds(newFavorites);
     } else {
-        setFavoriteIds([...favoriteIds, itemId]);
+        const newFavorites = [...favoriteIds, itemId];
+        setFavoriteIds(newFavorites);
     }
 
     // Persist the change to the database
@@ -69,12 +74,11 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
       const { error } = await supabase
         .from('user_favorites')
         .delete()
-        .eq('user_id', user.id)
-        .eq('menu_item_id', itemId);
+        .match({ user_id: user.id, menu_item_id: itemId });
 
       if (error) {
         // Revert UI on error
-        setFavoriteIds([...favoriteIds, itemId]);
+        setFavoriteIds(previousFavorites);
       }
     } else {
       // Add to favorites
@@ -84,7 +88,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
       if (error) {
         // Revert UI on error
-        setFavoriteIds(favoriteIds.filter(id => id !== itemId));
+        setFavoriteIds(previousFavorites);
       }
     }
   };
