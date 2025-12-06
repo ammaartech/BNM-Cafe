@@ -12,7 +12,7 @@ import {
   CardContent,
   CardTitle
 } from "@/components/ui/card";
-import { ArrowRight, ShoppingCart, LogOut, Search, Heart, Plus } from "lucide-react";
+import { ArrowRight, ShoppingCart, LogOut, Search, Heart, Plus, X, Minus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { Button } from "@/components/ui/button";
@@ -27,11 +27,14 @@ import { cn } from "@/lib/utils";
 
 
 function MenuItemGridCard({ item }: { item: MenuItem }) {
-  const { addItem } = useCart();
+  const { addItem, updateQuantity, state } = useCart();
   const { isFavorited, toggleFavorite } = useFavorites();
   const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
 
   const favorited = isFavorited(item.id);
+  
+  const cartItem = state.items.find(i => i.id === item.id);
+  const quantity = cartItem ? cartItem.quantity : 0;
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -64,9 +67,21 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
       </CardHeader>
       <CardContent className="flex-grow flex justify-between items-end">
         <p className="text-lg font-bold text-foreground">₹{item.price.toFixed(2)}</p>
-        <Button size="icon" className="h-8 w-8" onClick={() => addItem(item)}>
-            <Plus className="h-4 w-4" />
-        </Button>
+        {quantity === 0 ? (
+          <Button size="icon" className="h-8 w-8" onClick={() => addItem(item)}>
+              <Plus className="h-4 w-4" />
+          </Button>
+        ) : (
+          <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, quantity - 1)}>
+                  <Minus className="h-4 w-4" />
+              </Button>
+              <span className="font-bold text-lg">{quantity}</span>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, quantity + 1)}>
+                  <Plus className="h-4 w-4" />
+              </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -74,7 +89,6 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
 
 
 export default function MenuPage() {
-  const { totalItems } = useCart();
   const { user } = useUser();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -82,6 +96,7 @@ export default function MenuPage() {
   const { favoriteIds } = useFavorites();
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -109,60 +124,59 @@ export default function MenuPage() {
   });
 
   return (
-    <div className="space-y-6 flex flex-col h-full">
-      <header className="px-2">
-        <div className="flex justify-between items-center mb-4">
-            { user ? (
-                <Button variant="ghost" size="icon" onClick={handleLogout} className="text-destructive">
+    <div className="flex flex-col h-full">
+      <header className="px-2 pt-4 pb-2 mb-2">
+        <div className="flex justify-between items-center mb-2">
+            { user && !user.isAnonymous ? (
+                <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground">
                   <LogOut className="h-6 w-6 scale-x-[-1]" />
                   <span className="sr-only">Logout</span>
                 </Button>
             ) : (
                 <div className="w-10"></div> // Placeholder for spacing
             )}
-
-
-            <Link href="/cart">
-                <Button variant="ghost" size="icon" className="relative">
-                <ShoppingCart className="h-6 w-6" />
-                {totalItems > 0 && (
-                    <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                    {totalItems}
-                    </span>
-                )}
-                <span className="sr-only">Shopping Cart</span>
-                </Button>
-            </Link>
+            <h1 className="text-3xl font-bold text-center">BNM Cafe</h1>
+            <div className="w-10"></div>
         </div>
-        <div className="space-y-2 text-left">
-            <h1 className="text-3xl font-bold tracking-tight">
-                Good Morning{userProfile?.name ? `, ${userProfile.name}!` : ','}
-            </h1>
+
+        <div className="text-center mb-4">
+            <h2 className="text-xl font-bold tracking-tight text-primary">
+                Good Morning{userProfile?.name ? `, ${userProfile.name}!` : ', Welcome!'}
+            </h2>
         </div>
-        <div className="relative mt-4">
-            <Input 
-                placeholder="Search your favorite coffee" 
-                className="h-12 pl-10 bg-input"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-             />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        
+        <div className="relative">
+            <Button variant="ghost" size="icon" className="text-muted-foreground absolute left-0 top-1/2 -translate-y-1/2" onClick={() => setIsSearchOpen(!isSearchOpen)}>
+                {isSearchOpen ? <X className="h-6 w-6" /> : <Search className="h-6 w-6" />}
+                <span className="sr-only">{isSearchOpen ? 'Close search' : 'Open search'}</span>
+            </Button>
+            <div className={cn(
+                "transition-all duration-300 ease-in-out overflow-hidden",
+                isSearchOpen ? "max-h-20" : "max-h-0"
+            )}>
+                <Input 
+                    placeholder="Search your favorite coffee" 
+                    className="h-12 pl-12 bg-input" // Add padding for the icon
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                 />
+            </div>
         </div>
       </header>
       
-      <div className="px-2 overflow-x-auto pb-2">
+      <div className="overflow-x-auto py-2 no-scrollbar px-2">
         <div className="flex gap-2">
-            <Button variant={activeFilter === 'all' ? 'default' : 'secondary'} className="rounded-full" onClick={() => setActiveFilter('all')}>All</Button>
-            <Button variant={activeFilter === 'favorites' ? 'default' : 'secondary'} className="rounded-full" onClick={() => setActiveFilter('favorites')}>Favorites</Button>
+            <Button variant={activeFilter === 'all' ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => setActiveFilter('all')}>All</Button>
+            <Button variant={activeFilter === 'favorites' ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => setActiveFilter('favorites')}>Favorites</Button>
             {categories.map((category) => (
-              <Button key={category.id} variant={activeFilter === category.id ? 'default' : 'secondary'} className="rounded-full" onClick={() => setActiveFilter(category.id)}>
+              <Button key={category.id} variant={activeFilter === category.id ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => setActiveFilter(category.id)}>
                 {category.name}
               </Button>
             ))}
         </div>
       </div>
 
-      <main className="flex-grow px-2 overflow-y-auto">
+      <main className="flex-grow px-2 py-4 overflow-y-auto">
         <div className="grid grid-cols-2 gap-4">
             {displayedItems.map((item) => (
               <MenuItemGridCard key={item.id} item={item} />

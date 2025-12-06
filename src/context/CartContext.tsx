@@ -1,12 +1,11 @@
 
 "use client";
 
-import type { CartItem, MenuItem, Order, OrderItem, UserProfile } from "@/lib/types";
+import type { CartItem, MenuItem, Order, OrderItem } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import React, { createContext, useContext, useReducer, ReactNode, useState } from "react";
-import { addDocumentNonBlocking } from "@/firebase";
+import React, { createContext, useContext, useReducer, ReactNode, useState, useEffect } from "react";
 import { useFirestore, useUser } from "@/firebase";
-import { collection, doc, getDoc } from "firebase/firestore";
+import { collection, setDoc, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 
@@ -32,8 +31,8 @@ const CartContext = createContext<{
   placeOrder: () => Promise<void>;
   addedItemPopup: MenuItem | null;
   setAddedItemPopup: (item: MenuItem | null) => void;
-  orderSuccessPopup: boolean;
-  setOrderSuccessPopup: (status: boolean) => void;
+  customerName: string;
+  setCustomerName: (name: string) => void;
 }>({
   state: initialState,
   dispatch: () => null,
@@ -42,8 +41,8 @@ const CartContext = createContext<{
   placeOrder: async () => {},
   addedItemPopup: null,
   setAddedItemPopup: () => {},
-  orderSuccessPopup: false,
-  setOrderSuccessPopup: () => {},
+  customerName: "",
+  setCustomerName: () => {},
 });
 
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -56,7 +55,6 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         const newItems = [...state.items];
         const newQuantity = newItems[existingItemIndex].quantity + 1;
         if(newQuantity > action.payload.stock) {
-            // Can't add more than stock. We could show a toast here but it's handled in the component.
             return state;
         }
         newItems[existingItemIndex].quantity = newQuantity;
@@ -79,7 +77,6 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         .map((item) => {
           if (item.id === action.payload.id) {
             if(action.payload.quantity > item.stock) {
-                // Prevent updating quantity beyond stock
                 return {...item, quantity: item.stock};
             }
             return { ...item, quantity: action.payload.quantity };
@@ -99,11 +96,12 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const [addedItemPopup, setAddedItemPopup] = useState<MenuItem | null>(null);
-  const [orderSuccessPopup, setOrderSuccessPopup] = useState(false);
-  const { user } = useUser();
+  const [customerName, setCustomerName] = useState("");
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
+
 
   const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = state.items.reduce(
@@ -112,16 +110,32 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const placeOrder = async () => {
-    if (!user || !firestore) {
-        toast({
-            title: "Not signed in",
-            description: "Please log in to place an order.",
-            variant: "destructive"
+    if (isUserLoading) {
+         toast({
+            title: "Please wait",
+            description: "Connecting to the cafe...",
         })
-        router.push('/login');
         return;
     }
 
+    if (!user) {
+        toast({
+            title: "Not signed in",
+            description: "Anonymous user not found. Please refresh.",
+             variant: "destructive"
+        })
+        return;
+    }
+
+    if (!firestore) {
+        toast({
+            title: "Connection Error",
+            description: "Could not connect to the database.",
+            variant: "destructive"
+        })
+        return;
+    }
+    
     if(state.items.length === 0) {
         toast({
             title: "Cart is empty",
@@ -131,10 +145,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
 
+     if (!customerName.trim()) {
+        toast({
+            title: "Name is required",
+            description: "Please enter a name for the order in your cart.",
+            variant: "destructive"
+        });
+        router.push('/cart');
+        return;
+    }
+
     try {
-        const userProfileRef = doc(firestore, "users", user.uid);
-        const userProfileSnap = await getDoc(userProfileRef);
-        const userProfile = userProfileSnap.data() as UserProfile;
 
         const orderItems: OrderItem[] = state.items.map(item => ({
             id: item.id,
@@ -143,20 +164,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             quantity: item.quantity
         }));
 
-        const newOrder: Omit<Order, 'id'> = {
+        const newOrderRef = doc(collection(firestore, 'users', user.uid, 'orders'));
+
+        const newOrder: Order = {
+            id: newOrderRef.id,
             userId: user.uid,
-            userName: userProfile?.name || user.email || 'Unknown User',
+            userName: customerName.trim(),
             orderDate: new Date().toISOString(),
             totalAmount: totalPrice,
             status: "Pending",
             items: orderItems,
         }
 
-        const ordersCollectionRef = collection(firestore, 'users', user.uid, 'orders');
-        await addDocumentNonBlocking(ordersCollectionRef, newOrder);
+        await setDoc(newOrderRef, newOrder);
 
         dispatch({type: 'CLEAR_CART' });
-        setOrderSuccessPopup(true);
+        setCustomerName(""); // Clear name after order
+        router.push(`/orders/${newOrderRef.id}`);
 
     } catch(error) {
         console.error("Error placing order:", error);
@@ -169,7 +193,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice, placeOrder, addedItemPopup, setAddedItemPopup, orderSuccessPopup, setOrderSuccessPopup }}>
+    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice, placeOrder, addedItemPopup, setAddedItemPopup, customerName, setCustomerName }}>
       {children}
     </CartContext.Provider>
   );

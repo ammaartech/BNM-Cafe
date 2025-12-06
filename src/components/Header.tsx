@@ -12,7 +12,7 @@ export default function Header() {
   const router = useRouter();
   
   // Pages that have their own custom header or no header
-  const noHeaderPages = ['/login', '/register', '/', '/menu', '/admin'];
+  const noHeaderPages = ['/login', '/register', '/', '/menu', '/admin', '/profile'];
   if (noHeaderPages.some(p => pathname.startsWith(p))) {
     return null;
   }
@@ -22,11 +22,11 @@ export default function Header() {
     return null;
   }
   
-  const showBackArrow = !['/cart', '/checkout', '/orders'].includes(pathname);
   const titleMap: {[key: string]: string} = {
     '/cart': 'My Cart',
     '/checkout': 'Checkout',
-    '/orders': 'My Orders'
+    '/orders': 'My Orders',
+    '/favorites': 'Favorites',
   }
   const title = titleMap[pathname] || 'B.N.M Cafe';
 

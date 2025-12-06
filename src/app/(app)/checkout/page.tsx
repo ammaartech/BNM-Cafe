@@ -2,37 +2,23 @@
 "use client";
 
 import { useCart } from "@/context/CartContext";
-import { useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { AlertCircle, CreditCard, Loader2, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useUser } from "@/firebase";
 
 function CheckoutSkeleton() {
     return (
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-6">
-            <Card>
-                <CardHeader>
-                    <Skeleton className="h-6 w-48" />
-                    <Skeleton className="h-4 w-64 mt-2" />
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                    </div>
-                </CardContent>
-            </Card>
             <Card>
                 <CardHeader>
                     <Skeleton className="h-6 w-32" />
@@ -80,24 +66,16 @@ function CheckoutSkeleton() {
 }
 
 export default function CheckoutPage() {
-  const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
+  const { isUserLoading } = useUser();
   const router = useRouter();
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
-  const userProfileRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, "users", user.uid);
-  }, [firestore, user]);
-
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   const { state, totalPrice, totalItems, placeOrder } = useCart();
   
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-        router.push('/login');
-    }
-  }, [user, isUserLoading, router])
+  // Prices are inclusive of 5% GST.
+  const subTotal = totalPrice / 1.05;
+  const taxAmount = totalPrice - subTotal;
+  const finalTotal = totalPrice;
   
   const handlePlaceOrder = async () => {
     setIsPlacingOrder(true);
@@ -105,14 +83,10 @@ export default function CheckoutPage() {
     // No need to set isPlacingOrder to false, as the page will redirect.
   }
 
-  const isLoading = isUserLoading || isProfileLoading;
+  const isLoading = isUserLoading;
 
   if (isLoading) {
     return <CheckoutSkeleton />;
-  }
-
-  if(!user) {
-    return null; // Should be redirected by the useEffect
   }
 
   if (totalItems === 0 && !isPlacingOrder) {
@@ -140,22 +114,6 @@ export default function CheckoutPage() {
             <h1 className="text-2xl font-bold">Checkout</h1>
         </div>
         <div className="flex-grow space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Customer Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div>
-                        <dt className="text-sm font-medium text-muted-foreground">Name</dt>
-                        <dd className="mt-1 font-semibold">{userProfile?.name || 'Loading...'}</dd>
-                    </div>
-                     <div>
-                        <dt className="text-sm font-medium text-muted-foreground">Email</dt>
-                        <dd className="mt-1 font-semibold">{userProfile?.email || 'Loading...'}</dd>
-                    </div>
-                </CardContent>
-            </Card>
-            
             <Card>
                 <CardHeader>
                     <CardTitle>Items in Order ({totalItems})</CardTitle>
@@ -198,23 +156,23 @@ export default function CheckoutPage() {
                 <CardContent className="space-y-3">
                     <div className="flex justify-between text-muted-foreground">
                         <span>Subtotal</span>
-                        <span>₹{totalPrice.toFixed(2)}</span>
+                        <span>₹{subTotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                        <span>Taxes & Fees</span>
-                        <span>₹0.00</span>
+                        <span>Taxes (GST 5%)</span>
+                        <span>₹{taxAmount.toFixed(2)}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
-                        <span>₹{totalPrice.toFixed(2)}</span>
+                        <span>₹{finalTotal.toFixed(2)}</span>
                     </div>
                 </CardContent>
             </Card>
 
             <Button className="w-full h-14 text-lg font-bold" size="lg" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
               {isPlacingOrder ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
-              {isPlacingOrder ? 'Placing Order...' : `Pay ₹${totalPrice.toFixed(2)}`}
+              {isPlacingOrder ? 'Placing Order...' : `Pay ₹${finalTotal.toFixed(2)}`}
             </Button>
         </div>
     </div>

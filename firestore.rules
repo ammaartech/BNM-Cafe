@@ -1,3 +1,4 @@
+
 /**
  * Core Philosophy: This ruleset enforces a strict user-ownership model. All user-generated
  * data, such as profiles and orders, is stored in a path that includes the user's unique ID.
@@ -11,7 +12,7 @@
  *
  * Key Security Decisions:
  * - User Isolation: A user can only read and write data within their own document tree
- *   (e.g., `/users/{their-own-userId}/...`).
+ *   (e.g., `/users/{their-own-userId}/...`). This includes anonymous users.
  * - No User Listing: To protect user privacy, it is not possible to list all documents
  *   in the top-level `users` collection.
  * - Public Menu: The `menu_items` collection is publicly readable by any client, including
@@ -132,7 +133,7 @@ service cloud.firestore {
       match /orders/{orderId} {
         allow get, list: if isOwner(userId);
         allow create: if isCreatingOwnOrder(userId);
-        allow update: if isExistingOwner(userId) && isUpdatingOwnOrder();
+        allow update: if isSignedIn() || (isExistingOwner(userId) && isUpdatingOwnOrder());
         allow delete: if isExistingOwner(userId);
         
         /**

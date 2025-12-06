@@ -49,7 +49,7 @@ export default function MenuItemCard({ item }: MenuItemCardProps) {
       </CardHeader>
       <CardContent className="flex-grow">
         <p className="text-2xl font-bold text-primary">
-          ${item.price.toFixed(2)}
+          ₹{item.price.toFixed(2)}
         </p>
       </CardContent>
       <CardFooter>

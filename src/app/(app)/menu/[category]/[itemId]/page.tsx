@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { menuItems } from "@/lib/data";
@@ -9,7 +8,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
-import { ArrowLeft, PlusCircle, Star, Heart, Minus } from "lucide-react";
+import { ArrowLeft, Plus, Star, Heart, Minus } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -46,17 +45,16 @@ export default function MenuItemDetailPage() {
   const isOutOfStock = item.stock <= 0;
 
   return (
-    <div className="flex flex-col h-full bg-primary">
-       <div className="p-4 flex justify-between items-center text-primary-foreground">
-         <Button variant="ghost" size="icon" onClick={() => router.back()} className="hover:bg-white/10">
+    <div className="flex flex-col h-full bg-background">
+       <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-20">
+         <Button variant="ghost" size="icon" onClick={() => router.back()} className="bg-card/60 hover:bg-card/90 text-foreground rounded-full">
             <ArrowLeft className="h-6 w-6"/>
         </Button>
-        <h2 className="font-semibold text-lg">BNM Cafe</h2>
-         <Button variant="ghost" size="icon" className="hover:bg-white/10" onClick={handleFavoriteClick}>
+         <Button variant="ghost" size="icon" className="bg-card/60 hover:bg-card/90 text-foreground rounded-full" onClick={handleFavoriteClick}>
             <Heart className={cn("h-6 w-6", favorited && "fill-red-500 text-red-500")}/>
         </Button>
        </div>
-      <div className="relative flex-shrink-0 h-64">
+      <div className="relative flex-shrink-0 h-96">
         {itemImage && (
             <Image
                 src={itemImage.imageUrl}
@@ -68,13 +66,13 @@ export default function MenuItemDetailPage() {
         )}
       </div>
 
-      <div className="flex-grow p-6 space-y-4 bg-card rounded-t-3xl -mt-6 z-10 flex flex-col">
+      <div className="flex-grow p-6 space-y-4 bg-card rounded-t-3xl -mt-6 z-10 flex flex-col shadow-2xl">
         <div className="flex justify-between items-start">
             <div>
-                <h1 className="text-2xl font-bold">{item.name}</h1>
-                <p className="text-muted-foreground">{item.description}</p>
+                <h1 className="text-3xl font-bold">{item.name}</h1>
+                <p className="text-muted-foreground mt-2">{item.description}</p>
             </div>
-            <div className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+            <div className="flex items-center gap-1 bg-muted text-foreground px-2 py-1 rounded-full">
                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                 <span className="font-semibold text-sm">{rating}</span>
             </div>
@@ -84,12 +82,12 @@ export default function MenuItemDetailPage() {
 
         <div className="flex justify-between items-center">
              <div className="flex items-center gap-4">
-                <Button variant="secondary" size="icon" onClick={() => setQuantity(q => Math.max(1, q - 1))}>
+                <Button variant="outline" size="icon" className="w-12 h-12 rounded-full" onClick={() => setQuantity(q => Math.max(1, q - 1))}>
                     <Minus className="h-5 w-5" />
                 </Button>
-                <span className="text-xl font-bold">{quantity}</span>
-                <Button variant="secondary" size="icon" onClick={() => setQuantity(q => q + 1)}>
-                    <PlusCircle className="h-5 w-5" />
+                <span className="text-2xl font-bold w-8 text-center">{quantity}</span>
+                <Button variant="outline" size="icon" className="w-12 h-12 rounded-full" onClick={() => setQuantity(q => q + 1)}>
+                    <Plus className="h-5 w-5" />
                 </Button>
             </div>
             <p className="text-3xl font-bold text-foreground">₹{(item.price * quantity).toFixed(2)}</p>
@@ -97,7 +95,7 @@ export default function MenuItemDetailPage() {
 
 
         <Button
-          className="w-full h-14 text-lg font-bold"
+          className="w-full h-14 text-lg font-bold rounded-full"
           onClick={handleAddToCart}
           disabled={isOutOfStock}
         >

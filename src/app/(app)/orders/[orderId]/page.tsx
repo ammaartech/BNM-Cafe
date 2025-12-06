@@ -2,29 +2,16 @@
 "use client";
 
 import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import type { Order, OrderItem } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, FileText, ShoppingBag, Loader2 } from "lucide-react";
+import { AlertCircle, FileText, ShoppingBag } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
 
 
 function TicketSkeleton() {
@@ -75,45 +62,20 @@ function TicketSkeleton() {
 
 
 export default function OrderTicketPage() {
-  const { orderId } = useParams();
-  const { user, isUserLoading } = useUser();
+  const params = useParams();
+  const orderId = params.orderId as string;
+  const { user } = useUser();
   const firestore = useFirestore();
-  const { toast } = useToast();
-  const [isCancelAlertOpen, setIsCancelAlertOpen] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
 
   const orderRef = useMemoFirebase(() => {
-    if (!firestore || !user || !orderId) return null;
-    return doc(firestore, `users/${user.uid}/orders/${orderId}`);
-  }, [firestore, user, orderId]);
+    if (!firestore || !orderId || !user) return null;
+    return doc(firestore, 'users', user.uid, 'orders', orderId);
+  }, [firestore, orderId, user]);
 
   const { data: order, isLoading, error } = useDoc<Order>(orderRef);
 
-  const handleCancelOrder = async () => {
-    if (!orderRef) return;
-    
-    setIsCancelling(true);
-    try {
-        await updateDoc(orderRef, { status: 'Cancelled' });
-        toast({
-            title: "Order Cancelled",
-            description: `Your order has been cancelled.`
-        })
-    } catch (e) {
-        console.error("Error cancelling order: ", e);
-        toast({
-            title: "Cancellation Failed",
-            description: "Could not cancel the order. Please try again.",
-            variant: "destructive"
-        })
-    } finally {
-        setIsCancelling(false);
-        setIsCancelAlertOpen(false);
-    }
-  }
 
-
-  if (isLoading || isUserLoading) {
+  if (isLoading) {
     return <TicketSkeleton />;
   }
 
@@ -137,6 +99,11 @@ export default function OrderTicketPage() {
     );
   }
 
+  const subtotal = order.totalAmount / 1.05;
+  const gst = order.totalAmount - subtotal;
+  const total = order.totalAmount;
+
+
   return (
     <>
     <Card className="max-w-2xl mx-auto shadow-lg">
@@ -145,15 +112,15 @@ export default function OrderTicketPage() {
             <FileText className="h-8 w-8 text-primary"/>
             <div>
                 <CardTitle className="text-2xl font-bold">Order Ticket</CardTitle>
-                <CardDescription>Order ID: #{order.id.slice(0, 7)}</CardDescription>
+                <CardDescription>Order #{order.id.slice(0, 7)}</CardDescription>
             </div>
         </div>
       </CardHeader>
       <CardContent className="p-6 space-y-6">
-        <div className="grid sm:grid-cols-3 gap-4 text-sm">
-            <div>
-                <dt className="text-muted-foreground font-semibold">Order Date</dt>
-                <dd className="mt-1 font-medium">{new Date(order.orderDate).toLocaleString()}</dd>
+        <dl className="grid sm:grid-cols-3 gap-x-4 gap-y-6 text-sm">
+             <div>
+                <dt className="text-muted-foreground font-semibold">Name</dt>
+                <dd className="mt-1 font-medium text-foreground">{order.userName || 'Anonymous'}</dd>
             </div>
              <div>
                 <dt className="text-muted-foreground font-semibold">Status</dt>
@@ -171,9 +138,9 @@ export default function OrderTicketPage() {
             </div>
             <div>
                 <dt className="text-muted-foreground font-semibold">Total</dt>
-                <dd className="mt-1 font-bold text-lg text-primary">₹{order.totalAmount.toFixed(2)}</dd>
+                <dd className="mt-1 font-bold text-lg text-primary">₹{total.toFixed(2)}</dd>
             </div>
-        </div>
+        </dl>
 
         <Separator />
 
@@ -200,46 +167,20 @@ export default function OrderTicketPage() {
             <div className="w-full sm:w-1/2 space-y-2 text-sm">
                 <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">₹{order.totalAmount.toFixed(2)}</span>
+                    <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Taxes & Fees</span>
-                    <span className="font-medium">₹0.00</span>
+                    <span className="text-muted-foreground">GST (5%)</span>
+                    <span className="font-medium">₹{gst.toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between font-bold text-base border-t pt-2 mt-2">
                     <span>Total</span>
-                    <span>₹{order.totalAmount.toFixed(2)}</span>
+                    <span>₹{total.toFixed(2)}</span>
                 </div>
             </div>
         </div>
       </CardContent>
-
-       {order.status === 'Pending' && (
-        <CardFooter className="bg-muted/50 p-4">
-            <Button variant="destructive" className="w-full" onClick={() => setIsCancelAlertOpen(true)}>
-                Cancel Order
-            </Button>
-        </CardFooter>
-       )}
     </Card>
-
-    <AlertDialog open={isCancelAlertOpen} onOpenChange={setIsCancelAlertOpen}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to cancel this order?</AlertDialogTitle>
-            <AlertDialogDescription>
-                This action cannot be undone. This will permanently cancel your order #{order?.id.slice(0,7)}.
-            </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-            <AlertDialogCancel disabled={isCancelling}>Back</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancelOrder} disabled={isCancelling} className="bg-destructive hover:bg-destructive/90">
-                {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Cancel Order
-            </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }

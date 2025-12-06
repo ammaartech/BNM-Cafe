@@ -10,15 +10,11 @@ import {
   DialogTitle,
   DialogDescription
 } from "@/components/ui/dialog";
-import { CheckCircle, ClipboardList, PackageCheck, PartyPopper } from "lucide-react";
-import { usePathname, useRouter } from 'next/navigation';
-import { Button } from "@/components/ui/button";
+import { CheckCircle } from "lucide-react";
+import { usePathname } from 'next/navigation';
 import Link from "next/link";
-import { Home, ShoppingCart, User, Heart } from "lucide-react";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
-import type { Order } from "@/lib/types";
-import { useState, useEffect } from "react";
+import { Home, ShoppingCart } from "lucide-react";
+
 
 function CartSuccessDialog() {
     const { addedItemPopup, setAddedItemPopup } = useCart();
@@ -26,108 +22,33 @@ function CartSuccessDialog() {
     return (
         <Dialog open={!!addedItemPopup} onOpenChange={(isOpen) => !isOpen && setAddedItemPopup(null)}>
             <DialogContent className="max-w-xs rounded-2xl p-0">
-                 <div className="flex flex-col items-center justify-center text-center p-8">
+                 <DialogHeader className="flex flex-col items-center justify-center text-center p-8">
                     <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-                    <h2 className="text-xl font-semibold">Added to Cart</h2>
+                    <DialogTitle className="text-xl font-semibold">Added to Cart</DialogTitle>
                     {addedItemPopup && (
-                        <p className="text-muted-foreground">{addedItemPopup.name}</p>
+                        <DialogDescription className="text-muted-foreground">{addedItemPopup.name}</DialogDescription>
                     )}
-                </div>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
-function OrderSuccessDialog() {
-    const { orderSuccessPopup, setOrderSuccessPopup } = useCart();
-    const router = useRouter();
-
-    useEffect(() => {
-        if (orderSuccessPopup) {
-            const timer = setTimeout(() => {
-                setOrderSuccessPopup(false);
-                router.push('/orders');
-            }, 2000); // Wait 2 seconds before redirecting
-            return () => clearTimeout(timer);
-        }
-    }, [orderSuccessPopup, setOrderSuccessPopup, router]);
-
-
-    return (
-        <Dialog open={orderSuccessPopup} onOpenChange={(isOpen) => !isOpen && setOrderSuccessPopup(false)}>
-            <DialogContent className="max-w-xs rounded-2xl">
-                 <div className="flex flex-col items-center justify-center text-center p-8">
-                    <PartyPopper className="h-16 w-16 text-primary mb-4" />
-                    <h2 className="text-xl font-semibold">Order Placed!</h2>
-                    <p className="text-muted-foreground">Your order has been successfully placed.</p>
-                </div>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
-function OrderReadyNotifier() {
-    const { user } = useUser();
-    const firestore = useFirestore();
-    const [notifiedOrderIds, setNotifiedOrderIds] = useState<string[]>([]);
-    const [orderReady, setOrderReady] = useState<Order | null>(null);
-
-    const readyOrdersQuery = useMemoFirebase(() => {
-        if (!user || !firestore) return null;
-        return query(
-            collection(firestore, 'users', user.uid, 'orders'),
-            where('status', '==', 'Ready for Pickup')
-        );
-    }, [user, firestore]);
-
-    const { data: readyOrders } = useCollection<Order>(readyOrdersQuery);
-
-    useEffect(() => {
-        if (readyOrders && readyOrders.length > 0) {
-            const newReadyOrder = readyOrders.find(order => !notifiedOrderIds.includes(order.id));
-            if (newReadyOrder) {
-                setOrderReady(newReadyOrder);
-                setNotifiedOrderIds(prev => [...prev, newReadyOrder.id]);
-            }
-        }
-    }, [readyOrders, notifiedOrderIds]);
-
-    const handleClose = () => {
-        setOrderReady(null);
-    }
-
-    return (
-        <Dialog open={!!orderReady} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-            <DialogContent className="max-w-xs rounded-2xl">
-                <DialogHeader className="text-center items-center">
-                    <PackageCheck className="h-16 w-16 text-primary mb-4" />
-                    <DialogTitle className="text-xl font-bold">Your Order is Ready!</DialogTitle>
-                    <DialogDescription>
-                        Order #{orderReady?.id.slice(0, 7)} is now ready for pickup at B.N.M Cafe.
-                    </DialogDescription>
                 </DialogHeader>
-                <Button onClick={handleClose}>Got it!</Button>
-                 <Button variant="outline" asChild onClick={handleClose}>
-                    <Link href="/orders">View My Orders</Link>
-                </Button>
             </DialogContent>
         </Dialog>
-    );
+    )
 }
 
 function BottomNavBar() {
     const pathname = usePathname();
+    const { totalItems } = useCart();
     const navItems = [
         { href: '/menu', icon: Home, label: 'Home' },
-        { href: '/orders', icon: ClipboardList, label: 'My Orders' },
-        { href: '/profile/favorites', icon: Heart, label: 'Favorites' },
-        { href: '/cart', icon: ShoppingCart, label: 'Cart' },
-        { href: '/profile', icon: User, label: 'Profile' },
+        { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
     ];
     
-    // Don't show nav bar on certain pages
     const noNavPages = ['/login', '/register', '/admin'];
      if (noNavPages.some(p => pathname.startsWith(p))) {
+        return null;
+    }
+
+    // Hide nav bar on item detail pages
+    if (/^\/menu\/.+\/.+$/.test(pathname)) {
         return null;
     }
 
@@ -137,11 +58,16 @@ function BottomNavBar() {
                 {navItems.map(item => {
                     const isActive = pathname === item.href;
                     return (
-                        <Link href={item.href} key={item.href}>
+                        <Link href={item.href} key={item.href} className="relative">
                              <div className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
                                 <item.icon className="h-6 w-6" />
                                 <span className="text-xs font-medium">{item.label}</span>
                             </div>
+                            {item.badge && (
+                                <span className="absolute top-0 right-[-8px] flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                                    {item.badge}
+                                </span>
+                            )}
                         </Link>
                     )
                 })}
@@ -153,7 +79,7 @@ function BottomNavBar() {
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const noPaddingPages = ['/menu', '/login', '/register', '/admin', '/profile'];
-    const addPadding = !noPaddingPages.some(p => pathname.startsWith(p));
+    const addPadding = !noPaddingPages.some(p => pathname.startsWith(p)) && !/^\/menu\/.+\/.+$/.test(pathname);
     
     return (
         <>
@@ -162,8 +88,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             </main>
             <BottomNavBar />
             <CartSuccessDialog />
-            <OrderSuccessDialog />
-            <OrderReadyNotifier />
         </>
     );
 }
