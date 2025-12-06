@@ -58,6 +58,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
       ? favoriteIds.filter(id => id !== itemId)
       : [...favoriteIds, itemId];
     
+    // Update local state immediately for a responsive UI
     setFavoriteIds(newFavorites);
 
     const { error } = await supabase
@@ -67,7 +68,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
     if (error) {
       console.error('Failed to update favorites:', error);
-      // Optionally revert state if DB update fails
+      // Optionally revert state if DB update fails by re-fetching from DB
       setFavoriteIds(favoriteIds);
     }
   };
