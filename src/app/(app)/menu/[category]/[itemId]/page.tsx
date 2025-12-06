@@ -7,7 +7,7 @@ import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
-import { useFavorites } from "@/context/FavoritesContext";
+import { useUserPreferences } from "@/context/UserPreferencesContext";
 import { ArrowLeft, Plus, Star, Heart, Minus } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,7 @@ export default function MenuItemDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { addItem } = useCart();
-  const { isFavorited, toggleFavorite } = useFavorites();
+  const { isFavorited, toggleFavorite } = useUserPreferences();
   const [quantity, setQuantity] = useState(1);
   
   const { category: categoryId, itemId } = params;

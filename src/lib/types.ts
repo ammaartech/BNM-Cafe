@@ -46,4 +46,6 @@ export interface UserProfile {
     name: string;
     email: string;
     role?: 'customer' | 'admin';
+    favorites?: string[];
+    cart?: CartItem[];
 }

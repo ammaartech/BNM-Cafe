@@ -3,9 +3,10 @@
 
 import type { CartItem, MenuItem, Order, OrderItem, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import React, { createContext, useContext, useReducer, ReactNode, useState, useEffect } from "react";
+import React, { createContext, useContext, useReducer, ReactNode, useState, useEffect, useCallback } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
 import { useRouter } from "next/navigation";
+import { useUserPreferences } from "./UserPreferencesContext";
 
 
 type CartState = {
@@ -19,10 +20,11 @@ type CartAction =
   | { type: "CLEAR_CART" }
   | { type: "SET_STATE"; payload: CartState };
 
+
 const getInitialState = (): CartState => {
   if (typeof window !== 'undefined') {
     try {
-      const storedCart = localStorage.getItem('cart');
+      const storedCart = localStorage.getItem('anonymous_cart');
       if (storedCart) {
         return JSON.parse(storedCart);
       }
@@ -42,14 +44,16 @@ const CartContext = createContext<{
   placeOrder: () => Promise<void>;
   addedItemPopup: MenuItem | null;
   setAddedItemPopup: (item: MenuItem | null) => void;
+  isCartLoading: boolean;
 }>({
-  state: getInitialState(),
+  state: { items: [] },
   dispatch: () => null,
   totalItems: 0,
   totalPrice: 0,
   placeOrder: async () => {},
   addedItemPopup: null,
   setAddedItemPopup: () => {},
+  isCartLoading: true,
 });
 
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -107,33 +111,53 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [addedItemPopup, setAddedItemPopup] = useState<MenuItem | null>(null);
   const { supabase, user, userProfile, isUserLoading } = useSupabase();
+  const { preferences, updatePreference, isPreferencesLoading } = useUserPreferences();
   const { toast } = useToast();
   const router = useRouter();
+
+  const isCartLoading = isUserLoading || isPreferencesLoading;
   
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const storedCart = localStorage.getItem('cart');
-        if (storedCart) {
-          dispatch({ type: 'SET_STATE', payload: JSON.parse(storedCart) });
+    if (isCartLoading) return;
+
+    let initialState: CartState = { items: [] };
+    if (user && !user.is_anonymous) {
+        // Logged-in user: load from preferences (database)
+        if (preferences?.cart) {
+            initialState = { items: preferences.cart };
         }
-      } catch (error) {
-        console.error("Failed to load cart from localStorage", error);
-      } finally {
-        setIsInitialized(true);
-      }
+    } else {
+        // Anonymous user: load from localStorage
+        try {
+            const storedCart = localStorage.getItem('anonymous_cart');
+            if (storedCart) {
+                initialState = JSON.parse(storedCart);
+            }
+        } catch (error) {
+            console.error("Failed to load anonymous cart from localStorage", error);
+        }
     }
-  }, []);
+    dispatch({ type: 'SET_STATE', payload: initialState });
+    setIsInitialized(true);
+
+  }, [isCartLoading, user, preferences]);
+
 
   useEffect(() => {
-    if (isInitialized) {
-        try {
-            localStorage.setItem('cart', JSON.stringify(state));
-        } catch (error) {
-            console.error("Failed to save cart to localStorage", error);
-        }
+    if (!isInitialized || isCartLoading) return;
+
+    if (user && !user.is_anonymous) {
+      // Logged-in user: save to DB
+      updatePreference('cart', state.items);
+    } else {
+      // Anonymous user: save to localStorage
+      try {
+        localStorage.setItem('anonymous_cart', JSON.stringify(state));
+      } catch (error) {
+        console.error("Failed to save anonymous cart to localStorage", error);
+      }
     }
-  }, [state, isInitialized]);
+  }, [state, isInitialized, isCartLoading, user, updatePreference]);
 
 
   const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
@@ -173,7 +197,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (userProfile?.name) {
         customerName = userProfile.name;
     } else if (user && !user.is_anonymous) {
-        // Fallback for registered user if profile is slow to load
         const { data: profileData, error: profileError } = await supabase
             .from('users')
             .select('name')
@@ -200,7 +223,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
 
     try {
-        // 1. Insert the order
         const { data: orderData, error: orderError } = await supabase
             .from('orders')
             .insert({
@@ -216,7 +238,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
         const newOrderId = orderData.id;
 
-        // 2. Prepare and insert order items
         const orderItemsToInsert = state.items.map(item => ({
             order_id: newOrderId,
             menu_item_id: item.id,
@@ -245,7 +266,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice, placeOrder, addedItemPopup, setAddedItemPopup }}>
+    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice, placeOrder, addedItemPopup, setAddedItemPopup, isCartLoading }}>
       {children}
     </CartContext.Provider>
   );

@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -21,6 +22,13 @@
           "items": {
             "type": "string"
           }
+        },
+        "cart": {
+            "type": "array",
+            "description": "A list of cart items saved to the user's account.",
+            "items": {
+                "type": "object"
+            }
         }
       },
       "required": [

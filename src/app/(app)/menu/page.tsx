@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { ArrowRight, ShoppingCart, LogOut, Search, Heart, Plus, X, Minus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { useFavorites } from "@/context/FavoritesContext";
+import { useUserPreferences } from "@/context/UserPreferencesContext";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ import { supabase } from "@/lib/supabase/client";
 
 function MenuItemGridCard({ item }: { item: MenuItem }) {
   const { addItem, updateQuantity, state } = useCart();
-  const { isFavorited, toggleFavorite } = useFavorites();
+  const { isFavorited, toggleFavorite } = useUserPreferences();
   const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
 
   const favorited = isFavorited(item.id);
@@ -90,7 +90,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
 export default function MenuPage() {
   const { user } = useSupabase();
   const router = useRouter();
-  const { favoriteIds } = useFavorites();
+  const { favoriteIds } = useUserPreferences();
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);

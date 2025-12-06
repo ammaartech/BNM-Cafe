@@ -2,7 +2,7 @@
 
 "use client";
 import { useCart, CartProvider } from "@/context/CartContext";
-import { FavoritesProvider } from "@/context/FavoritesContext";
+import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
 import {
   Dialog,
   DialogContent,
@@ -99,10 +99,10 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <CartProvider>
-      <FavoritesProvider>
-        <AppLayoutContent>{children}</AppLayoutContent>
-      </FavoritesProvider>
-    </CartProvider>
+    <UserPreferencesProvider>
+        <CartProvider>
+            <AppLayoutContent>{children}</AppLayoutContent>
+        </CartProvider>
+    </UserPreferencesProvider>
   );
 }
