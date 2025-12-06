@@ -16,11 +16,23 @@ type CartAction =
   | { type: "ADD_ITEM"; payload: MenuItem }
   | { type: "REMOVE_ITEM"; payload: { id: string } }
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
-  | { type: "CLEAR_CART" };
+  | { type: "CLEAR_CART" }
+  | { type: "SET_STATE"; payload: CartState };
 
-const initialState: CartState = {
-  items: [],
+const getInitialState = (): CartState => {
+  if (typeof window !== 'undefined') {
+    try {
+      const storedCart = localStorage.getItem('cart');
+      if (storedCart) {
+        return JSON.parse(storedCart);
+      }
+    } catch (error) {
+      console.error("Failed to parse cart from localStorage", error);
+    }
+  }
+  return { items: [] };
 };
+
 
 const CartContext = createContext<{
   state: CartState;
@@ -31,7 +43,7 @@ const CartContext = createContext<{
   addedItemPopup: MenuItem | null;
   setAddedItemPopup: (item: MenuItem | null) => void;
 }>({
-  state: initialState,
+  state: getInitialState(),
   dispatch: () => null,
   totalItems: 0,
   totalPrice: 0,
@@ -83,17 +95,45 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     }
     case "CLEAR_CART":
         return { ...state, items: [] };
+    case "SET_STATE":
+        return action.payload;
     default:
       return state;
   }
 }
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [state, dispatch] = useReducer(cartReducer, { items: [] });
+  const [isInitialized, setIsInitialized] = useState(false);
   const [addedItemPopup, setAddedItemPopup] = useState<MenuItem | null>(null);
   const { supabase, user, userProfile, isUserLoading } = useSupabase();
   const { toast } = useToast();
   const router = useRouter();
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storedCart = localStorage.getItem('cart');
+        if (storedCart) {
+          dispatch({ type: 'SET_STATE', payload: JSON.parse(storedCart) });
+        }
+      } catch (error) {
+        console.error("Failed to load cart from localStorage", error);
+      } finally {
+        setIsInitialized(true);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isInitialized) {
+        try {
+            localStorage.setItem('cart', JSON.stringify(state));
+        } catch (error) {
+            console.error("Failed to save cart to localStorage", error);
+        }
+    }
+  }, [state, isInitialized]);
 
 
   const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
