@@ -13,7 +13,7 @@ import {
 import { CheckCircle } from "lucide-react";
 import { usePathname } from 'next/navigation';
 import Link from "next/link";
-import { Home, ShoppingCart } from "lucide-react";
+import { Home, ShoppingCart, ClipboardList } from "lucide-react";
 
 
 function CartSuccessDialog() {
@@ -39,6 +39,7 @@ function BottomNavBar() {
     const { totalItems } = useCart();
     const navItems = [
         { href: '/menu', icon: Home, label: 'Home' },
+        { href: '/orders', icon: ClipboardList, label: 'My Orders' },
         { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
     ];
     
