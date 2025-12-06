@@ -41,9 +41,8 @@ function AuthForm() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError(error.message);
-    } else {
-      router.push('/menu');
     }
+    // On success, the component will re-render, and the redirect logic above will handle navigation.
     setIsLoading(false);
   };
 
@@ -77,7 +76,7 @@ function AuthForm() {
         } else {
              // Sign in the user automatically after sign up
             await supabase.auth.signInWithPassword({ email, password });
-            router.push('/menu');
+            // On success, the component will re-render and redirect.
         }
     }
     setIsLoading(false);
