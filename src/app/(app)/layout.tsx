@@ -42,7 +42,7 @@ function BottomNavBar() {
         { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
     ];
     
-    const noNavPages = ['/login', '/register', '/admin'];
+    const noNavPages = ['/admin'];
      if (noNavPages.some(p => pathname.startsWith(p))) {
         return null;
     }
@@ -78,7 +78,7 @@ function BottomNavBar() {
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const noPaddingPages = ['/menu', '/login', '/register', '/admin', '/profile'];
+    const noPaddingPages = ['/menu', '/admin', '/profile'];
     const addPadding = !noPaddingPages.some(p => pathname.startsWith(p)) && !/^\/menu\/.+\/.+$/.test(pathname);
     
     return (

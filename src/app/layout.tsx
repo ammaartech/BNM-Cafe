@@ -28,6 +28,7 @@ function RootLayoutContent({
 }>) {
     const pathname = usePathname();
     const isAdminPage = pathname.startsWith('/admin');
+    const isAuthPage = pathname === '/';
 
     return (
         <html lang="en" suppressHydrationWarning>
@@ -37,8 +38,9 @@ function RootLayoutContent({
             </head>
             <body className={`font-sans antialiased ${inter.variable}`}>
                 <div className={cn(
-                    "mx-auto bg-background min-h-dvh flex flex-col shadow-2xl",
-                    isAdminPage ? "max-w-7xl" : "max-w-md"
+                    "mx-auto bg-background min-h-dvh flex flex-col",
+                    isAdminPage ? "max-w-7xl" : 
+                    isAuthPage ? "w-full" : "max-w-md shadow-2xl"
                 )}>
                     <SupabaseProvider>
                         {children}
