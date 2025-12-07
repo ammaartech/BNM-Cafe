@@ -13,6 +13,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import Link from "next/link";
 import { Home, ShoppingCart, ClipboardList, Heart } from "lucide-react";
 import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
+import { cn } from "@/lib/utils";
 
 
 function CartSuccessDialog() {
@@ -59,12 +60,19 @@ function BottomNavBar() {
         <nav className="sticky bottom-0 z-50 bg-card border-t mt-auto">
             <div className="flex justify-around items-center h-16">
                 {navItems.map(item => {
-                    const isFavoritesActive = item.href.includes('?filter=favorites') && pathname.includes('/menu') && searchParams.get('filter') === 'favorites';
-                    const isActive = pathname === item.href || isFavoritesActive;
+                    const isFavoritesActive = item.label === 'Favorites' && pathname === '/menu' && searchParams.get('filter') === 'favorites';
+                    const isHomeActive = item.label === 'Home' && pathname === '/menu' && !searchParams.get('filter');
+                    const isActive = pathname === item.href || isFavoritesActive || isHomeActive;
+
+                    const Icon = item.icon;
+
                     return (
                         <Link href={item.href} key={item.href} className="relative">
-                             <div className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
-                                <item.icon className="h-6 w-6" />
+                             <div className={cn('flex flex-col items-center gap-1', isActive ? 'text-primary' : 'text-muted-foreground')}>
+                                <Icon className={cn(
+                                    "h-6 w-6",
+                                    item.label === 'Favorites' && isActive && "fill-primary"
+                                 )} />
                                 <span className="text-xs font-medium">{item.label}</span>
                             </div>
                             {item.badge && (
