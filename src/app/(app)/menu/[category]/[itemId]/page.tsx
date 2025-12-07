@@ -7,13 +7,17 @@ import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
-import { ArrowLeft, Plus, Star, Minus } from "lucide-react";
+import { ArrowLeft, Plus, Star, Minus, Heart } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useUserPreferences } from "@/context/UserPreferencesContext";
+import { useSupabase } from "@/lib/supabase/provider";
 
 export default function MenuItemDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useSupabase();
+  const { favoriteIds, toggleFavorite } = useUserPreferences();
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   
@@ -24,6 +28,8 @@ export default function MenuItemDetailPage() {
   if (!item) {
     notFound();
   }
+
+  const isFavorited = favoriteIds.includes(item.id);
 
   const handleAddToCart = () => {
     for(let i = 0; i < quantity; i++) {
@@ -41,6 +47,17 @@ export default function MenuItemDetailPage() {
          <Button variant="ghost" size="icon" onClick={() => router.back()} className="bg-card/60 hover:bg-card/90 text-foreground rounded-full">
             <ArrowLeft className="h-6 w-6"/>
         </Button>
+        <Button 
+            size="icon" 
+            variant="ghost" 
+            className="h-10 w-10 rounded-full bg-card/60 hover:bg-card/80 text-white"
+            onClick={() => toggleFavorite(item.id, user)}
+          >
+            <Heart className={cn(
+              "h-6 w-6 transition-all duration-200 ease-in-out",
+              isFavorited ? "text-red-500 fill-red-500" : "text-white"
+            )} />
+          </Button>
        </div>
       <div className="relative flex-shrink-0 h-96">
         {itemImage && (
