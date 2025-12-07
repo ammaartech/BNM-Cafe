@@ -141,7 +141,7 @@ export default function ProfilePage() {
                     </Avatar>
                     <input 
                         type="file" 
-                        ref={avatarInputref} 
+                        ref={avatarInputRef} 
                         onChange={handleAvatarUpload}
                         className="hidden" 
                         accept="image/png, image/jpeg" 
