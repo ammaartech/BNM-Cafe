@@ -11,7 +11,7 @@ import {
   CardContent,
   CardTitle
 } from "@/components/ui/card";
-import { ArrowRight, ShoppingCart, LogOut, Search, Plus, X, Minus } from "lucide-react";
+import { LogOut, Search, Plus, X, Minus, Heart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -25,14 +25,34 @@ import { supabase } from "@/lib/supabase/client";
 
 function MenuItemGridCard({ item }: { item: MenuItem }) {
   const { addItem, updateQuantity, state } = useCart();
+  const [isFavorited, setIsFavorited] = useState(false);
   const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
 
   const cartItem = state.items.find(i => i.id === item.id);
   const quantity = cartItem ? cartItem.quantity : 0;
 
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Stop event from bubbling up to the Link
+    e.stopPropagation();
+    setIsFavorited(!isFavorited);
+  }
+
   return (
     <Card className="overflow-hidden h-full flex flex-col text-left">
-       <Link href={`/menu/${item.category}/${item.id}`} className="block">
+       <Link href={`/menu/${item.category}/${item.id}`} className="block relative">
+        <div className="absolute top-2 right-2 z-10">
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="h-9 w-9 rounded-full bg-card/60 hover:bg-card/80"
+              onClick={handleFavoriteClick}
+            >
+              <Heart className={cn(
+                "h-5 w-5 transition-all duration-200 ease-in-out",
+                isFavorited ? "text-red-500 fill-red-500" : "text-white"
+              )} />
+            </Button>
+        </div>
         <div className="relative aspect-square w-full">
         {itemImage && (
             <Image
