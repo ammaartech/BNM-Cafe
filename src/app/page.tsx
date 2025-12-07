@@ -13,6 +13,32 @@ import { AlertCircle, LogIn, UserPlus } from 'lucide-react';
 import { useSupabase } from '@/lib/supabase/provider';
 import Image from 'next/image';
 
+function AnimatedSubtitle() {
+    const [text, setText] = useState('');
+    const fullText = "Your campus cafe companion.";
+
+    useEffect(() => {
+        let i = 0;
+        const typingInterval = setInterval(() => {
+            if (i < fullText.length) {
+                setText(prev => prev + fullText.charAt(i));
+                i++;
+            } else {
+                clearInterval(typingInterval);
+            }
+        }, 100);
+        return () => clearInterval(typingInterval);
+    }, []);
+
+    return (
+        <p className="text-muted-foreground mt-2 h-5">
+            {text}
+            <span className="blinking-cursor">.</span>
+        </p>
+    );
+}
+
+
 function AuthForm() {
   const router = useRouter();
   const { user, isUserLoading } = useSupabase();
@@ -85,10 +111,10 @@ function AuthForm() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
-      <div className="w-full max-w-md animate-fade-in-slide-up">
+      <div className="w-full max-w-md">
         <div className="text-center mb-6 flex flex-col items-center">
             <Image src="/bnmlogoB.png" alt="B.N.M Cafe Logo" width={150} height={150} priority className="mb-4" />
-            <p className="text-muted-foreground mt-2">Your campus coffee companion.</p>
+            <AnimatedSubtitle />
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -144,7 +170,7 @@ function AuthForm() {
                 <form onSubmit={handleSignUp} className="space-y-4">
                     <Input
                         type="text"
-                        placeholder="Full Name"
+                        placeholder="Name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         required
