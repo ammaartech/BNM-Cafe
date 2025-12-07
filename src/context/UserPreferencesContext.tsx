@@ -85,13 +85,12 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
         setFavoriteIds(prev => [...prev, menuItemId]);
       }
     } else {
-      // Add to favorites
+      // Add to favorites using upsert to prevent duplicates
       const { error } = await supabase
         .from('user_favorites')
-        .insert({ user_id: user.id, menu_item_id: menuItemId });
+        .upsert({ user_id: user.id, menu_item_id: menuItemId });
         
       if (error) {
-        console.error('Error adding favorite:', error);
         toast({ title: 'Error', description: 'Could not add to favorites.', variant: 'destructive'});
         // Revert UI change
         setFavoriteIds(prev => prev.filter(id => id !== menuItemId));
