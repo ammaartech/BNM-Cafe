@@ -42,11 +42,9 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
 
   useEffect(() => {
-    // Fetch favorites only when the user is loaded and present.
     if (!isUserLoading && user) {
       fetchFavorites();
     } else if (!isUserLoading && !user) {
-      // Clear favorites if the user logs out
       setFavoriteIds([]);
       setIsLoading(false);
     }
@@ -72,23 +70,22 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     );
 
     if (isCurrentlyFavorited) {
-      // Remove from favorites
+      // --- REMOVE FAVORITE ---
       const { error } = await supabase
         .from('user_favorites')
         .delete()
         .match({ user_id: user.id, menu_item_id: menuItemId });
 
       if (error) {
-        console.error('Error removing favorite:', error);
         toast({ title: 'Error', description: 'Could not remove from favorites.', variant: 'destructive'});
         // Revert UI change
         setFavoriteIds(prev => [...prev, menuItemId]);
       }
     } else {
-      // Add to favorites using upsert to prevent duplicates
+      // --- ADD FAVORITE ---
       const { error } = await supabase
         .from('user_favorites')
-        .upsert({ user_id: user.id, menu_item_id: menuItemId });
+        .insert({ user_id: user.id, menu_item_id: menuItemId });
         
       if (error) {
         toast({ title: 'Error', description: 'Could not add to favorites.', variant: 'destructive'});
