@@ -183,7 +183,7 @@ export default function CheckoutPage() {
                             <DialogTitle className="text-center">Scan & Pay</DialogTitle>
                         </DialogHeader>
                         <div className="flex justify-center">
-                            <Image src="/qr.png" alt="Payment QR Code" width={250} height={250} />
+                            <Image src="/qrcode1.png" alt="Payment QR Code" width={250} height={250} />
                         </div>
                     </DialogContent>
                 </Dialog>
