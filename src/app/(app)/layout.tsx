@@ -11,7 +11,7 @@ import {
 import { CheckCircle } from "lucide-react";
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from "next/link";
-import { Home, ShoppingCart, ClipboardList, Heart } from "lucide-react";
+import { LayoutGrid, ShoppingCart, ClipboardList, Heart } from "lucide-react";
 import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +40,7 @@ function BottomNavBar() {
     const searchParams = useSearchParams();
 
     const navItems = [
-        { href: '/menu', icon: Home, label: 'Home' },
+        { href: '/menu', icon: LayoutGrid, label: 'Home' },
         { href: '/orders', icon: ClipboardList, label: 'My Orders' },
         { href: '/menu?filter=favorites', icon: Heart, label: 'Favorites' },
         { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
