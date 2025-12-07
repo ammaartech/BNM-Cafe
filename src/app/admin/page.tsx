@@ -42,6 +42,7 @@ function formatOrder(orderData: any): Order | null {
     orderDate: orderData.order_date,
     totalAmount: orderData.total_amount,
     status: orderData.status,
+    // Ensure items is always an array to prevent crashes
     items: orderData.order_items || [],
   };
 }
@@ -63,7 +64,7 @@ function AdminDashboard() {
 
         if (error) {
             console.error("Error fetching initial orders:", error);
-            toast({ title: "Error", description: "Could not fetch orders. Check RLS policies.", variant: "destructive" });
+            toast({ title: "Error", description: "Could not fetch orders.", variant: "destructive" });
         } else if (data) {
             const formatted = data.map(formatOrder).filter((o): o is Order => o !== null);
             setAllOrders(formatted);
@@ -73,44 +74,59 @@ function AdminDashboard() {
 
     fetchInitialOrders();
 
+    const handleRealtimeUpdate = async (payload: any) => {
+        const { eventType, new: newRecord, old: oldRecord, table } = payload;
+        if (table !== 'orders') return;
+
+        if (eventType === 'INSERT') {
+            // CRITICAL FIX: The newRecord from subscription does NOT contain related table data (order_items).
+            // We must fetch it separately to prevent the UI from crashing.
+            const { data: newOrderData, error } = await supabase
+                .from('orders')
+                .select('*, order_items(*)')
+                .eq('id', newRecord.id)
+                .single();
+            
+            if (!error && newOrderData) {
+                const formattedOrder = formatOrder(newOrderData);
+                if (formattedOrder) {
+                    setAllOrders(currentOrders => [formattedOrder, ...currentOrders]);
+                    toast({ title: "New Order Received!", description: `Order from ${formattedOrder.userName} for ₹${formattedOrder.totalAmount.toFixed(2)}`});
+                }
+            } else {
+                 console.error("Error fetching full new order:", error);
+            }
+        } else if (eventType === 'UPDATE') {
+            const formattedOrder = formatOrder(newRecord);
+            if (formattedOrder) {
+                setAllOrders(currentOrders => 
+                    currentOrders.map(order => 
+                        order.id === formattedOrder.id ? { ...order, status: formattedOrder.status } : order
+                    )
+                );
+            }
+        } else if (eventType === 'DELETE') {
+            setAllOrders(currentOrders => 
+                currentOrders.filter(order => order.id !== (oldRecord as any).id)
+            );
+        }
+    };
+    
     const channel = supabase.channel('realtime-orders')
         .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'orders' },
-            async (payload) => {
-                 const { eventType, new: newRecord, old: oldRecord, table } = payload;
-                 if (table !== 'orders') return;
-
-                 if (eventType === 'INSERT') {
-                    const { data: newOrderData, error } = await supabase
-                        .from('orders')
-                        .select('*, order_items(*)')
-                        .eq('id', newRecord.id)
-                        .single();
-                    
-                    if (!error && newOrderData) {
-                        const formattedOrder = formatOrder(newOrderData);
-                        if (formattedOrder) {
-                            setAllOrders(currentOrders => [formattedOrder, ...currentOrders]);
-                        }
-                    }
-                 } else if (eventType === 'UPDATE') {
-                    const formattedOrder = formatOrder(newRecord);
-                    if (formattedOrder) {
-                        setAllOrders(currentOrders => 
-                            currentOrders.map(order => 
-                                order.id === formattedOrder.id ? { ...order, status: formattedOrder.status } : order
-                            )
-                        );
-                    }
-                 } else if (eventType === 'DELETE') {
-                    setAllOrders(currentOrders => 
-                        currentOrders.filter(order => order.id !== (oldRecord as any).id)
-                    );
-                 }
-            }
+            handleRealtimeUpdate
         )
-        .subscribe();
+        .subscribe((status, err) => {
+             if (status === 'SUBSCRIBED') {
+                console.log('Subscribed to real-time orders!');
+             }
+             if (status === 'CHANNEL_ERROR') {
+                console.error('Real-time subscription error:', err);
+                toast({ title: "Connection Error", description: "Could not connect to real-time updates.", variant: "destructive"});
+             }
+        });
     
     return () => {
         supabase.removeChannel(channel);
