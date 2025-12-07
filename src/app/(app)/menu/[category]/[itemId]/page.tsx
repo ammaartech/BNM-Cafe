@@ -7,8 +7,7 @@ import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
-import { useUserPreferences } from "@/context/UserPreferencesContext";
-import { ArrowLeft, Plus, Star, Heart, Minus } from "lucide-react";
+import { ArrowLeft, Plus, Star, Minus } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +15,6 @@ export default function MenuItemDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { addItem } = useCart();
-  const { isFavorited, toggleFavorite } = useUserPreferences();
   const [quantity, setQuantity] = useState(1);
   
   const { category: categoryId, itemId } = params;
@@ -33,14 +31,6 @@ export default function MenuItemDetailPage() {
     }
   };
   
-  const favorited = isFavorited(item.id);
-
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    toggleFavorite(item.id);
-  }
-
   const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
   const rating = 4.5;
   const isOutOfStock = item.stock <= 0;
@@ -50,9 +40,6 @@ export default function MenuItemDetailPage() {
        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-20">
          <Button variant="ghost" size="icon" onClick={() => router.back()} className="bg-card/60 hover:bg-card/90 text-foreground rounded-full">
             <ArrowLeft className="h-6 w-6"/>
-        </Button>
-         <Button variant="ghost" size="icon" className="bg-card/60 hover:bg-card/90 text-foreground rounded-full" onClick={handleFavoriteClick}>
-            <Heart className={cn("h-6 w-6", favorited && "fill-red-500 text-red-500")}/>
         </Button>
        </div>
       <div className="relative flex-shrink-0 h-96">

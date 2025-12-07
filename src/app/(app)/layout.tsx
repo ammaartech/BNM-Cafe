@@ -1,7 +1,6 @@
 
 "use client";
 import { useCart, CartProvider } from "@/context/CartContext";
-import { UserPreferencesProvider, useUserPreferences } from "@/context/UserPreferencesContext";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +11,7 @@ import {
 import { CheckCircle } from "lucide-react";
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from "next/link";
-import { Home, ShoppingCart, ClipboardList, Heart } from "lucide-react";
+import { Home, ShoppingCart, ClipboardList } from "lucide-react";
 
 
 function CartSuccessDialog() {
@@ -37,12 +36,10 @@ function BottomNavBar() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const { totalItems } = useCart();
-    const { favoriteIds } = useUserPreferences();
 
     const navItems = [
         { href: '/menu?filter=all', icon: Home, label: 'Home' },
         { href: '/orders', icon: ClipboardList, label: 'My Orders' },
-        { href: '/menu?filter=favorites', icon: Heart, label: 'Favorites', badge: favoriteIds.length > 0 ? favoriteIds.length : null },
         { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
     ];
     
@@ -62,7 +59,6 @@ function BottomNavBar() {
                 {navItems.map(item => {
                     const filterParam = searchParams.get('filter');
                     const isActive = (item.href === '/menu?filter=all' && (pathname === '/menu' && (!filterParam || filterParam === 'all'))) ||
-                                     (item.href === `/menu?filter=${filterParam}` && pathname === '/menu') ||
                                      (item.href !== '/menu?filter=all' && pathname === item.href);
 
                     return (
@@ -106,10 +102,8 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <UserPreferencesProvider>
-        <CartProvider>
-            <AppLayoutContent>{children}</AppLayoutContent>
-        </CartProvider>
-    </UserPreferencesProvider>
+    <CartProvider>
+        <AppLayoutContent>{children}</AppLayoutContent>
+    </CartProvider>
   );
 }

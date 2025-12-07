@@ -11,9 +11,8 @@ import {
   CardContent,
   CardTitle
 } from "@/components/ui/card";
-import { ArrowRight, ShoppingCart, LogOut, Search, Heart, Plus, X, Minus } from "lucide-react";
+import { ArrowRight, ShoppingCart, LogOut, Search, Plus, X, Minus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { useUserPreferences } from "@/context/UserPreferencesContext";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
@@ -26,40 +25,26 @@ import { supabase } from "@/lib/supabase/client";
 
 function MenuItemGridCard({ item }: { item: MenuItem }) {
   const { addItem, updateQuantity, state } = useCart();
-  const { isFavorited, toggleFavorite } = useUserPreferences();
   const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
 
-  const favorited = isFavorited(item.id);
-  
   const cartItem = state.items.find(i => i.id === item.id);
   const quantity = cartItem ? cartItem.quantity : 0;
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleFavorite(item.id);
-  }
-
   return (
     <Card className="overflow-hidden h-full flex flex-col text-left">
-       <div className="relative">
-        <Link href={`/menu/${item.category}/${item.id}`} className="block">
-            <div className="relative aspect-square w-full">
-            {itemImage && (
-                <Image
-                src={itemImage.imageUrl}
-                alt={item.name}
-                fill
-                className="object-cover"
-                data-ai-hint={itemImage.imageHint}
-                />
-            )}
-            </div>
-        </Link>
-        <Button size="icon" variant="secondary" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-card/70 hover:bg-card" onClick={handleFavoriteClick}>
-            <Heart className={cn("h-4 w-4 text-primary", favorited && "fill-red-500 text-red-500")} />
-        </Button>
-      </div>
+       <Link href={`/menu/${item.category}/${item.id}`} className="block">
+        <div className="relative aspect-square w-full">
+        {itemImage && (
+            <Image
+            src={itemImage.imageUrl}
+            alt={item.name}
+            fill
+            className="object-cover"
+            data-ai-hint={itemImage.imageHint}
+            />
+        )}
+        </div>
+      </Link>
       <CardHeader>
         <Link href={`/menu/${item.category}/${item.id}`} className="block">
             <CardTitle className="text-base font-semibold">{item.name}</CardTitle>
@@ -92,7 +77,6 @@ export default function MenuPage() {
   const { user } = useSupabase();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { favoriteIds } = useUserPreferences();
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -138,7 +122,6 @@ export default function MenuPage() {
   const displayedItems = menuItems.filter(item => {
     const matchesFilter = 
         activeFilter === 'all'
-        || (activeFilter === 'favorites' && favoriteIds.includes(item.id))
         || (activeFilter === item.category);
 
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -190,7 +173,6 @@ export default function MenuPage() {
       <div className="overflow-x-auto py-2 no-scrollbar px-2">
         <div className="flex gap-2">
             <Button variant={activeFilter === 'all' ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => handleFilterClick('all')}>All</Button>
-            <Button variant={activeFilter === 'favorites' ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => handleFilterClick('favorites')}>Favorites</Button>
             {categories.map((category) => (
               <Button key={category.id} variant={activeFilter === category.id ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => handleFilterClick(category.id)}>
                 {category.name}
@@ -208,11 +190,6 @@ export default function MenuPage() {
          {displayedItems.length === 0 && searchQuery && (
             <div className="text-center py-16">
                 <p className="text-muted-foreground">No items found for &quot;{searchQuery}&quot;.</p>
-            </div>
-        )}
-        {activeFilter === 'favorites' && displayedItems.length === 0 && !searchQuery && (
-            <div className="text-center py-16">
-                <p className="text-muted-foreground">You haven&apos;t favorited any items yet!</p>
             </div>
         )}
       </main>
