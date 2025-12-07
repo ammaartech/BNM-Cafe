@@ -33,21 +33,24 @@ const filterOptions: { label: string; value: OrderFilter }[] = [
     { label: "All Orders", value: "all" },
 ];
 
+function formatOrder(orderData: any): Order {
+  if (!orderData) return {} as Order;
+  return {
+    id: orderData.id,
+    userId: orderData.user_id,
+    userName: orderData.user_name,
+    orderDate: orderData.order_date,
+    totalAmount: orderData.total_amount,
+    status: orderData.status,
+    items: orderData.order_items || [],
+  };
+}
+
 function AdminDashboard() {
   const [filter, setFilter] = useState<OrderFilter>("live");
   const { toast } = useToast();
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const formatOrder = useCallback((order: any): Order => {
-    return {
-        ...order,
-        orderDate: order.order_date,
-        totalAmount: order.total_amount,
-        userName: order.user_name,
-        items: order.order_items || [],
-    };
-  }, []);
 
   useEffect(() => {
     const fetchInitialOrders = async () => {
@@ -60,9 +63,8 @@ function AdminDashboard() {
         if (error) {
             console.error("Error fetching initial orders:", error);
             toast({ title: "Error", description: "Could not fetch orders. Check RLS policies.", variant: "destructive" });
-        } else {
-            const orders = data.map(formatOrder);
-            setAllOrders(orders);
+        } else if (data) {
+            setAllOrders(data.map(formatOrder));
         }
         setIsLoading(false);
     };
@@ -77,6 +79,7 @@ function AdminDashboard() {
                 const { eventType, new: newRecord, old: oldRecord } = payload;
                 
                 if (eventType === 'INSERT') {
+                    // Fetch the new order with its items
                     const { data: newOrderData, error } = await supabase
                         .from('orders')
                         .select('*, order_items(*)')
@@ -88,14 +91,11 @@ function AdminDashboard() {
                     }
                 } else if (eventType === 'UPDATE') {
                      setAllOrders(currentOrders => 
-                        currentOrders.map(order => {
-                            if (order.id === newRecord.id) {
-                                // Important: Fetch order_items for the updated order
-                                const updatedItems = (newRecord as any).order_items || order.items;
-                                return { ...order, ...formatOrder(newRecord), items: updatedItems };
-                            }
-                            return order;
-                        })
+                        currentOrders.map(order => 
+                            order.id === newRecord.id 
+                                ? { ...order, ...formatOrder(newRecord) }
+                                : order
+                        )
                     );
                 } else if (eventType === 'DELETE') {
                     setAllOrders(currentOrders => 
@@ -109,7 +109,7 @@ function AdminDashboard() {
     return () => {
         supabase.removeChannel(channel);
     }
-  }, [toast, formatOrder]);
+  }, [toast]);
   
 
   const handleStatusChange = async (order: Order, status: Order['status']) => {
@@ -117,14 +117,11 @@ function AdminDashboard() {
     if(error) {
         toast({ title: "Update Failed", description: error.message, variant: "destructive"});
     } else {
-        // Optimistic update handled by realtime subscription
         toast({ title: "Status Updated", description: `Order #${order.id.slice(0,7)} is now ${status}.`});
     }
   };
   
   const filteredOrders = useMemo(() => {
-    if (!allOrders) return [];
-    
     const sorted = [...allOrders].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
 
     switch (filter) {
@@ -406,7 +403,7 @@ function AdminLoginPage() {
 export default function AdminPage() {
     const { user, userRole, isUserLoading, supabase } = useSupabase();
     const router = useRouter();
-    const isAdmin = user && userRole === 'admin';
+    const isAdmin = user && !user.is_anonymous && userRole === 'admin';
 
      const handleLogout = async () => {
         if (supabase) {

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, FileText, ShoppingBag, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useSupabase } from "@/lib/supabase/provider";
 import { Button } from "@/components/ui/button";
@@ -61,12 +61,29 @@ function TicketSkeleton() {
     );
 }
 
+function formatOrder(data: any): Order {
+    return {
+        id: data.id,
+        userId: data.user_id,
+        userName: data.user_name,
+        orderDate: data.order_date,
+        totalAmount: data.total_amount,
+        status: data.status,
+        items: data.order_items?.map((item: any) => ({
+            id: item.menu_item_id,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+        })) || []
+    };
+}
+
 
 export default function OrderTicketPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.orderId as string;
-  const { user } = useSupabase();
+  const { user, isUserLoading } = useSupabase();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,27 +105,42 @@ export default function OrderTicketPage() {
             setError(error);
             setOrder(null);
         } else {
-             const formattedOrder: Order = {
-                id: data.id,
-                userId: data.user_id,
-                userName: data.user_name,
-                orderDate: data.order_date,
-                totalAmount: data.total_amount,
-                status: data.status,
-                items: data.order_items.map((item: any) => ({
-                    id: item.menu_item_id,
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: item.price,
-                }))
-            };
-            setOrder(formattedOrder);
+            setOrder(formatOrder(data));
         }
         setIsLoading(false);
     };
 
-    fetchOrder();
-  }, [orderId, user]);
+    if (!isUserLoading) {
+      fetchOrder();
+    }
+  }, [orderId, user, isUserLoading]);
+
+  useEffect(() => {
+    if (!orderId) return;
+
+    const channel = supabase.channel(`order-ticket-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`
+        },
+        (payload) => {
+          setOrder(currentOrder => {
+            if (!currentOrder) return null;
+            const updatedOrder = formatOrder(payload.new);
+            return { ...currentOrder, status: updatedOrder.status };
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orderId]);
 
 
   if (isLoading) {

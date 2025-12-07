@@ -21,9 +21,8 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchFavorites = useCallback(async () => {
-    if (!user || !supabase) {
-      setFavoriteIds([]);
+  const fetchFavorites = useCallback(async (currentUserId: string) => {
+    if (!supabase) {
       setIsLoading(false);
       return;
     }
@@ -32,22 +31,25 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     const { data, error } = await supabase
       .from('user_favorites')
       .select('menu_item_id')
-      .eq('user_id', user.id);
+      .eq('user_id', currentUserId);
 
     if (error) {
       console.error("Error fetching user favorites:", error);
       toast({ title: 'Error', description: 'Could not load your favorites.', variant: 'destructive'});
       setFavoriteIds([]);
     } else {
-      setFavoriteIds(data.map(fav => fav.menu_item_id) || []);
+      setFavoriteIds(data?.map(fav => fav.menu_item_id) || []);
     }
     setIsLoading(false);
-  }, [user, supabase]);
+  }, [supabase, toast]);
 
 
   useEffect(() => {
-    if (!isUserLoading) {
-      fetchFavorites();
+    if (!isUserLoading && user) {
+      fetchFavorites(user.id);
+    } else if (!isUserLoading && !user) {
+        setFavoriteIds([]);
+        setIsLoading(false);
     }
   }, [isUserLoading, user, fetchFavorites]);
 
@@ -62,38 +64,54 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
       return;
     }
 
+    if (user.is_anonymous) {
+        toast({
+            title: 'Account Required',
+            description: 'Please create an account to save your favorites.',
+            variant: 'destructive',
+        });
+        router.push('/');
+        return;
+    }
+
     const isCurrentlyFavorited = favoriteIds.includes(menuItemId);
     
+    // Optimistic UI update
+    setFavoriteIds(prev => 
+        isCurrentlyFavorited 
+            ? prev.filter(id => id !== menuItemId) 
+            : [...prev, menuItemId]
+    );
+    
+    let error;
     if (isCurrentlyFavorited) {
-      // --- REMOVE FAVORITE ---
-      setFavoriteIds(prev => prev.filter(id => id !== menuItemId)); // Optimistic update
-      const { error } = await supabase
+      const { error: deleteError } = await supabase
         .from('user_favorites')
         .delete()
         .match({ user_id: user.id, menu_item_id: menuItemId });
-
-      if (error) {
-        toast({ title: 'Error', description: 'Could not remove from favorites.', variant: 'destructive'});
-        setFavoriteIds(prev => [...prev, menuItemId]); // Revert UI on failure
-      }
+        error = deleteError;
     } else {
-      // --- ADD FAVORITE ---
-      setFavoriteIds(prev => [...prev, menuItemId]); // Optimistic update
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('user_favorites')
         .insert({ user_id: user.id, menu_item_id: menuItemId });
-        
-      if (error) {
-        toast({ title: 'Error', description: 'Could not add to favorites.', variant: 'destructive'});
-        setFavoriteIds(prev => prev.filter(id => id !== menuItemId)); // Revert UI on failure
-      }
+        error = insertError;
+    }
+
+    if (error) {
+        toast({ title: 'Error', description: `Could not ${isCurrentlyFavorited ? 'remove from' : 'add to'} favorites.`, variant: 'destructive'});
+        // Revert UI on failure
+        setFavoriteIds(prev => 
+            isCurrentlyFavorited 
+                ? [...prev, menuItemId]
+                : prev.filter(id => id !== menuItemId)
+        );
     }
   };
 
   const value = {
     favoriteIds,
     toggleFavorite,
-    isLoading,
+    isLoading: isLoading || isUserLoading,
   };
 
   return (

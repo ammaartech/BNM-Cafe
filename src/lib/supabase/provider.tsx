@@ -9,7 +9,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
 interface SupabaseContextType {
-  supabase: SupabaseClient | null;
+  supabase: SupabaseClient;
   user: User | null;
   userProfile: UserProfile | null;
   userRole: UserProfile['role'] | null;
@@ -41,11 +41,16 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
       .eq('id', currentUser.id)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116: "exact one row expected, but found 0"
-        console.error('Error fetching user profile:', error);
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching user profile:', error);
+      setUserProfile(null);
+      setUserRole('customer');
     } else if (profile) {
       setUserProfile(profile);
       setUserRole(profile.role || 'customer');
+    } else {
+      setUserProfile(null);
+      setUserRole('customer');
     }
   }, []);
   
@@ -58,8 +63,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    const handleAuthChange = async (event: string, session: any) => {
         setIsUserLoading(true);
         const currentUser = session?.user ?? null;
         setUser(currentUser);
@@ -67,12 +71,30 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
         if (currentUser) {
           await fetchUserProfile(currentUser);
         } else {
-          setUserProfile(null);
-          setUserRole(null);
+          // If no user, sign in anonymously
+          const { data, error } = await supabase.auth.signInAnonymously();
+          if (error) {
+              console.error("Anonymous sign-in error:", error);
+              setUser(null);
+              setUserProfile(null);
+              setUserRole(null);
+          } else if (data.user) {
+              setUser(data.user);
+              setUserProfile(null);
+              setUserRole('customer');
+          }
         }
         setIsUserLoading(false);
       }
-    );
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(handleAuthChange);
+    
+    // Initial check in case onAuthStateChange doesn't fire on first load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) {
+             handleAuthChange('INITIAL_STATE', null);
+        }
+    });
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -80,20 +102,17 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchUserProfile]);
 
   useEffect(() => {
-    // This effect handles redirects based on auth state
-    if (isUserLoading) return; // Don't do anything while loading
+    if (isUserLoading) return;
 
     const isAuthPage = pathname === '/';
     const isAdminPage = pathname.startsWith('/admin');
 
-    // If there's no user and they are NOT on a public page, redirect them to login.
-    if (!user) {
-        if (!isAuthPage && !isAdminPage) {
-            router.replace('/');
-        }
+    // If user is anonymous and trying to access a protected page, redirect to login
+    if (user?.is_anonymous && !isAuthPage && !isAdminPage && pathname !== '/menu' && !pathname.startsWith('/menu/')) {
+        router.replace('/');
     }
     
-    // If there IS a user (and not anonymous) and they are on the login page, redirect to menu.
+    // If there IS a logged-in (not anonymous) user and they are on the auth page, redirect to menu.
     if (user && !user.is_anonymous && isAuthPage) {
       router.replace('/menu');
     }

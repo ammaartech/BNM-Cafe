@@ -100,19 +100,19 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const router = useRouter();
 
-  const fetchCart = useCallback(async () => {
-    if (!user || !supabase) {
-      dispatch({ type: "SET_CART", payload: [] });
+  const fetchCart = useCallback(async (currentUserId: string) => {
+    if (!supabase) {
       return;
     }
-
     const { data: cartData, error: cartError } = await supabase
       .from('user_cart_items')
       .select('menu_item_id, quantity')
-      .eq('user_id', user.id);
+      .eq('user_id', currentUserId);
 
     if (cartError) {
+      console.error("Error fetching cart:", cartError);
       toast({ title: "Error", description: "Could not load your cart.", variant: "destructive" });
+      dispatch({ type: "SET_CART", payload: [] });
       return;
     }
 
@@ -128,7 +128,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .in('id', menuItemIds);
     
     if (menuItemsError) {
+        console.error("Error fetching menu items for cart:", menuItemsError);
         toast({ title: "Error", description: "Could not load menu item details for your cart.", variant: "destructive" });
+        dispatch({ type: "SET_CART", payload: [] });
         return;
     }
 
@@ -142,12 +144,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }).filter((item): item is CartItem => item !== null);
       
     dispatch({ type: "SET_CART", payload: loadedCartItems });
-  }, [user, supabase]);
+  }, [supabase, toast]);
 
 
   useEffect(() => {
-    if(!isUserLoading) {
-      fetchCart();
+    if(!isUserLoading && user) {
+      fetchCart(user.id);
+    } else if (!isUserLoading && !user) {
+      dispatch({ type: "SET_CART", payload: [] });
     }
   }, [user, isUserLoading, fetchCart]);
 
@@ -159,19 +163,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const placeOrder = async () => {
-     if (isUserLoading) {
-         toast({ title: "Please wait", description: "Verifying user session..." });
+    if (isUserLoading) {
+        toast({ title: "Please wait", description: "Verifying user session..." });
         return;
     }
 
-    if (!user) {
-        toast({ title: "Please Log In", description: "You need to be logged in to place an order.", variant: "destructive" });
+    if (!user || user.is_anonymous) {
+        toast({ title: "Please Log In", description: "You need to create an account to place an order.", variant: "destructive" });
         router.push('/');
-        return;
-    }
-
-    if (!supabase) {
-        toast({ title: "Connection Error", description: "Could not connect to the database. Please refresh.", variant: "destructive" });
         return;
     }
     
@@ -180,7 +179,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
     
-    const customerName = userProfile?.name || user.email || "Valued Customer";
+    const customerName = userProfile?.name || user.email;
+    if (!customerName) {
+      toast({ title: "Error", description: "Could not determine user name for the order.", variant: "destructive" });
+      return;
+    }
 
     try {
         const { data: orderData, error: orderError } = await supabase
@@ -226,11 +229,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }
 
 
-  // --- DB Cart Actions ---
   const addItem = async (item: MenuItem) => {
     if (!user || !supabase) {
-      toast({ title: 'Please log in', description: 'You need an account to add items to your cart.', variant: 'destructive'});
-      router.push('/');
+      toast({ title: 'Session error', description: 'Your session could not be verified. Please refresh.', variant: 'destructive'});
       return;
     }
 
@@ -242,30 +243,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setUpdatingItemId(item.id);
     const existingItem = state.items.find(i => i.id === item.id);
     
-    // Optimistic UI update
     if (existingItem) {
       dispatch({ type: 'UPDATE_QUANTITY', payload: { id: item.id, quantity: existingItem.quantity + 1 }});
     } else {
       dispatch({ type: 'ADD_ITEM', payload: { ...item, quantity: 1 } });
     }
 
-    let error;
-    if (existingItem) {
-        const { error: updateError } = await supabase
-            .from('user_cart_items')
-            .update({ quantity: existingItem.quantity + 1 })
-            .match({ user_id: user.id, menu_item_id: item.id });
-        error = updateError;
-    } else {
-        const { error: insertError } = await supabase
-            .from('user_cart_items')
-            .insert({ user_id: user.id, menu_item_id: item.id, quantity: 1 });
-        error = insertError;
-    }
+    const { error } = await supabase
+      .from('user_cart_items')
+      .upsert(
+        { user_id: user.id, menu_item_id: item.id, quantity: (existingItem?.quantity || 0) + 1 },
+        { onConflict: 'user_id,menu_item_id' }
+      );
 
     if (error) {
       toast({ title: 'Error', description: 'Could not add item to cart.', variant: 'destructive'});
-      // Revert optimistic update on failure
       if (existingItem) {
         dispatch({ type: 'UPDATE_QUANTITY', payload: { id: item.id, quantity: existingItem.quantity }});
       } else {
@@ -283,9 +275,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     setUpdatingItemId(id);
     const existingItem = state.items.find(i => i.id === id);
-    if (!existingItem) return;
+    if (!existingItem) {
+        setUpdatingItemId(null);
+        return;
+    }
 
-    // Optimistic UI update
     dispatch({ type: 'REMOVE_ITEM', payload: { id } });
 
     const { error } = await supabase
@@ -295,7 +289,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       toast({ title: 'Error', description: 'Could not remove item from cart.', variant: 'destructive' });
-      // Revert UI on failure
       dispatch({ type: 'ADD_ITEM', payload: existingItem });
     }
     setUpdatingItemId(null);
@@ -319,7 +312,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
     
-    // Optimistic update
     if (quantity <= 0) {
         dispatch({ type: 'REMOVE_ITEM', payload: { id }});
     } else {
@@ -343,7 +335,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
         toast({ title: 'Error', description: 'Could not update item quantity.', variant: 'destructive' });
-        // Revert UI on failure
         dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity: originalQuantity }});
     }
     setUpdatingItemId(null);
@@ -353,7 +344,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (!user || !supabase) return;
 
     const currentItems = state.items;
-    // Optimistic update
     dispatch({ type: 'CLEAR_CART' });
 
     const { error } = await supabase
@@ -363,7 +353,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       toast({ title: 'Error', description: 'Could not clear your cart.', variant: 'destructive' });
-      // Revert UI on failure
       dispatch({ type: 'SET_CART', payload: currentItems });
     }
   };
