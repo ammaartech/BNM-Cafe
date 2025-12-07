@@ -59,20 +59,15 @@
 }
 
 @layer utilities {
-  @keyframes fade-in-slide-up {
-    0% {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
   }
 
-  .animate-fade-in-slide-up {
-    animation: fade-in-slide-up 0.5s ease-out forwards;
+  .animate-blink {
+    animation: blink 0.75s step-end infinite;
   }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
