@@ -11,7 +11,7 @@ import {
 import { CheckCircle } from "lucide-react";
 import { usePathname } from 'next/navigation';
 import Link from "next/link";
-import { Home, ShoppingCart, ClipboardList } from "lucide-react";
+import { Home, ShoppingCart, ClipboardList, Heart } from "lucide-react";
 import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
 
 
@@ -40,6 +40,7 @@ function BottomNavBar() {
     const navItems = [
         { href: '/menu', icon: Home, label: 'Home' },
         { href: '/orders', icon: ClipboardList, label: 'My Orders' },
+        { href: '/menu?filter=favorites', icon: Heart, label: 'Favorites' },
         { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
     ];
     
@@ -57,7 +58,7 @@ function BottomNavBar() {
         <nav className="sticky bottom-0 z-50 bg-card border-t mt-auto">
             <div className="flex justify-around items-center h-16">
                 {navItems.map(item => {
-                    const isActive = pathname === item.href;
+                    const isActive = pathname === item.href || (item.href.includes('?filter=favorites') && pathname.includes('/menu') && new URLSearchParams(window.location.search).get('filter') === 'favorites');
                     return (
                         <Link href={item.href} key={item.href} className="relative">
                              <div className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
