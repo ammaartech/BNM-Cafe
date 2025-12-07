@@ -65,7 +65,7 @@ function BottomNavBar() {
                     const isActive = pathname === item.href || isFavoritesActive || isHomeActive;
 
                     const Icon = item.icon;
-                    const shouldFill = isActive;
+                    const shouldFill = isActive && (item.label === 'Favorites' || item.label === 'Cart');
 
                     return (
                         <Link href={item.href} key={item.href} className="relative">
