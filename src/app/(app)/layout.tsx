@@ -11,7 +11,7 @@ import {
 import { CheckCircle } from "lucide-react";
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from "next/link";
-import { Home, ShoppingCart, ClipboardList, Heart } from "lucide-react";
+import { Store, ShoppingCart, ClipboardList, Heart } from "lucide-react";
 import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +40,7 @@ function BottomNavBar() {
     const searchParams = useSearchParams();
 
     const navItems = [
-        { href: '/menu', icon: Home, label: 'Home' },
+        { href: '/menu', icon: Store, label: 'Home' },
         { href: '/orders', icon: ClipboardList, label: 'My Orders' },
         { href: '/menu?filter=favorites', icon: Heart, label: 'Favorites' },
         { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
@@ -65,14 +65,14 @@ function BottomNavBar() {
                     const isActive = pathname === item.href || isFavoritesActive || isHomeActive;
 
                     const Icon = item.icon;
-                    const shouldFill = isActive && item.label !== 'Home';
+                    const shouldFill = isActive;
 
                     return (
                         <Link href={item.href} key={item.href} className="relative">
                              <div className={cn('flex flex-col items-center gap-1', isActive ? 'text-primary' : 'text-muted-foreground')}>
                                 <Icon className={cn(
                                     "h-6 w-6",
-                                    shouldFill && "fill-primary"
+                                    shouldFill && "fill-current"
                                  )} />
                                 <span className="text-xs font-medium">{item.label}</span>
                             </div>
