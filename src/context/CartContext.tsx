@@ -243,11 +243,24 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Stock limit reached", description: `You cannot add more of ${item.name}.`, variant: "destructive" });
       return;
     }
-
-    const { error } = await supabase
-      .from('user_cart_items')
-      .upsert({ user_id: user.id, menu_item_id: item.id, quantity: currentQuantity + 1 });
     
+    let error;
+
+    if (existingItem) {
+        // Item exists, so update the quantity
+        const { error: updateError } = await supabase
+            .from('user_cart_items')
+            .update({ quantity: currentQuantity + 1 })
+            .match({ user_id: user.id, menu_item_id: item.id });
+        error = updateError;
+    } else {
+        // Item doesn't exist, so insert a new row
+        const { error: insertError } = await supabase
+            .from('user_cart_items')
+            .insert({ user_id: user.id, menu_item_id: item.id, quantity: 1 });
+        error = insertError;
+    }
+
     if (error) {
       toast({ title: 'Error', description: 'Could not add item to cart.', variant: 'destructive'});
     } else {
