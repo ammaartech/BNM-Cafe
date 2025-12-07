@@ -105,24 +105,38 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const { data: cartData, error: cartError } = await supabase
       .from('user_cart_items')
-      .select('*, menu_items(*)')
+      .select('menu_item_id, quantity')
       .eq('user_id', user.id);
 
     if (cartError) {
-      console.error('Error fetching cart:', cartError);
       toast({ title: "Error", description: "Could not load your cart.", variant: "destructive" });
       return;
     }
 
-    const loadedCartItems: CartItem[] = cartData
-      .map(item => {
-        if (!item.menu_items) return null;
+    if (!cartData || cartData.length === 0) {
+        dispatch({ type: "SET_CART", payload: [] });
+        return;
+    }
+
+    const menuItemIds = cartData.map(item => item.menu_item_id);
+    const { data: menuItemsData, error: menuItemsError } = await supabase
+        .from('menu_items')
+        .select('*')
+        .in('id', menuItemIds);
+    
+    if (menuItemsError) {
+        toast({ title: "Error", description: "Could not load menu item details for your cart.", variant: "destructive" });
+        return;
+    }
+
+    const loadedCartItems: CartItem[] = cartData.map(cartItem => {
+        const menuItem = menuItemsData.find(mi => mi.id === cartItem.menu_item_id);
+        if (!menuItem) return null;
         return {
-          ...(item.menu_items as MenuItem),
-          quantity: item.quantity,
+            ...menuItem,
+            quantity: cartItem.quantity,
         };
-      })
-      .filter((item): item is CartItem => item !== null);
+    }).filter((item): item is CartItem => item !== null);
       
     dispatch({ type: "SET_CART", payload: loadedCartItems });
   }, [user, supabase, toast]);
@@ -331,5 +345,3 @@ export const useCart = () => {
   }
   return context;
 };
-
-    
