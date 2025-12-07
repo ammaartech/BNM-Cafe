@@ -54,21 +54,21 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
               data-ai-hint={itemImage.imageHint}
               />
           )}
+           <div className="absolute top-2 right-2 z-10">
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-9 w-9 rounded-full bg-card/60 hover:bg-card/80 text-white"
+                onClick={handleFavoriteClick}
+              >
+                <Heart className={cn(
+                  "h-5 w-5 transition-all duration-200 ease-in-out",
+                  isFavorited ? "text-red-500 fill-red-500" : "text-white"
+                )} />
+              </Button>
+          </div>
         </div>
       </Link>
-       <div className="absolute top-2 right-2 z-10">
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            className="h-9 w-9 rounded-full bg-card/60 hover:bg-card/80 text-white"
-            onClick={handleFavoriteClick}
-          >
-            <Heart className={cn(
-              "h-5 w-5 transition-all duration-200 ease-in-out",
-              isFavorited ? "text-red-500 fill-red-500" : "text-white"
-            )} />
-          </Button>
-      </div>
       <CardHeader>
         <Link href={`/menu/${item.category}/${item.id}`} className="block">
             <CardTitle className="text-base font-semibold">{item.name}</CardTitle>
