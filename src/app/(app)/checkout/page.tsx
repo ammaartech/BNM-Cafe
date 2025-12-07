@@ -174,7 +174,7 @@ export default function CheckoutPage() {
             <div className="flex items-center gap-2">
                  <Dialog>
                     <DialogTrigger asChild>
-                        <Button variant="outline" className="h-14 w-1/2 text-base font-bold">
+                        <Button className="h-14 w-1/2 text-base font-bold">
                             <QrCode className="mr-2 h-5 w-5" />
                             Pay by QR
                         </Button>
