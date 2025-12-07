@@ -65,13 +65,14 @@ function BottomNavBar() {
                     const isActive = pathname === item.href || isFavoritesActive || isHomeActive;
 
                     const Icon = item.icon;
+                    const shouldFill = isActive && item.label !== 'Home';
 
                     return (
                         <Link href={item.href} key={item.href} className="relative">
                              <div className={cn('flex flex-col items-center gap-1', isActive ? 'text-primary' : 'text-muted-foreground')}>
                                 <Icon className={cn(
                                     "h-6 w-6",
-                                    isActive && "fill-primary"
+                                    shouldFill && "fill-primary"
                                  )} />
                                 <span className="text-xs font-medium">{item.label}</span>
                             </div>
