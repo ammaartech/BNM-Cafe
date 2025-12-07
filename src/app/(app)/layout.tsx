@@ -71,7 +71,7 @@ function BottomNavBar() {
                              <div className={cn('flex flex-col items-center gap-1', isActive ? 'text-primary' : 'text-muted-foreground')}>
                                 <Icon className={cn(
                                     "h-6 w-6",
-                                    item.label === 'Favorites' && isActive && "fill-primary"
+                                    isActive && "fill-primary"
                                  )} />
                                 <span className="text-xs font-medium">{item.label}</span>
                             </div>
