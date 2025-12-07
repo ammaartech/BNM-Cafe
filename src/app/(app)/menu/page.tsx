@@ -39,7 +39,9 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault(); 
     e.stopPropagation();
-    toggleFavorite(item.id);
+    if (user) {
+      toggleFavorite(item.id);
+    }
   }
 
   return (
@@ -270,5 +272,3 @@ export default function MenuPage() {
     </div>
   );
 }
-
-    
