@@ -8,12 +8,11 @@ import {
   DialogTitle,
   DialogDescription
 } from "@/components/ui/dialog";
-import { CheckCircle, Home } from "lucide-react";
-import { usePathname, useSearchParams } from 'next/navigation';
-import Link from "next/link";
-import { ShoppingCart, ClipboardList, Heart } from "lucide-react";
+import { CheckCircle } from "lucide-react";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
-import { cn } from "@/lib/utils";
+import BottomNavBar from "./BottomNavBar";
 
 function CartSuccessDialog() {
     const { addedItemPopup, setAddedItemPopup } = useCart();
@@ -33,72 +32,31 @@ function CartSuccessDialog() {
     )
 }
 
-function BottomNavBar() {
-    const pathname = usePathname();
-    const { totalItems } = useCart();
-    const searchParams = useSearchParams();
-
-    const navItems = [
-        { href: '/menu', icon: Home, label: 'Home' },
-        { href: '/orders', icon: ClipboardList, label: 'My Orders' },
-        { href: '/menu?filter=favorites', icon: Heart, label: 'Favorites' },
-        { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
-    ];
-    
-    const noNavPages = ['/admin', '/profile'];
-     if (noNavPages.some(p => pathname.startsWith(p))) {
-        return null;
-    }
-
-    // Hide nav bar on item detail pages
-    if (/^\/menu\/.+\/.+$/.test(pathname)) {
-        return null;
-    }
-
+function NavSkeleton() {
     return (
-        <nav className="sticky bottom-0 z-50 bg-card border-t mt-auto">
+         <div className="sticky bottom-0 z-50 bg-card border-t mt-auto">
             <div className="flex justify-around items-center h-16">
-                {navItems.map(item => {
-                    const isFavoritesActive = item.label === 'Favorites' && pathname === '/menu' && searchParams.get('filter') === 'favorites';
-                    const isHomeActive = item.label === 'Home' && pathname === '/menu' && !searchParams.get('filter');
-                    const isActive = pathname === item.href || isFavoritesActive || isHomeActive;
-
-                    const Icon = item.icon;
-                    const shouldFill = isActive && (item.label === 'Favorites' || item.label === 'Cart');
-
-                    return (
-                        <Link href={item.href} key={item.href} className="relative">
-                             <div className={cn('flex flex-col items-center gap-1', isActive ? 'text-primary' : 'text-muted-foreground')}>
-                                <Icon className={cn(
-                                    "h-6 w-6",
-                                    shouldFill && "fill-current"
-                                 )} />
-                                <span className="text-xs font-medium">{item.label}</span>
-                            </div>
-                            {item.badge && (
-                                <span className="absolute top-[-4px] right-[-6px] flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                                    {item.badge}
-                                </span>
-                            )}
-                        </Link>
-                    )
-                })}
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex flex-col items-center gap-1">
+                        <Skeleton className="h-6 w-6 rounded-md" />
+                        <Skeleton className="h-3 w-12" />
+                    </div>
+                ))}
             </div>
-        </nav>
-    );
+        </div>
+    )
 }
 
+
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
-    const pathname = usePathname();
-    const noPaddingPages = ['/menu', '/admin', '/profile'];
-    const addPadding = !noPaddingPages.some(p => pathname.startsWith(p)) && !/^\/menu\/.+\/.+$/.test(pathname);
-    
     return (
         <>
-            <main className={`flex flex-col flex-grow ${addPadding ? 'container mx-auto px-4 py-6' : ''}`}>
+            <main className="flex flex-col flex-grow">
                 {children}
             </main>
-            <BottomNavBar />
+            <Suspense fallback={<NavSkeleton />}>
+                <BottomNavBar />
+            </Suspense>
             <CartSuccessDialog />
         </>
     );

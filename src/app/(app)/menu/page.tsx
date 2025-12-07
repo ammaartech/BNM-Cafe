@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import type { MenuItem, UserProfile } from "@/lib/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
@@ -106,8 +106,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
   );
 }
 
-
-export default function MenuPage() {
+function MenuPageContent() {
   const { user } = useSupabase();
   const { favoriteIds } = useUserPreferences();
   const router = useRouter();
@@ -293,4 +292,12 @@ export default function MenuPage() {
 
     </div>
   );
+}
+
+export default function MenuPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <MenuPageContent />
+    </Suspense>
+  )
 }
