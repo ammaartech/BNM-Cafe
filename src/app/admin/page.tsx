@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, IndianRupee, ShoppingCart, LogIn, AlertCircle, LogOut } from "lucide-react";
+import { Package, IndianRupee, ShoppingCart, LogIn, AlertCircle, LogOut, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useState, useMemo, useEffect, useCallback } from "react";
@@ -33,8 +33,8 @@ const filterOptions: { label: string; value: OrderFilter }[] = [
     { label: "All Orders", value: "all" },
 ];
 
-function formatOrder(orderData: any): Order {
-  if (!orderData) return {} as Order;
+function formatOrder(orderData: any): Order | null {
+  if (!orderData || !orderData.id) return null;
   return {
     id: orderData.id,
     userId: orderData.user_id,
@@ -51,6 +51,7 @@ function AdminDashboard() {
   const { toast } = useToast();
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [updatingStatus, setUpdatingStatus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchInitialOrders = async () => {
@@ -64,7 +65,8 @@ function AdminDashboard() {
             console.error("Error fetching initial orders:", error);
             toast({ title: "Error", description: "Could not fetch orders. Check RLS policies.", variant: "destructive" });
         } else if (data) {
-            setAllOrders(data.map(formatOrder));
+            const formatted = data.map(formatOrder).filter((o): o is Order => o !== null);
+            setAllOrders(formatted);
         }
         setIsLoading(false);
     };
@@ -76,32 +78,36 @@ function AdminDashboard() {
             'postgres_changes',
             { event: '*', schema: 'public', table: 'orders' },
             async (payload) => {
-                const { eventType, new: newRecord, old: oldRecord } = payload;
-                
-                if (eventType === 'INSERT') {
-                    // Fetch the new order with its items
+                 const { eventType, new: newRecord, old: oldRecord, table } = payload;
+                 if (table !== 'orders') return;
+
+                 if (eventType === 'INSERT') {
                     const { data: newOrderData, error } = await supabase
                         .from('orders')
                         .select('*, order_items(*)')
                         .eq('id', newRecord.id)
                         .single();
-
+                    
                     if (!error && newOrderData) {
-                        setAllOrders(currentOrders => [formatOrder(newOrderData), ...currentOrders]);
+                        const formattedOrder = formatOrder(newOrderData);
+                        if (formattedOrder) {
+                            setAllOrders(currentOrders => [formattedOrder, ...currentOrders]);
+                        }
                     }
-                } else if (eventType === 'UPDATE') {
-                     setAllOrders(currentOrders => 
-                        currentOrders.map(order => 
-                            order.id === newRecord.id 
-                                ? { ...order, ...formatOrder(newRecord) }
-                                : order
-                        )
-                    );
-                } else if (eventType === 'DELETE') {
+                 } else if (eventType === 'UPDATE') {
+                    const formattedOrder = formatOrder(newRecord);
+                    if (formattedOrder) {
+                        setAllOrders(currentOrders => 
+                            currentOrders.map(order => 
+                                order.id === formattedOrder.id ? { ...order, status: formattedOrder.status } : order
+                            )
+                        );
+                    }
+                 } else if (eventType === 'DELETE') {
                     setAllOrders(currentOrders => 
                         currentOrders.filter(order => order.id !== (oldRecord as any).id)
                     );
-                }
+                 }
             }
         )
         .subscribe();
@@ -112,13 +118,24 @@ function AdminDashboard() {
   }, [toast]);
   
 
-  const handleStatusChange = async (order: Order, status: Order['status']) => {
-    const { error } = await supabase.from('orders').update({ status }).eq('id', order.id);
-    if(error) {
+  const handleStatusChange = async (order: Order, newStatus: Order['status']) => {
+    setUpdatingStatus(prev => ({ ...prev, [order.id]: true }));
+
+    const originalStatus = order.status;
+    
+    // Optimistic UI update
+    setAllOrders(prevOrders => prevOrders.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
+
+    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', order.id);
+
+    if (error) {
+        // Revert UI on failure
+        setAllOrders(prevOrders => prevOrders.map(o => o.id === order.id ? { ...o, status: originalStatus } : o));
         toast({ title: "Update Failed", description: error.message, variant: "destructive"});
     } else {
-        toast({ title: "Status Updated", description: `Order #${order.id.slice(0,7)} is now ${status}.`});
+        toast({ title: "Status Updated", description: `Order #${order.id.slice(0,7)} is now ${newStatus}.`});
     }
+    setUpdatingStatus(prev => ({ ...prev, [order.id]: false }));
   };
   
   const filteredOrders = useMemo(() => {
@@ -128,7 +145,7 @@ function AdminDashboard() {
       case "live":
         return sorted.filter(o => o.status === "Pending" || o.status === "Ready for Pickup");
       case "delivered":
-        return sorted.filter(o => o.status === "Delivered");
+        return sorted.filter(o => o.status === "Delivered" || o.status === "Cancelled");
       case "all":
       default:
         return sorted;
@@ -275,54 +292,57 @@ function AdminDashboard() {
             </TableHeader>
             <TableBody>
               {filteredOrders.length > 0 ? (
-                filteredOrders.map((order) => (
-                    <TableRow key={order.id}>
-                    <TableCell className="font-medium">#{order.id.slice(0, 7)}</TableCell>
-                    <TableCell>{order.userName}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[200px]">
-                        {order.items?.map(item => (
-                            <div key={item.id} className="font-semibold truncate">{item.name} (x{item.quantity})</div>
-                        ))}
-                    </TableCell>
-                    <TableCell>
-                        <Badge 
-                            variant={order.status === 'Delivered' ? 'default' : order.status === 'Cancelled' ? 'destructive' : 'secondary'}
-                            className={cn('font-semibold', {
-                                'bg-green-600 text-white': order.status === 'Delivered',
-                                'bg-yellow-500 text-white': order.status === 'Ready for Pickup',
-                            })}
-                        >
-                            {order.status}
-                        </Badge>
-                    </TableCell>
-                    <TableCell>{new Date(order.orderDate).toLocaleString()}</TableCell>
-                    <TableCell className="text-right">₹{order.totalAmount.toFixed(2)}</TableCell>
-                    <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                        {order.status === 'Pending' && (
-                            <>
-                            <Button size="sm" onClick={() => handleStatusChange(order, 'Ready for Pickup')}>
-                                Ready
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleStatusChange(order, 'Cancelled')}>
-                                Cancel
-                            </Button>
-                            </>
-                        )}
-                        {order.status === 'Ready for Pickup' && (
-                            <>
-                              <Button size="sm" onClick={() => handleStatusChange(order, 'Delivered')}>
-                                Delivered
-                              </Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleStatusChange(order, 'Cancelled')}>
-                                  Cancel
-                              </Button>
-                            </>
-                        )}
-                        </div>
-                    </TableCell>
-                    </TableRow>
-                ))
+                filteredOrders.map((order) => {
+                    const isUpdating = updatingStatus[order.id];
+                    return (
+                        <TableRow key={order.id}>
+                            <TableCell className="font-medium">#{order.id.slice(0, 7)}</TableCell>
+                            <TableCell>{order.userName}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground max-w-[200px]">
+                                {order.items?.map(item => (
+                                    <div key={item.id} className="font-semibold truncate">{item.name} (x{item.quantity})</div>
+                                ))}
+                            </TableCell>
+                            <TableCell>
+                                <Badge 
+                                    variant={order.status === 'Delivered' ? 'default' : order.status === 'Cancelled' ? 'destructive' : 'secondary'}
+                                    className={cn('font-semibold', {
+                                        'bg-green-600 text-white': order.status === 'Delivered',
+                                        'bg-yellow-500 text-white': order.status === 'Ready for Pickup',
+                                    })}
+                                >
+                                    {order.status}
+                                </Badge>
+                            </TableCell>
+                            <TableCell>{new Date(order.orderDate).toLocaleString()}</TableCell>
+                            <TableCell className="text-right">₹{order.totalAmount.toFixed(2)}</TableCell>
+                            <TableCell className="text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                {order.status === 'Pending' && (
+                                    <>
+                                    <Button size="sm" onClick={() => handleStatusChange(order, 'Ready for Pickup')} disabled={isUpdating}>
+                                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Ready'}
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => handleStatusChange(order, 'Cancelled')} disabled={isUpdating}>
+                                        Cancel
+                                    </Button>
+                                    </>
+                                )}
+                                {order.status === 'Ready for Pickup' && (
+                                    <>
+                                    <Button size="sm" onClick={() => handleStatusChange(order, 'Delivered')} disabled={isUpdating}>
+                                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Delivered'}
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => handleStatusChange(order, 'Cancelled')} disabled={isUpdating}>
+                                        Cancel
+                                    </Button>
+                                    </>
+                                )}
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    )
+                })
               ) : (
                 <TableRow>
                     <TableCell colSpan={7} className="text-center h-24">
@@ -390,8 +410,8 @@ function AdminLoginPage() {
                             </Alert>
                         )}
                         <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <LogIn className="mr-2 h-4 w-4" />}
                             {isLoading ? 'Signing In...' : 'Sign In'}
-                             <LogIn className="ml-2 h-4 w-4" />
                         </Button>
                     </form>
                 </CardContent>
@@ -442,3 +462,5 @@ export default function AdminPage() {
         </div>
     );
 }
+
+    
