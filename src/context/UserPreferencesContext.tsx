@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useSupabase } from '@/lib/supabase/provider';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 interface UserPreferencesContextType {
   favoriteIds: string[];
@@ -16,11 +17,13 @@ const UserPreferencesContext = createContext<UserPreferencesContextType | undefi
 export const UserPreferencesProvider = ({ children }: { children: ReactNode }) => {
   const { user, supabase, isUserLoading } = useSupabase();
   const { toast } = useToast();
+  const router = useRouter();
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchFavorites = useCallback(async () => {
-    if (!user || !supabase) {
+    if (!user || user.is_anonymous || !supabase) {
+      setFavoriteIds([]);
       setIsLoading(false);
       return;
     }
@@ -42,29 +45,33 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
 
   useEffect(() => {
+    // We only fetch favorites when the user session is fully loaded.
     if (!isUserLoading) {
       fetchFavorites();
     }
-  }, [user, isUserLoading, fetchFavorites]);
+  }, [isUserLoading, user, fetchFavorites]);
 
   const toggleFavorite = async (menuItemId: string) => {
-    if (!user || !supabase) {
+    // 1. Check if we have a real, non-anonymous user.
+    if (!user || user.is_anonymous || !supabase) {
       toast({
         title: 'Please log in',
         description: 'You need to be logged in to save favorites.',
         variant: 'destructive',
       });
+      // Optional: redirect to login page
+      router.push('/'); 
       return;
     }
 
     const isCurrentlyFavorited = favoriteIds.includes(menuItemId);
     
-    // Optimistic UI update
-    setFavoriteIds(prev => 
-        isCurrentlyFavorited 
-        ? prev.filter(id => id !== menuItemId)
-        : [...prev, menuItemId]
-    );
+    // 2. Optimistic UI update for instant feedback
+    if (isCurrentlyFavorited) {
+      setFavoriteIds(prev => prev.filter(id => id !== menuItemId));
+    } else {
+      setFavoriteIds(prev => [...prev, menuItemId]);
+    }
 
     if (isCurrentlyFavorited) {
       // --- REMOVE FAVORITE ---
@@ -75,7 +82,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
       if (error) {
         toast({ title: 'Error', description: 'Could not remove from favorites.', variant: 'destructive'});
-        // Revert UI change
+        // Revert UI change on failure
         setFavoriteIds(prev => [...prev, menuItemId]);
       }
     } else {
@@ -86,7 +93,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
         
       if (error) {
         toast({ title: 'Error', description: 'Could not add to favorites.', variant: 'destructive'});
-        // Revert UI change
+        // Revert UI change on failure
         setFavoriteIds(prev => prev.filter(id => id !== menuItemId));
       }
     }
