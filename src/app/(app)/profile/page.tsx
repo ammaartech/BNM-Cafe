@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { LogOut, User, Mail, Shield, ArrowLeft, Edit, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 function ProfileSkeleton() {
@@ -38,6 +38,13 @@ export default function ProfilePage() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!isUserLoading && (!user || !userProfile || user.is_anonymous)) {
+      router.replace('/');
+    }
+  }, [isUserLoading, user, userProfile, router]);
+
 
   const handleLogout = async () => {
     if (supabase) {
@@ -96,12 +103,7 @@ export default function ProfilePage() {
       toast({ title: 'Success', description: 'Your profile picture has been updated.' });
   }
 
-  if (isUserLoading) {
-      return <ProfileSkeleton />;
-  }
-
-  if (!user || !userProfile) {
-    router.replace('/');
+  if (isUserLoading || !user || !userProfile) {
     return <ProfileSkeleton />;
   }
 
