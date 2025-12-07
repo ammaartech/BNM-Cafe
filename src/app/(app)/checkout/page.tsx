@@ -174,7 +174,7 @@ export default function CheckoutPage() {
             <div className="flex items-center gap-2">
                  <Dialog>
                     <DialogTrigger asChild>
-                        <Button className="h-14 w-1/2 text-base font-bold">
+                        <Button className="h-12 w-1/2 text-base font-bold" variant="default">
                             <QrCode className="mr-2 h-5 w-5" />
                             Pay by QR
                         </Button>
@@ -189,9 +189,9 @@ export default function CheckoutPage() {
                     </DialogContent>
                 </Dialog>
 
-                <Button className="w-1/2 h-14 text-lg font-bold" size="lg" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
+                <Button className="w-1/2 h-12 text-base font-bold" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
                   {isPlacingOrder ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
-                  {isPlacingOrder ? 'Placing Order...' : `Pay ₹${finalTotal.toFixed(2)}`}
+                  {isPlacingOrder ? 'Placing...' : `Pay ₹${finalTotal.toFixed(2)}`}
                 </Button>
             </div>
         </div>
