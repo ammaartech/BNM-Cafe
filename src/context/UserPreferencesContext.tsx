@@ -42,7 +42,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
       setFavoriteIds(data.map(fav => fav.menu_item_id) || []);
     }
     setIsLoading(false);
-  }, [user, supabase, toast]);
+  }, [user, supabase]);
 
 
   useEffect(() => {

@@ -142,7 +142,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }).filter((item): item is CartItem => item !== null);
       
     dispatch({ type: "SET_CART", payload: loadedCartItems });
-  }, [user, supabase, toast]);
+  }, [user, supabase]);
 
 
   useEffect(() => {
