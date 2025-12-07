@@ -197,7 +197,9 @@ export default function MenuPage() {
             ) : (
                 <div className="w-10"></div> // Placeholder for spacing
             )}
-            <h1 className="text-3xl font-bold text-center">BNM Cafe</h1>
+            <div className="flex justify-center">
+                <Image src="/bnmlogoB.png" alt="B.N.M Cafe Logo" width={140} height={40} priority />
+            </div>
             <div className="w-10"></div>
         </div>
 
