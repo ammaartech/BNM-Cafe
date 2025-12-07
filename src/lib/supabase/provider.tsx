@@ -97,7 +97,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
       router.replace('/menu');
     }
 
-  }, [user, isUserLoading, pathname, router]);
+  }, [user, isUserLoading, pathname]);
 
   const value = {
     supabase,
