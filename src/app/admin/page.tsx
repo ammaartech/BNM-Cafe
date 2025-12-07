@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/lib/supabase/hooks";
@@ -18,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Package, IndianRupee, ShoppingCart, LogIn, AlertCircle, LogOut } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/lib/supabase/provider";
 import { Input } from "@/components/ui/input";
@@ -40,6 +39,16 @@ function AdminDashboard() {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const formatOrder = useCallback((order: any): Order => {
+    return {
+        ...order,
+        orderDate: order.order_date,
+        totalAmount: order.total_amount,
+        userName: order.user_name,
+        items: order.order_items || [],
+    };
+  }, []);
+
   useEffect(() => {
     const fetchInitialOrders = async () => {
         setIsLoading(true);
@@ -52,18 +61,7 @@ function AdminDashboard() {
             console.error("Error fetching initial orders:", error);
             toast({ title: "Error", description: "Could not fetch orders.", variant: "destructive" });
         } else {
-            const orders = data.map((order: any) => ({
-                ...order,
-                orderDate: order.order_date,
-                totalAmount: order.total_amount,
-                userName: order.user_name,
-                items: order.order_items.map((item: any) => ({
-                    id: item.menu_item_id,
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: item.price
-                }))
-            }));
+            const orders = data.map(formatOrder);
             setAllOrders(orders);
         }
         setIsLoading(false);
@@ -75,9 +73,31 @@ function AdminDashboard() {
         .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'orders' },
-            (payload) => {
-                // This is a simple refetch, could be optimized to handle specific events
-                fetchInitialOrders(); 
+            async (payload) => {
+                const { eventType, new: newRecord, old: oldRecord } = payload;
+                
+                if (eventType === 'INSERT') {
+                    // Fetch the new order with its items
+                    const { data: newOrderData, error } = await supabase
+                        .from('orders')
+                        .select('*, order_items(*)')
+                        .eq('id', newRecord.id)
+                        .single();
+
+                    if (!error && newOrderData) {
+                        setAllOrders(currentOrders => [formatOrder(newOrderData), ...currentOrders]);
+                    }
+                } else if (eventType === 'UPDATE') {
+                     setAllOrders(currentOrders => 
+                        currentOrders.map(order => 
+                            order.id === newRecord.id ? { ...order, ...formatOrder(newRecord) } : order
+                        )
+                    );
+                } else if (eventType === 'DELETE') {
+                    setAllOrders(currentOrders => 
+                        currentOrders.filter(order => order.id !== (oldRecord as any).id)
+                    );
+                }
             }
         )
         .subscribe();
@@ -85,7 +105,7 @@ function AdminDashboard() {
     return () => {
         supabase.removeChannel(channel);
     }
-  }, [toast]);
+  }, [toast, formatOrder]);
   
 
   const handleStatusChange = async (order: Order, status: Order['status']) => {
@@ -93,8 +113,7 @@ function AdminDashboard() {
     if(error) {
         toast({ title: "Update Failed", description: error.message, variant: "destructive"});
     } else {
-        // Optimistic update is no longer strictly necessary due to realtime,
-        // but can make the UI feel faster. The realtime subscription will correct any discrepancy.
+        // The realtime subscription will handle the UI update, but this makes it feel instant
         setAllOrders(prevOrders => prevOrders.map(o => o.id === order.id ? {...o, status} : o));
         toast({ title: "Status Updated", description: `Order #${order.id.slice(0,7)} is now ${status}.`});
     }
