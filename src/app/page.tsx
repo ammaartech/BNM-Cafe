@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -24,15 +24,18 @@ function AuthForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
 
-  if (isUserLoading) {
-      return <div className="h-screen w-screen bg-background" />; // Or a skeleton loader
-  }
-  
-  // If user is logged in (and not anonymous), redirect them
-  if (user && !user.is_anonymous) {
-    router.replace('/menu');
+  useEffect(() => {
+    // If user is loaded and logged in (and not anonymous), redirect them
+    if (!isUserLoading && user && !user.is_anonymous) {
+      router.replace('/menu');
+    }
+  }, [user, isUserLoading, router]);
+
+  if (isUserLoading || (user && !user.is_anonymous)) {
+    // Show a loader or a blank screen while loading/redirecting to prevent flickering
     return <div className="h-screen w-screen bg-background" />;
   }
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +45,7 @@ function AuthForm() {
     if (error) {
       setError(error.message);
     }
-    // On success, the component will re-render, and the redirect logic above will handle navigation.
+    // On success, the useEffect hook will handle the redirect.
     setIsLoading(false);
   };
 
@@ -76,7 +79,7 @@ function AuthForm() {
         } else {
              // Sign in the user automatically after sign up
             await supabase.auth.signInWithPassword({ email, password });
-            // On success, the component will re-render and redirect.
+            // On success, the useEffect hook will handle the redirect.
         }
     }
     setIsLoading(false);
