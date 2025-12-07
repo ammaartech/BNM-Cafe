@@ -198,7 +198,7 @@ export default function MenuPage() {
                 <div className="w-10"></div> // Placeholder for spacing
             )}
             <div className="flex justify-center">
-                <Image src="/bnmlogoB.png" alt="B.N.M Cafe Logo" width={140} height={40} priority />
+                <Image src="/bnmlogoB12.png" alt="B.N.M Cafe Logo" width={140} height={40} priority />
             </div>
             <div className="w-10"></div>
         </div>
