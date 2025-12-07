@@ -188,7 +188,7 @@ export default function MenuPage() {
   return (
     <div className="flex flex-col h-full">
       <header className="px-2 pt-4 pb-4">
-        <div className="flex justify-between items-center mb-2">
+        <div className="flex justify-between items-center mb-4">
             { user && !user.is_anonymous ? (
                 <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground">
                   <LogOut className="h-6 w-6 scale-x-[-1]" />
@@ -202,27 +202,35 @@ export default function MenuPage() {
             </div>
             <div className="w-10"></div>
         </div>
-
-        <div className="text-center mb-4">
-            <h2 className="text-xl font-bold tracking-tight text-primary">
-                {userProfile?.name ? `Welcome, ${userProfile.name}!` : 'Good Morning, Welcome!'}
-            </h2>
-        </div>
         
-        <div className="relative">
-            <Button variant="ghost" size="icon" className="text-muted-foreground absolute left-0 top-1/2 -translate-y-1/2" onClick={() => setIsSearchOpen(!isSearchOpen)}>
+        <div className="relative flex items-center h-12">
+            <Button variant="ghost" size="icon" className="text-muted-foreground absolute left-0 top-1/2 -translate-y-1/2 z-20" onClick={() => setIsSearchOpen(!isSearchOpen)}>
                 {isSearchOpen ? <X className="h-6 w-6" /> : <Search className="h-6 w-6" />}
                 <span className="sr-only">{isSearchOpen ? 'Close search' : 'Open search'}</span>
             </Button>
+
             <div className={cn(
-                "transition-all duration-300 ease-in-out overflow-hidden",
-                isSearchOpen ? "max-h-20" : "max-h-0"
+                "absolute inset-0 flex items-center justify-center transition-opacity duration-300 ease-in-out",
+                isSearchOpen ? "opacity-0" : "opacity-100"
             )}>
-                <Input 
+                 <h2 className="text-xl font-bold tracking-tight text-primary">
+                    {userProfile?.name ? `Welcome, ${userProfile.name}!` : 'Good Morning, Welcome!'}
+                </h2>
+            </div>
+            
+            <div className={cn(
+                "absolute inset-0 transition-all duration-300 ease-in-out z-10",
+                isSearchOpen ? "opacity-100" : "opacity-0"
+            )}>
+                 <Input 
                     placeholder="Search your favorite coffee" 
-                    className="h-12 pl-12 bg-input" // Add padding for the icon
+                    className={cn(
+                        "h-12 pl-12 bg-input transition-all duration-300 ease-in-out w-full",
+                        isSearchOpen ? "opacity-100" : "opacity-0"
+                    )}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    disabled={!isSearchOpen}
                  />
             </div>
         </div>
