@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/lib/supabase/hooks";
@@ -77,7 +78,6 @@ function AdminDashboard() {
                 const { eventType, new: newRecord, old: oldRecord } = payload;
                 
                 if (eventType === 'INSERT') {
-                    // Fetch the new order with its items
                     const { data: newOrderData, error } = await supabase
                         .from('orders')
                         .select('*, order_items(*)')
@@ -89,9 +89,14 @@ function AdminDashboard() {
                     }
                 } else if (eventType === 'UPDATE') {
                      setAllOrders(currentOrders => 
-                        currentOrders.map(order => 
-                            order.id === newRecord.id ? { ...order, ...formatOrder(newRecord) } : order
-                        )
+                        currentOrders.map(order => {
+                            if (order.id === newRecord.id) {
+                                // Important: If order_items are not part of the payload, keep the old ones
+                                const updatedItems = newRecord.order_items ? newRecord.order_items : order.items;
+                                return { ...order, ...formatOrder(newRecord), items: updatedItems };
+                            }
+                            return order;
+                        })
                     );
                 } else if (eventType === 'DELETE') {
                     setAllOrders(currentOrders => 
@@ -113,7 +118,6 @@ function AdminDashboard() {
     if(error) {
         toast({ title: "Update Failed", description: error.message, variant: "destructive"});
     } else {
-        // The realtime subscription will handle the UI update, but this makes it feel instant
         setAllOrders(prevOrders => prevOrders.map(o => o.id === order.id ? {...o, status} : o));
         toast({ title: "Status Updated", description: `Order #${order.id.slice(0,7)} is now ${status}.`});
     }
@@ -122,7 +126,6 @@ function AdminDashboard() {
   const filteredOrders = useMemo(() => {
     if (!allOrders) return [];
     
-    // Default sort: newest first
     const sorted = [...allOrders].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
 
     switch (filter) {
@@ -281,7 +284,7 @@ function AdminDashboard() {
                     <TableCell className="font-medium">#{order.id.slice(0, 7)}</TableCell>
                     <TableCell>{order.userName}</TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[200px]">
-                        {order.items.map(item => (
+                        {order.items && order.items.map(item => (
                             <div key={item.id} className="font-semibold truncate">{item.name} (x{item.quantity})</div>
                         ))}
                     </TableCell>
@@ -358,7 +361,6 @@ function AdminLoginPage() {
         if (error) {
             setError(error.message);
         }
-        // On success, the main AdminPage component will detect the user and role change, and re-render.
         setIsLoading(false);
     };
 
@@ -444,3 +446,5 @@ export default function AdminPage() {
         </div>
     );
 }
+
+    
