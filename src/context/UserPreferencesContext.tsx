@@ -37,12 +37,13 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
     if (error) {
       console.error("Error fetching user favorites:", error);
+      toast({ title: 'Error', description: 'Could not load your favorites.', variant: 'destructive'});
       setFavoriteIds([]);
     } else {
       setFavoriteIds(data.map(fav => fav.menu_item_id) || []);
     }
     setIsLoading(false);
-  }, [user, supabase]);
+  }, [user, supabase, toast]);
 
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     }
 
     const isCurrentlyFavorited = favoriteIds.includes(menuItemId);
-    const originalFavorites = favoriteIds;
+    const originalFavorites = [...favoriteIds];
 
     // Optimistic UI update
     if (isCurrentlyFavorited) {
