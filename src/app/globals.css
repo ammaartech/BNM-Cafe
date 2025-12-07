@@ -81,10 +81,4 @@
     scrollbar-width: none;  /* Firefox */
   }
 
-  @keyframes blink {
-    50% { opacity: 0; }
-  }
-  .blinking-cursor {
-    animation: blink 1s step-end infinite;
-  }
 }
