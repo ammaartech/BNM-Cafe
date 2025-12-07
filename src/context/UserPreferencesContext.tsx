@@ -53,13 +53,13 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
   }, [isUserLoading, user, fetchFavorites]);
 
   const toggleFavorite = async (menuItemId: string, user: User | null) => {
-    if (!user || user.is_anonymous || !supabase) {
+    if (!user || user.is_anonymous) {
       toast({
         title: 'Please log in',
         description: 'You need to be logged in to save favorites.',
         variant: 'destructive',
       });
-      router.push('/'); 
+      router.push('/');
       return;
     }
 
