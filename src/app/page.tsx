@@ -88,9 +88,11 @@ function AuthForm() {
       <div className="w-full max-w-md">
         <div className="text-center mb-6 flex flex-col items-center">
             <Image src="/bnmlogoB.png" alt="B.N.M Cafe Logo" width={150} height={150} priority className="mb-4" />
-            <p className="text-muted-foreground mt-2 h-5 animate-fade-in opacity-0 [--animation-delay:200ms]">
-                Your campus cafe companion.
-            </p>
+            <div className="h-5 w-fit mx-auto mt-2">
+              <div className="typewriter-container">
+                <p className="typewriter-text text-muted-foreground">Your campus cafe companion.</p>
+              </div>
+            </div>
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
