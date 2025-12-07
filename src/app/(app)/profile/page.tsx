@@ -126,8 +126,8 @@ export default function ProfilePage() {
 
         <main className="flex-grow flex flex-col p-4">
             <div className="flex flex-col items-center text-center pt-8">
-                <div className="relative group">
-                    <Avatar className="h-24 w-24 mb-4 text-3xl">
+                <div className="relative group mb-4">
+                    <Avatar className="h-24 w-24 text-3xl">
                         <AvatarImage src={avatarUrl} alt={userProfile.name} />
                         <AvatarFallback>{getInitials(userProfile.name)}</AvatarFallback>
                     </Avatar>
