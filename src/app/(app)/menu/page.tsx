@@ -19,13 +19,14 @@ import { Input } from "@/components/ui/input";
 import type { MenuItem, UserProfile } from "@/lib/types";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { useSupabase } from "@/lib/supabase/provider";
 import { supabase } from "@/lib/supabase/client";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
+import { useSupabase } from "@/lib/supabase/provider";
 
 
 function MenuItemGridCard({ item }: { item: MenuItem }) {
   const { addItem, updateQuantity, state } = useCart();
+  const { user } = useSupabase();
   const { favoriteIds, toggleFavorite } = useUserPreferences();
   const isFavorited = favoriteIds.includes(item.id);
 
@@ -35,39 +36,39 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
   const quantity = cartItem ? cartItem.quantity : 0;
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Stop event from bubbling up to the Link
+    e.preventDefault(); 
     e.stopPropagation();
-    toggleFavorite(item.id);
+    toggleFavorite(item.id, user);
   }
 
   return (
     <Card className="overflow-hidden h-full flex flex-col text-left">
-       <Link href={`/menu/${item.category}/${item.id}`} className="block relative">
-        <div className="absolute top-2 right-2 z-10">
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="h-9 w-9 rounded-full bg-card/60 hover:bg-card/80"
-              onClick={handleFavoriteClick}
-            >
-              <Heart className={cn(
-                "h-5 w-5 transition-all duration-200 ease-in-out",
-                isFavorited ? "text-red-500 fill-red-500" : "text-white"
-              )} />
-            </Button>
-        </div>
+       <Link href={`/menu/${item.category}/${item.id}`} className="block relative group">
         <div className="relative aspect-square w-full">
-        {itemImage && (
-            <Image
-            src={itemImage.imageUrl}
-            alt={item.name}
-            fill
-            className="object-cover"
-            data-ai-hint={itemImage.imageHint}
-            />
-        )}
+          {itemImage && (
+              <Image
+              src={itemImage.imageUrl}
+              alt={item.name}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              data-ai-hint={itemImage.imageHint}
+              />
+          )}
         </div>
       </Link>
+       <div className="absolute top-2 right-2 z-10">
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="h-9 w-9 rounded-full bg-card/60 hover:bg-card/80 text-white"
+            onClick={handleFavoriteClick}
+          >
+            <Heart className={cn(
+              "h-5 w-5 transition-all duration-200 ease-in-out",
+              isFavorited ? "text-red-500 fill-red-500" : "text-white"
+            )} />
+          </Button>
+      </div>
       <CardHeader>
         <Link href={`/menu/${item.category}/${item.id}`} className="block">
             <CardTitle className="text-base font-semibold">{item.name}</CardTitle>
@@ -123,7 +124,7 @@ export default function MenuPage() {
           .select('*')
           .eq('id', user.id)
           .single();
-        if (error) {
+        if (error && error.code !== 'PGRST116') { // Ignore 'exact one row' error for anon users
           console.error('Error fetching user profile:', error);
         } else {
           setUserProfile(data);

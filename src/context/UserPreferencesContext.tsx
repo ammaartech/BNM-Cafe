@@ -5,10 +5,11 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { useSupabase } from '@/lib/supabase/provider';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import type { User } from '@supabase/supabase-js';
 
 interface UserPreferencesContextType {
   favoriteIds: string[];
-  toggleFavorite: (menuItemId: string) => void;
+  toggleFavorite: (menuItemId: string, user: User | null) => void;
   isLoading: boolean;
 }
 
@@ -45,28 +46,26 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
 
   useEffect(() => {
-    // We only fetch favorites when the user session is fully loaded.
     if (!isUserLoading) {
       fetchFavorites();
     }
   }, [isUserLoading, user, fetchFavorites]);
 
-  const toggleFavorite = async (menuItemId: string) => {
-    // 1. Check if we have a real, non-anonymous user.
+  const toggleFavorite = async (menuItemId: string, user: User | null) => {
     if (!user || user.is_anonymous || !supabase) {
       toast({
         title: 'Please log in',
         description: 'You need to be logged in to save favorites.',
         variant: 'destructive',
       });
-      // Optional: redirect to login page
       router.push('/'); 
       return;
     }
 
     const isCurrentlyFavorited = favoriteIds.includes(menuItemId);
-    
-    // 2. Optimistic UI update for instant feedback
+    const originalFavorites = favoriteIds;
+
+    // Optimistic UI update
     if (isCurrentlyFavorited) {
       setFavoriteIds(prev => prev.filter(id => id !== menuItemId));
     } else {
@@ -82,8 +81,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
       if (error) {
         toast({ title: 'Error', description: 'Could not remove from favorites.', variant: 'destructive'});
-        // Revert UI change on failure
-        setFavoriteIds(prev => [...prev, menuItemId]);
+        setFavoriteIds(originalFavorites); // Revert UI on failure
       }
     } else {
       // --- ADD FAVORITE ---
@@ -93,8 +91,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
         
       if (error) {
         toast({ title: 'Error', description: 'Could not add to favorites.', variant: 'destructive'});
-        // Revert UI change on failure
-        setFavoriteIds(prev => prev.filter(id => id !== menuItemId));
+        setFavoriteIds(originalFavorites); // Revert UI on failure
       }
     }
   };
