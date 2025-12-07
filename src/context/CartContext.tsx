@@ -33,6 +33,7 @@ const CartContext = createContext<{
   removeItem: (id: string) => Promise<void>;
   updateQuantity: (id: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
+  updatingItemId: string | null;
 }>({
   state: { items: [] },
   dispatch: () => null,
@@ -46,6 +47,7 @@ const CartContext = createContext<{
   removeItem: async () => {},
   updateQuantity: async () => {},
   clearCart: async () => {},
+  updatingItemId: null,
 });
 
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -93,6 +95,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(cartReducer, { items: [] });
   const [addedItemPopup, setAddedItemPopup] = useState<MenuItem | null>(null);
+  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
   const { supabase, user, userProfile, isUserLoading } = useSupabase();
   const { toast } = useToast();
   const router = useRouter();
@@ -236,25 +239,24 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    setUpdatingItemId(item.id);
     const existingItem = state.items.find(i => i.id === item.id);
-    const currentQuantity = existingItem ? existingItem.quantity : 0;
-
-    if (currentQuantity >= item.stock) {
-      toast({ title: "Stock limit reached", description: `You cannot add more of ${item.name}.`, variant: "destructive" });
-      return;
-    }
     
-    let error;
-
+    // Optimistic UI update
     if (existingItem) {
-        // Item exists, so update the quantity
+      dispatch({ type: 'UPDATE_QUANTITY', payload: { id: item.id, quantity: existingItem.quantity + 1 }});
+    } else {
+      dispatch({ type: 'ADD_ITEM', payload: { ...item, quantity: 1 } });
+    }
+
+    let error;
+    if (existingItem) {
         const { error: updateError } = await supabase
             .from('user_cart_items')
-            .update({ quantity: currentQuantity + 1 })
+            .update({ quantity: existingItem.quantity + 1 })
             .match({ user_id: user.id, menu_item_id: item.id });
         error = updateError;
     } else {
-        // Item doesn't exist, so insert a new row
         const { error: insertError } = await supabase
             .from('user_cart_items')
             .insert({ user_id: user.id, menu_item_id: item.id, quantity: 1 });
@@ -263,19 +265,28 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       toast({ title: 'Error', description: 'Could not add item to cart.', variant: 'destructive'});
-    } else {
+      // Revert optimistic update on failure
       if (existingItem) {
-        dispatch({ type: 'UPDATE_QUANTITY', payload: { id: item.id, quantity: currentQuantity + 1 }});
+        dispatch({ type: 'UPDATE_QUANTITY', payload: { id: item.id, quantity: existingItem.quantity }});
       } else {
-        dispatch({ type: 'ADD_ITEM', payload: { ...item, quantity: 1 } });
+        dispatch({ type: 'REMOVE_ITEM', payload: { id: item.id } });
       }
+    } else {
       setAddedItemPopup(item);
       setTimeout(() => setAddedItemPopup(null), 1000);
     }
+    setUpdatingItemId(null);
   };
 
   const removeItem = async (id: string) => {
     if (!user || user.is_anonymous || !supabase) return;
+
+    setUpdatingItemId(id);
+    const existingItem = state.items.find(i => i.id === id);
+    if (!existingItem) return;
+
+    // Optimistic UI update
+    dispatch({ type: 'REMOVE_ITEM', payload: { id } });
 
     const { error } = await supabase
       .from('user_cart_items')
@@ -284,39 +295,66 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       toast({ title: 'Error', description: 'Could not remove item from cart.', variant: 'destructive' });
-    } else {
-      dispatch({ type: 'REMOVE_ITEM', payload: { id } });
+      // Revert UI on failure
+      dispatch({ type: 'ADD_ITEM', payload: existingItem });
     }
+    setUpdatingItemId(null);
   };
 
   const updateQuantity = async (id: string, quantity: number) => {
     if (!user || user.is_anonymous || !supabase) return;
-
+    
+    setUpdatingItemId(id);
     const item = state.items.find(i => i.id === id);
-    if (item && quantity > item.stock) {
-        toast({ title: "Stock limit reached", description: `Only ${item.stock} of ${item.name} available.`, variant: "destructive" });
-        return; // Prevent update if stock limit is exceeded
-    }
+    if (!item) {
+        setUpdatingItemId(null);
+        return;
+    };
 
-    if (quantity <= 0) {
-        await removeItem(id);
+    const originalQuantity = item.quantity;
+
+    if (quantity > item.stock) {
+        toast({ title: "Stock limit reached", description: `Only ${item.stock} of ${item.name} available.`, variant: "destructive" });
+        setUpdatingItemId(null);
         return;
     }
+    
+    // Optimistic update
+    if (quantity <= 0) {
+        dispatch({ type: 'REMOVE_ITEM', payload: { id }});
+    } else {
+        dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity }});
+    }
 
-    const { error } = await supabase
-        .from('user_cart_items')
-        .update({ quantity })
-        .match({ user_id: user.id, menu_item_id: id });
+    let error;
+    if (quantity <= 0) {
+        const { error: deleteError } = await supabase
+            .from('user_cart_items')
+            .delete()
+            .match({ user_id: user.id, menu_item_id: id });
+        error = deleteError;
+    } else {
+        const { error: updateError } = await supabase
+            .from('user_cart_items')
+            .update({ quantity })
+            .match({ user_id: user.id, menu_item_id: id });
+        error = updateError;
+    }
 
     if (error) {
         toast({ title: 'Error', description: 'Could not update item quantity.', variant: 'destructive' });
-    } else {
-        dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
+        // Revert UI on failure
+        dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity: originalQuantity }});
     }
-};
+    setUpdatingItemId(null);
+  };
 
   const clearCart = async () => {
     if (!user || user.is_anonymous || !supabase) return;
+
+    const currentItems = state.items;
+    // Optimistic update
+    dispatch({ type: 'CLEAR_CART' });
 
     const { error } = await supabase
       .from('user_cart_items')
@@ -325,8 +363,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       toast({ title: 'Error', description: 'Could not clear your cart.', variant: 'destructive' });
-    } else {
-      dispatch({ type: 'CLEAR_CART' });
+      // Revert UI on failure
+      dispatch({ type: 'SET_CART', payload: currentItems });
     }
   };
 
@@ -344,7 +382,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         addItem,
         removeItem,
         updateQuantity,
-        clearCart
+        clearCart,
+        updatingItemId
     }}>
       {children}
     </CartContext.Provider>
@@ -358,5 +397,3 @@ export const useCart = () => {
   }
   return context;
 };
-
-    

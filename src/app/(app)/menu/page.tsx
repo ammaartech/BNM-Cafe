@@ -11,7 +11,7 @@ import {
   CardContent,
   CardTitle
 } from "@/components/ui/card";
-import { LogOut, Search, Plus, X, Minus, Heart } from "lucide-react";
+import { LogOut, Search, Plus, X, Minus, Heart, Loader2 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -26,7 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 
 function MenuItemGridCard({ item }: { item: MenuItem }) {
-  const { addItem, updateQuantity, state } = useCart();
+  const { addItem, updateQuantity, state, updatingItemId } = useCart();
   const { user } = useSupabase();
   const { favoriteIds, toggleFavorite } = useUserPreferences();
   const isFavorited = favoriteIds.includes(item.id);
@@ -35,6 +35,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
 
   const cartItem = state.items.find(i => i.id === item.id);
   const quantity = cartItem ? cartItem.quantity : 0;
+  const isUpdating = updatingItemId === item.id;
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault(); 
@@ -81,17 +82,21 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
       </CardHeader>
       <CardContent className="flex-grow flex justify-between items-end">
         <p className="text-lg font-bold text-foreground">₹{item.price.toFixed(2)}</p>
-        {quantity === 0 ? (
-          <Button size="icon" className="h-8 w-8" onClick={() => addItem(item)}>
+        { isUpdating ? (
+            <div className="flex items-center justify-end h-8 w-24">
+                <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+        ) : quantity === 0 ? (
+          <Button size="icon" className="h-8 w-8" onClick={() => addItem(item)} disabled={isUpdating}>
               <Plus className="h-4 w-4" />
           </Button>
         ) : (
           <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, quantity - 1)}>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, quantity - 1)} disabled={isUpdating}>
                   <Minus className="h-4 w-4" />
               </Button>
-              <span className="font-bold text-lg">{quantity}</span>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, quantity + 1)}>
+              <span className="font-bold text-lg w-4 text-center">{quantity}</span>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, quantity + 1)} disabled={isUpdating}>
                   <Plus className="h-4 w-4" />
               </Button>
           </div>
