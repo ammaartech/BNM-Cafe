@@ -13,20 +13,24 @@ import { useToast } from '@/hooks/use-toast';
 
 function ProfileSkeleton() {
     return (
-        <div className="p-4">
-            <div className="flex items-center gap-4 mb-6">
-                <Skeleton className="h-10 w-10" />
-                <Skeleton className="h-8 w-32" />
-            </div>
-            <div className="flex flex-col items-center pt-8">
+        <div className="flex flex-col h-full">
+            <header className="p-4 flex items-center gap-4">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-6 w-24" />
+            </header>
+            <main className="flex-grow flex flex-col p-4 items-center text-center pt-8">
                 <Skeleton className="h-24 w-24 rounded-full mb-4" />
                 <Skeleton className="h-7 w-40 mb-2" />
                 <Skeleton className="h-5 w-48" />
-            </div>
-            <div className="mt-12 space-y-4">
-                <Skeleton className="h-14 w-full" />
-                <Skeleton className="h-14 w-full" />
-            </div>
+
+                <div className="w-full mt-12 space-y-4">
+                    <Skeleton className="h-16 w-full rounded-2xl" />
+                    <Skeleton className="h-16 w-full rounded-2xl" />
+                </div>
+                 <div className="w-full mt-auto">
+                    <Skeleton className="h-12 w-full" />
+                 </div>
+            </main>
         </div>
     )
 }
@@ -103,7 +107,7 @@ export default function ProfilePage() {
       toast({ title: 'Success', description: 'Your profile picture has been updated.' });
   }
 
-  if (isUserLoading || !user) {
+  if (isUserLoading || !user || user.is_anonymous) {
     return <ProfileSkeleton />;
   }
 
@@ -137,7 +141,7 @@ export default function ProfilePage() {
                     </Avatar>
                     <input 
                         type="file" 
-                        ref={avatarInputRef} 
+                        ref={avatarInputref} 
                         onChange={handleAvatarUpload}
                         className="hidden" 
                         accept="image/png, image/jpeg" 
