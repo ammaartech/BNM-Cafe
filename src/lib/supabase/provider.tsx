@@ -2,7 +2,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { SupabaseClient, User } from '@supabase/supabase-js';
+import { SupabaseClient, User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import type { UserProfile } from '@/lib/types';
 import { useRouter, usePathname } from 'next/navigation';
@@ -55,7 +55,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    const handleAuthChange = async (event: string, session: any) => {
+    const handleAuthChange = async (event: string, session: Session | null) => {
       setIsUserLoading(true);
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -63,21 +63,21 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
       if (currentUser) {
         await fetchUserProfile(currentUser);
       } else {
-        setUser(null);
         setUserProfile(null);
       }
       setIsUserLoading(false);
     };
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(handleAuthChange);
-    
-    // Initial check for session
+    // Set initial user from session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      handleAuthChange('INITIAL_STATE', session);
+        handleAuthChange('INITIAL_SESSION', session);
     });
 
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, [fetchUserProfile]);
 
