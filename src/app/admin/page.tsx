@@ -91,7 +91,9 @@ function AdminDashboard() {
                      setAllOrders(currentOrders => 
                         currentOrders.map(order => {
                             if (order.id === newRecord.id) {
-                                return { ...order, ...formatOrder(newRecord), items: newRecord.order_items || order.items };
+                                // Important: Fetch order_items for the updated order
+                                const updatedItems = (newRecord as any).order_items || order.items;
+                                return { ...order, ...formatOrder(newRecord), items: updatedItems };
                             }
                             return order;
                         })
