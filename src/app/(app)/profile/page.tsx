@@ -40,10 +40,10 @@ export default function ProfilePage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isUserLoading && (!user || !userProfile || user.is_anonymous)) {
+    if (!isUserLoading && (!user || user.is_anonymous)) {
       router.replace('/');
     }
-  }, [isUserLoading, user, userProfile, router]);
+  }, [isUserLoading, user, router]);
 
 
   const handleLogout = async () => {
