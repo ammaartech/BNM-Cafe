@@ -39,7 +39,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault(); 
     e.stopPropagation();
-    toggleFavorite(item.id, user);
+    toggleFavorite(item.id);
   }
 
   return (
@@ -138,17 +138,19 @@ export default function MenuPage() {
 
    useEffect(() => {
     const fetchUserProfile = async () => {
-      if (user) {
+      if (user && !user.is_anonymous) {
         const { data, error } = await supabase
           .from('users')
           .select('*')
           .eq('id', user.id)
           .single();
-        if (error && error.code !== 'PGRST116') { // Ignore 'exact one row' error for anon users
+        if (error && error.code !== 'PGRST116') { // Ignore 'exact one row' error
           console.error('Error fetching user profile:', error);
         } else {
           setUserProfile(data);
         }
+      } else {
+        setUserProfile(null);
       }
     };
     fetchUserProfile();
@@ -156,12 +158,13 @@ export default function MenuPage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = '/';
+    router.push('/');
   }
 
   const handleFilterClick = (filter: string) => {
-    setActiveFilter(filter);
-    router.push(`/menu?filter=${filter}`, { scroll: false });
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('filter', filter);
+    router.push(`/menu?${params.toString()}`, { scroll: false });
   }
   
   const displayedItems = menuItems.filter(item => {
@@ -193,7 +196,7 @@ export default function MenuPage() {
 
         <div className="text-center mb-4">
             <h2 className="text-xl font-bold tracking-tight text-primary">
-                Good Morning{userProfile?.name ? `, ${userProfile.name}!` : ', Welcome!'}
+                {userProfile?.name ? `Welcome, ${userProfile.name}!` : 'Good Morning, Welcome!'}
             </h2>
         </div>
         
@@ -267,3 +270,5 @@ export default function MenuPage() {
     </div>
   );
 }
+
+    

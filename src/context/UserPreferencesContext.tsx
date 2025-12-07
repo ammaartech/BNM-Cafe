@@ -5,11 +5,10 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { useSupabase } from '@/lib/supabase/provider';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import type { User } from '@supabase/supabase-js';
 
 interface UserPreferencesContextType {
   favoriteIds: string[];
-  toggleFavorite: (menuItemId: string, user: User | null) => void;
+  toggleFavorite: (menuItemId: string) => void;
   isLoading: boolean;
 }
 
@@ -52,8 +51,8 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     }
   }, [isUserLoading, user, fetchFavorites]);
 
-  const toggleFavorite = async (menuItemId: string, user: User | null) => {
-    if (!user || user.is_anonymous) {
+  const toggleFavorite = async (menuItemId: string) => {
+    if (!user || user.is_anonymous || !supabase) {
       toast({
         title: 'Please log in',
         description: 'You need to be logged in to save favorites.',
@@ -64,17 +63,10 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     }
 
     const isCurrentlyFavorited = favoriteIds.includes(menuItemId);
-    const originalFavorites = [...favoriteIds];
-
-    // Optimistic UI update
-    if (isCurrentlyFavorited) {
-      setFavoriteIds(prev => prev.filter(id => id !== menuItemId));
-    } else {
-      setFavoriteIds(prev => [...prev, menuItemId]);
-    }
-
+    
     if (isCurrentlyFavorited) {
       // --- REMOVE FAVORITE ---
+      setFavoriteIds(prev => prev.filter(id => id !== menuItemId)); // Optimistic update
       const { error } = await supabase
         .from('user_favorites')
         .delete()
@@ -82,17 +74,18 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
       if (error) {
         toast({ title: 'Error', description: 'Could not remove from favorites.', variant: 'destructive'});
-        setFavoriteIds(originalFavorites); // Revert UI on failure
+        setFavoriteIds(prev => [...prev, menuItemId]); // Revert UI on failure
       }
     } else {
       // --- ADD FAVORITE ---
+      setFavoriteIds(prev => [...prev, menuItemId]); // Optimistic update
       const { error } = await supabase
         .from('user_favorites')
         .insert({ user_id: user.id, menu_item_id: menuItemId });
         
       if (error) {
         toast({ title: 'Error', description: 'Could not add to favorites.', variant: 'destructive'});
-        setFavoriteIds(originalFavorites); // Revert UI on failure
+        setFavoriteIds(prev => prev.filter(id => id !== menuItemId)); // Revert UI on failure
       }
     }
   };
@@ -117,3 +110,5 @@ export const useUserPreferences = () => {
   }
   return context;
 };
+
+    
