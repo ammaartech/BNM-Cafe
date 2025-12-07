@@ -60,7 +60,7 @@ function AdminDashboard() {
 
         if (error) {
             console.error("Error fetching initial orders:", error);
-            toast({ title: "Error", description: "Could not fetch orders.", variant: "destructive" });
+            toast({ title: "Error", description: "Could not fetch orders. Check RLS policies.", variant: "destructive" });
         } else {
             const orders = data.map(formatOrder);
             setAllOrders(orders);
@@ -91,9 +91,7 @@ function AdminDashboard() {
                      setAllOrders(currentOrders => 
                         currentOrders.map(order => {
                             if (order.id === newRecord.id) {
-                                // Important: If order_items are not part of the payload, keep the old ones
-                                const updatedItems = newRecord.order_items ? newRecord.order_items : order.items;
-                                return { ...order, ...formatOrder(newRecord), items: updatedItems };
+                                return { ...order, ...formatOrder(newRecord), items: newRecord.order_items || order.items };
                             }
                             return order;
                         })
@@ -118,7 +116,7 @@ function AdminDashboard() {
     if(error) {
         toast({ title: "Update Failed", description: error.message, variant: "destructive"});
     } else {
-        setAllOrders(prevOrders => prevOrders.map(o => o.id === order.id ? {...o, status} : o));
+        // Optimistic update handled by realtime subscription
         toast({ title: "Status Updated", description: `Order #${order.id.slice(0,7)} is now ${status}.`});
     }
   };
@@ -446,5 +444,3 @@ export default function AdminPage() {
         </div>
     );
 }
-
-    
