@@ -406,9 +406,9 @@ function AdminLoginPage() {
 
 
 export default function AnalyticsPageContainer() {
-    const { user, userRole, isUserLoading, supabase } = useSupabase();
+    const { user, isUserLoading, supabase } = useSupabase();
     const router = useRouter();
-    const isAdmin = user && userRole === 'admin';
+    const isUserLoggedIn = user && !user.is_anonymous;
 
     const handleLogout = async () => {
         if (supabase) {
@@ -423,7 +423,7 @@ export default function AnalyticsPageContainer() {
     
     return (
         <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
-            {isAdmin ? (
+            {isUserLoggedIn ? (
                  <>
                     <header className="mb-6 flex justify-between items-center">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground text-center flex-grow">
@@ -443,5 +443,3 @@ export default function AnalyticsPageContainer() {
         </div>
     );
 }
-
-    

@@ -42,7 +42,6 @@ function formatOrder(orderData: any): Order | null {
     orderDate: orderData.order_date,
     totalAmount: orderData.total_amount,
     status: orderData.status,
-    // Ensure items is always an array to prevent crashes
     items: orderData.order_items || [],
   };
 }
@@ -79,8 +78,6 @@ function AdminDashboard() {
         if (table !== 'orders') return;
 
         if (eventType === 'INSERT') {
-            // CRITICAL FIX: The newRecord from subscription does NOT contain related table data (order_items).
-            // We must fetch it separately to prevent the UI from crashing.
             const { data: newOrderData, error } = await supabase
                 .from('orders')
                 .select('*, order_items(*)')
@@ -95,6 +92,7 @@ function AdminDashboard() {
                 }
             } else {
                  console.error("Error fetching full new order:", error);
+                 toast({ title: "Error", description: "Failed to fetch details for a new order.", variant: "destructive"});
             }
         } else if (eventType === 'UPDATE') {
             const formattedOrder = formatOrder(newRecord);
@@ -139,13 +137,11 @@ function AdminDashboard() {
 
     const originalStatus = order.status;
     
-    // Optimistic UI update
     setAllOrders(prevOrders => prevOrders.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
 
     const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', order.id);
 
     if (error) {
-        // Revert UI on failure
         setAllOrders(prevOrders => prevOrders.map(o => o.id === order.id ? { ...o, status: originalStatus } : o));
         toast({ title: "Update Failed", description: error.message, variant: "destructive"});
     } else {
@@ -415,7 +411,7 @@ function AdminLoginPage() {
                             type="password"
                             placeholder="Password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => setPassword(e.targe.value)}
                             required
                         />
                         {error && (
@@ -437,9 +433,9 @@ function AdminLoginPage() {
 }
 
 export default function AdminPage() {
-    const { user, userRole, isUserLoading, supabase } = useSupabase();
+    const { user, isUserLoading, supabase } = useSupabase();
     const router = useRouter();
-    const isAdmin = user && !user.is_anonymous && userRole === 'admin';
+    const isUserLoggedIn = user && !user.is_anonymous;
 
      const handleLogout = async () => {
         if (supabase) {
@@ -458,7 +454,7 @@ export default function AdminPage() {
     
     return (
         <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
-            {isAdmin ? (
+            {isUserLoggedIn ? (
                 <>
                     <header className="mb-6 flex justify-between items-center">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground text-center flex-grow">
@@ -478,5 +474,3 @@ export default function AdminPage() {
         </div>
     );
 }
-
-    

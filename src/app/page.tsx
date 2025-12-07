@@ -59,7 +59,6 @@ function AuthForm() {
       options: {
         data: {
           name: name,
-          user_role: 'customer', // Default role
         }
       }
     });
@@ -72,16 +71,13 @@ function AuthForm() {
             id: data.user.id,
             name: name,
             email: email,
-            role: 'customer',
         });
 
         if (profileError) {
             setError(profileError.message);
         } else {
              // Sign in the user automatically after sign up to trigger onAuthStateChange
-             // This will also get the JWT with the custom claim
             await supabase.auth.signInWithPassword({ email, password });
-            // On success, the SupabaseProvider's useEffect will handle the redirect.
         }
     }
     setIsLoading(false);

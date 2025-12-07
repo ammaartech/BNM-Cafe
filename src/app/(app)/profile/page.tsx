@@ -24,7 +24,6 @@ function ProfileSkeleton() {
 
                 <div className="w-full mt-12 space-y-4">
                     <Skeleton className="h-16 w-full rounded-2xl" />
-                    <Skeleton className="h-16 w-full rounded-2xl" />
                 </div>
                  <div className="w-full mt-auto">
                     <Skeleton className="h-12 w-full" />
@@ -88,17 +87,6 @@ export default function ProfilePage() {
                             <div className="flex-1">
                                 <p className="text-sm text-muted-foreground">Email</p>
                                 <p className="font-semibold">{userProfile.email}</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                 <Card className="bg-muted/50">
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-4">
-                            <Shield className="h-5 w-5 text-muted-foreground" />
-                            <div className="flex-1">
-                                <p className="text-sm text-muted-foreground">Role</p>
-                                <p className="font-semibold capitalize">{userProfile.role}</p>
                             </div>
                         </div>
                     </CardContent>

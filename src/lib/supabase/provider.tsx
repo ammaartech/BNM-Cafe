@@ -12,7 +12,6 @@ interface SupabaseContextType {
   supabase: SupabaseClient;
   user: User | null;
   userProfile: UserProfile | null;
-  userRole: UserProfile['role'] | null;
   isUserLoading: boolean;
   refreshUserProfile: () => Promise<void>;
 }
@@ -22,7 +21,6 @@ const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined
 export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [userRole, setUserRole] = useState<UserProfile['role'] | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -31,7 +29,6 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   const fetchUserProfile = useCallback(async (currentUser: User) => {
     if (currentUser.is_anonymous) {
       setUserProfile(null);
-      setUserRole('customer');
       return;
     }
 
@@ -44,13 +41,10 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     if (error && error.code !== 'PGRST116') {
       console.error('Error fetching user profile:', error);
       setUserProfile(null);
-      setUserRole('customer');
     } else if (profile) {
       setUserProfile(profile);
-      setUserRole(profile.role || 'customer');
     } else {
       setUserProfile(null);
-      setUserRole('customer');
     }
   }, []);
   
@@ -73,7 +67,6 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
         setUserProfile(null);
-        setUserRole(null);
       }
       setIsUserLoading(false);
     };
@@ -112,7 +105,6 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     supabase,
     user,
     userProfile,
-    userRole,
     isUserLoading,
     refreshUserProfile,
   };
