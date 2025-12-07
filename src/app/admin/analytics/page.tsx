@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
-  ResponsiveContainer,
   LineChart,
   CartesianGrid,
   XAxis,
@@ -26,11 +25,12 @@ import {
   Tooltip,
   Legend,
   Line,
-  BarChart as RechartsBarChart,
   Bar,
+  BarChart as RechartsBarChart,
+  ResponsiveContainer,
 } from "recharts";
 import { format, subDays, startOfDay } from 'date-fns';
-import { ChartTooltipContent } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 
 
 interface AnalyticsData {
@@ -87,6 +87,25 @@ function AnalyticsSkeleton() {
         </div>
     )
 }
+
+const salesChartConfig = {
+  revenue: {
+    label: "Revenue (₹)",
+    color: "hsl(var(--primary))",
+  },
+  sales: {
+    label: "Sales",
+    color: "hsl(var(--accent))",
+  },
+} satisfies ChartConfig;
+
+const topProductsChartConfig = {
+  unitsSold: {
+    label: "Units Sold",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig;
+
 
 function AdminAnalyticsPage() {
     const { supabase } = useSupabase();
@@ -171,14 +190,20 @@ function AdminAnalyticsPage() {
         if (!data?.topProducts) return;
         
         const headers = ["Product ID", "Product Name", "Units Sold", "Total Revenue (INR)"];
-        const rows = data.topProducts.map(p => [p.id, `"${p.name}"`, p.unitsSold, p.revenue.toFixed(2)]);
+        const rows = data.topProducts.map(p => [p.id, `"${p.name.replace(/"/g, '""')}"`, p.unitsSold, p.revenue.toFixed(2)]);
         
-        const csvContent = "data:text/csv;charset=utf-8," 
-            + [headers.join(","), ...rows.map(e => e.join(","))].join("\\n");
-            
+        let csvContent = headers.join(",") + "\\r\\n";
+        rows.forEach(rowArray => {
+            let row = rowArray.join(",");
+            csvContent += row + "\\r\\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        link.setAttribute("href", encodeURI(csvContent));
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
         link.setAttribute("download", "top-products-analytics.csv");
+        link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -247,35 +272,35 @@ function AdminAnalyticsPage() {
                         <CardTitle>Sales Overview (Last 30 Days)</CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
-                         <ResponsiveContainer width="100%" height={350}>
-                            <LineChart data={data.salesOverTime}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
-                                <Tooltip content={<ChartTooltipContent indicator="dot" />} />
+                        <ChartContainer config={salesChartConfig} className="min-h-[350px] w-full">
+                            <LineChart accessibilityLayer data={data.salesOverTime}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
+                                <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `₹${value}`} />
+                                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                                 <Legend />
-                                <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" activeDot={{ r: 8 }} />
-                                <Line type="monotone" dataKey="sales" stroke="hsl(var(--accent))" />
+                                <Line dataKey="revenue" type="monotone" stroke="var(--color-revenue)" strokeWidth={2} dot={false} />
+                                <Line dataKey="sales" type="monotone" stroke="var(--color-sales)" strokeWidth={2} dot={false} />
                             </LineChart>
-                         </ResponsiveContainer>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
 
-                 <Card className="lg:col-span-3">
+                <Card className="lg:col-span-3">
                     <CardHeader>
                         <CardTitle>Top Selling Items</CardTitle>
                     </CardHeader>
                     <CardContent>
-                         <ResponsiveContainer width="100%" height={350}>
-                            <RechartsBarChart data={data.topProducts.slice(0, 5)} layout="vertical">
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
-                                <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent indicator="dot" />} />
+                        <ChartContainer config={topProductsChartConfig} className="min-h-[350px] w-full">
+                            <RechartsBarChart accessibilityLayer data={data.topProducts.slice(0, 5)} layout="vertical" margin={{ left: 50 }}>
+                                <CartesianGrid horizontal={false} />
+                                <YAxis dataKey="name" type="category" tickLine={false} tickMargin={10} axisLine={false} />
+                                <XAxis dataKey="unitsSold" type="number" hide />
+                                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                                 <Legend />
-                                <Bar dataKey="unitsSold" fill="hsl(var(--primary))" name="Units Sold" radius={[0, 4, 4, 0]} />
+                                <Bar dataKey="unitsSold" layout="vertical" fill="var(--color-unitsSold)" radius={4} />
                             </RechartsBarChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
             </div>
@@ -344,3 +369,5 @@ export default function AnalyticsPageContainer() {
         </div>
     );
 }
+
+    
