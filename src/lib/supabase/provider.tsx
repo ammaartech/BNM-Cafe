@@ -64,36 +64,25 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const handleAuthChange = async (event: string, session: any) => {
-        setIsUserLoading(true);
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        
-        if (currentUser) {
-          await fetchUserProfile(currentUser);
-        } else {
-          // If no user, sign in anonymously
-          const { data, error } = await supabase.auth.signInAnonymously();
-          if (error) {
-              console.error("Anonymous sign-in error:", error);
-              setUser(null);
-              setUserProfile(null);
-              setUserRole(null);
-          } else if (data.user) {
-              setUser(data.user);
-              setUserProfile(null);
-              setUserRole('customer');
-          }
-        }
-        setIsUserLoading(false);
+      setIsUserLoading(true);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        await fetchUserProfile(currentUser);
+      } else {
+        setUser(null);
+        setUserProfile(null);
+        setUserRole(null);
       }
+      setIsUserLoading(false);
+    };
 
     const { data: authListener } = supabase.auth.onAuthStateChange(handleAuthChange);
     
-    // Initial check in case onAuthStateChange doesn't fire on first load
+    // Initial check for session
     supabase.auth.getSession().then(({ data: { session } }) => {
-        if (!session) {
-             handleAuthChange('INITIAL_STATE', null);
-        }
+      handleAuthChange('INITIAL_STATE', session);
     });
 
     return () => {
@@ -107,9 +96,9 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     const isAuthPage = pathname === '/';
     const isAdminPage = pathname.startsWith('/admin');
 
-    // If user is anonymous and trying to access a protected page, redirect to login
-    if (user?.is_anonymous && !isAuthPage && !isAdminPage && pathname !== '/menu' && !pathname.startsWith('/menu/')) {
-        router.replace('/');
+    // If there is no user and they are not on an auth or admin page, redirect them.
+    if (!user && !isAuthPage && !isAdminPage) {
+      router.replace('/');
     }
     
     // If there IS a logged-in (not anonymous) user and they are on the auth page, redirect to menu.
