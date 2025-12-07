@@ -6,6 +6,7 @@ import { SupabaseClient, User } from '@supabase/supabase-js';
 import { supabase } from './client';
 import type { UserProfile } from '@/lib/types';
 import { useRouter, usePathname } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 interface SupabaseContextType {
   supabase: SupabaseClient | null;
@@ -25,6 +26,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   const [isUserLoading, setIsUserLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
 
   const fetchUserProfile = useCallback(async (currentUser: User) => {
     if (currentUser.is_anonymous) {
@@ -39,7 +41,9 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
       .eq('id', currentUser.id)
       .single();
 
-    if (profile) {
+    if (error && error.code !== 'PGRST116') { // PGRST116: "exact one row expected, but found 0"
+        console.error('Error fetching user profile:', error);
+    } else if (profile) {
       setUserProfile(profile);
       setUserRole(profile.role || 'customer');
     }
@@ -76,12 +80,24 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchUserProfile]);
 
   useEffect(() => {
-    const isAuthPage = pathname === '/' || pathname.startsWith('/login') || pathname.startsWith('/register');
+    // This effect handles redirects based on auth state
+    if (isUserLoading) return; // Don't do anything while loading
+
+    const isAuthPage = pathname === '/';
     const isAdminPage = pathname.startsWith('/admin');
 
-    if (!isUserLoading && !user && !isAuthPage && !isAdminPage) {
-        router.push('/');
+    // If there's no user and they are NOT on a public page, redirect them to login.
+    if (!user) {
+        if (!isAuthPage && !isAdminPage) {
+            router.replace('/');
+        }
     }
+    
+    // If there IS a user (and not anonymous) and they are on the login page, redirect to menu.
+    if (user && !user.is_anonymous && isAuthPage) {
+      router.replace('/menu');
+    }
+
   }, [user, isUserLoading, pathname, router]);
 
   const value = {
