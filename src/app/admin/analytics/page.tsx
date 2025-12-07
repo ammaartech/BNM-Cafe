@@ -3,7 +3,7 @@
 
 import { useSupabase } from "@/lib/supabase/provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { BarChart, IndianRupee, ShoppingCart, Users, AlertCircle, Download, TrendingUp, TrendingDown, Package, LogIn } from "lucide-react";
+import { BarChart, IndianRupee, ShoppingCart, Users, AlertCircle, Download, TrendingUp, TrendingDown, Package, LogIn, LogOut } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
@@ -32,6 +32,7 @@ import {
 import { format, subDays, startOfDay } from 'date-fns';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 
 
 interface AnalyticsData {
@@ -405,8 +406,16 @@ function AdminLoginPage() {
 
 
 export default function AnalyticsPageContainer() {
-    const { user, userRole, isUserLoading } = useSupabase();
+    const { user, userRole, isUserLoading, supabase } = useSupabase();
+    const router = useRouter();
     const isAdmin = user && userRole === 'admin';
+
+    const handleLogout = async () => {
+        if (supabase) {
+            await supabase.auth.signOut();
+        }
+        router.push('/');
+    };
 
     if (isUserLoading) {
         return <AnalyticsSkeleton />;
@@ -416,10 +425,13 @@ export default function AnalyticsPageContainer() {
         <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
             {isAdmin ? (
                  <>
-                    <header className="mb-6">
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground text-center">
+                    <header className="mb-6 flex justify-between items-center">
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground text-center flex-grow">
                             Sales Analytics
                         </h1>
+                        <Button variant="outline" onClick={handleLogout}>
+                            <LogOut className="mr-2 h-4 w-4" /> Logout
+                        </Button>
                     </header>
                     <AdminAnalyticsPage />
                 </>
@@ -431,3 +443,5 @@ export default function AnalyticsPageContainer() {
         </div>
     );
 }
+
+    

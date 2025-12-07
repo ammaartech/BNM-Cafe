@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, IndianRupee, ShoppingCart, LogIn, AlertCircle } from "lucide-react";
+import { Package, IndianRupee, ShoppingCart, LogIn, AlertCircle, LogOut } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useState, useMemo, useEffect } from "react";
@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/lib/supabase/provider";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useRouter } from "next/navigation";
 
 
 type OrderFilter = "live" | "delivered" | "all";
@@ -359,8 +360,16 @@ function AdminLoginPage() {
 }
 
 export default function AdminPage() {
-    const { user, userRole, isUserLoading } = useSupabase();
+    const { user, userRole, isUserLoading, supabase } = useSupabase();
+    const router = useRouter();
     const isAdmin = user && userRole === 'admin';
+
+     const handleLogout = async () => {
+        if (supabase) {
+            await supabase.auth.signOut();
+        }
+        router.push('/');
+    };
 
     if (isUserLoading) {
          return (
@@ -374,10 +383,13 @@ export default function AdminPage() {
         <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
             {isAdmin ? (
                 <>
-                    <header className="mb-6">
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground text-center">
+                    <header className="mb-6 flex justify-between items-center">
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground text-center flex-grow">
                             Admin Dashboard
                         </h1>
+                        <Button variant="outline" onClick={handleLogout}>
+                            <LogOut className="mr-2 h-4 w-4" /> Logout
+                        </Button>
                     </header>
                     <AdminDashboard />
                 </>
@@ -389,3 +401,5 @@ export default function AdminPage() {
         </div>
     );
 }
+
+    
