@@ -15,7 +15,7 @@ import Image from 'next/image';
 
 function AuthForm() {
   const router = useRouter();
-  const { user, isUserLoading } = useSupabase();
+  const { user, isUserLoading, refreshUserProfile } = useSupabase();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -78,6 +78,7 @@ function AuthForm() {
         } else {
              // Sign in the user automatically after sign up to trigger onAuthStateChange
             await supabase.auth.signInWithPassword({ email, password });
+            await refreshUserProfile();
         }
     }
     setIsLoading(false);

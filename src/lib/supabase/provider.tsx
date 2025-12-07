@@ -6,7 +6,6 @@ import { SupabaseClient, User } from '@supabase/supabase-js';
 import { supabase } from './client';
 import type { UserProfile } from '@/lib/types';
 import { useRouter, usePathname } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
 
 interface SupabaseContextType {
   supabase: SupabaseClient;
@@ -24,7 +23,6 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   const [isUserLoading, setIsUserLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  const { toast } = useToast();
 
   const fetchUserProfile = useCallback(async (currentUser: User) => {
     if (currentUser.is_anonymous) {
