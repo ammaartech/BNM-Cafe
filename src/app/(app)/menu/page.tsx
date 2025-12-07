@@ -135,8 +135,8 @@ function MenuPageContent() {
 
   useEffect(() => {
     const filterParam = searchParams.get('filter');
-    if (filterParam === 'favorites') {
-      setActiveFilter('favorites');
+    if (filterParam) {
+      setActiveFilter(filterParam);
     } else {
       setActiveFilter('all');
     }
@@ -168,7 +168,8 @@ function MenuPageContent() {
   }
 
   const handleFilterClick = (filter: string) => {
-    router.push(`/menu?filter=${filter}`, { scroll: false });
+    const newUrl = filter === 'all' ? '/menu' : `/menu?filter=${filter}`;
+    router.push(newUrl, { scroll: false });
   }
   
   const displayedItems = menuItems.filter(item => {
@@ -301,3 +302,5 @@ export default function MenuPage() {
     </Suspense>
   )
 }
+
+    
