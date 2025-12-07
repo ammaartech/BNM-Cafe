@@ -5,7 +5,7 @@ import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, CreditCard, Loader2, ArrowLeft } from "lucide-react";
+import { AlertCircle, CreditCard, Loader2, ArrowLeft, QrCode } from "lucide-react";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSupabase } from "@/lib/supabase/provider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 function CheckoutSkeleton() {
     return (
@@ -170,10 +171,28 @@ export default function CheckoutPage() {
                 </CardContent>
             </Card>
 
-            <Button className="w-full h-14 text-lg font-bold" size="lg" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
-              {isPlacingOrder ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
-              {isPlacingOrder ? 'Placing Order...' : `Pay ₹${finalTotal.toFixed(2)}`}
-            </Button>
+            <div className="flex items-center gap-2">
+                 <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" className="h-14">
+                            <QrCode className="h-6 w-6" />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-xs p-4">
+                        <DialogHeader>
+                            <DialogTitle className="text-center">Scan & Pay</DialogTitle>
+                        </DialogHeader>
+                        <div className="flex justify-center">
+                            <Image src="/qr.png" alt="Payment QR Code" width={250} height={250} />
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                <Button className="w-full h-14 text-lg font-bold" size="lg" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
+                  {isPlacingOrder ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
+                  {isPlacingOrder ? 'Placing Order...' : `Pay ₹${finalTotal.toFixed(2)}`}
+                </Button>
+            </div>
         </div>
     </div>
   );
