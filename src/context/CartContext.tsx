@@ -180,7 +180,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
     
-    const customerName = userProfile?.name || "Valued Customer";
+    const customerName = userProfile?.name || user.email || "Valued Customer";
 
     try {
         const { data: orderData, error: orderError } = await supabase
