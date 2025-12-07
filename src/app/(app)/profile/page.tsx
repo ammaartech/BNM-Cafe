@@ -103,7 +103,7 @@ export default function ProfilePage() {
       toast({ title: 'Success', description: 'Your profile picture has been updated.' });
   }
 
-  if (isUserLoading || !user || !userProfile) {
+  if (isUserLoading || !user) {
     return <ProfileSkeleton />;
   }
 
@@ -127,6 +127,8 @@ export default function ProfilePage() {
         </header>
 
         <main className="flex-grow flex flex-col p-4">
+           { userProfile ? (
+            <>
             <div className="flex flex-col items-center text-center pt-8">
                 <div className="relative group mb-4">
                     <Avatar className="h-24 w-24 text-3xl">
@@ -188,6 +190,10 @@ export default function ProfilePage() {
                     Logout
                 </Button>
             </div>
+            </>
+           ) : (
+                <ProfileSkeleton />
+           )}
         </main>
     </div>
   );
