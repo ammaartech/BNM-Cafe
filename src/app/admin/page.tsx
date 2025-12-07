@@ -284,7 +284,7 @@ function AdminDashboard() {
                     <TableCell className="font-medium">#{order.id.slice(0, 7)}</TableCell>
                     <TableCell>{order.userName}</TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[200px]">
-                        {order.items && order.items.map(item => (
+                        {order.items?.map(item => (
                             <div key={item.id} className="font-semibold truncate">{item.name} (x{item.quantity})</div>
                         ))}
                     </TableCell>
