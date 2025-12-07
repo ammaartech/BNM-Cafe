@@ -27,8 +27,6 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
 
   const fetchUserProfile = useCallback(async (currentUser: User) => {
-    // Anonymous users don't have profiles, but we are removing anonymous login,
-    // so this check is for robustness.
     if (currentUser.is_anonymous) {
       setUserProfile(null);
       setUserRole('customer');
@@ -56,27 +54,6 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    const getSessionAndUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      
-      if (currentUser) {
-        await fetchUserProfile(currentUser);
-      } else {
-        // If no user and we are not on an auth or admin page, redirect to login
-        const isAuthPage = pathname === '/' || pathname.startsWith('/login') || pathname.startsWith('/register');
-        const isAdminPage = pathname.startsWith('/admin');
-        if (!isAuthPage && !isAdminPage) {
-            router.push('/');
-        }
-      }
-      
-      setIsUserLoading(false);
-    };
-
-    getSessionAndUser();
-
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setIsUserLoading(true);
@@ -88,13 +65,6 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
         } else {
           setUserProfile(null);
           setUserRole(null);
-          // When user logs out, or session expires, redirect to login page
-          // unless they are already on an auth or admin page (which has its own login).
-          const isAuthPage = window.location.pathname === '/' || window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/register');
-          const isAdminPage = window.location.pathname.startsWith('/admin');
-           if (!isAuthPage && !isAdminPage) {
-            router.push('/');
-          }
         }
         setIsUserLoading(false);
       }
@@ -103,7 +73,16 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [fetchUserProfile, pathname, router]);
+  }, [fetchUserProfile]);
+
+  useEffect(() => {
+    const isAuthPage = pathname === '/' || pathname.startsWith('/login') || pathname.startsWith('/register');
+    const isAdminPage = pathname.startsWith('/admin');
+
+    if (!isUserLoading && !user && !isAuthPage && !isAdminPage) {
+        router.push('/');
+    }
+  }, [user, isUserLoading, pathname, router]);
 
   const value = {
     supabase,
