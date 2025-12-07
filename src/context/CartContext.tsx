@@ -291,29 +291,29 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const updateQuantity = async (id: string, quantity: number) => {
     if (!user || user.is_anonymous || !supabase) return;
-    
+
     const item = state.items.find(i => i.id === id);
     if (item && quantity > item.stock) {
-      toast({ title: "Stock limit reached", description: `Only ${item.stock} of ${item.name} available.`, variant: "destructive" });
-      quantity = item.stock; // Cap at stock
+        toast({ title: "Stock limit reached", description: `Only ${item.stock} of ${item.name} available.`, variant: "destructive" });
+        return; // Prevent update if stock limit is exceeded
     }
 
     if (quantity <= 0) {
-      await removeItem(id);
-      return;
+        await removeItem(id);
+        return;
     }
 
     const { error } = await supabase
-      .from('user_cart_items')
-      .update({ quantity })
-      .match({ user_id: user.id, menu_item_id: id });
+        .from('user_cart_items')
+        .update({ quantity })
+        .match({ user_id: user.id, menu_item_id: id });
 
     if (error) {
-      toast({ title: 'Error', description: 'Could not update item quantity.', variant: 'destructive' });
+        toast({ title: 'Error', description: 'Could not update item quantity.', variant: 'destructive' });
     } else {
-      dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
+        dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
     }
-  };
+};
 
   const clearCart = async () => {
     if (!user || user.is_anonymous || !supabase) return;
@@ -358,3 +358,5 @@ export const useCart = () => {
   }
   return context;
 };
+
+    
