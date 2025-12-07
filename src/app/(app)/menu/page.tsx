@@ -21,11 +21,14 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useSupabase } from "@/lib/supabase/provider";
 import { supabase } from "@/lib/supabase/client";
+import { useUserPreferences } from "@/context/UserPreferencesContext";
 
 
 function MenuItemGridCard({ item }: { item: MenuItem }) {
   const { addItem, updateQuantity, state } = useCart();
-  const [isFavorited, setIsFavorited] = useState(false);
+  const { favoriteIds, toggleFavorite } = useUserPreferences();
+  const isFavorited = favoriteIds.includes(item.id);
+
   const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
 
   const cartItem = state.items.find(i => i.id === item.id);
@@ -34,7 +37,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault(); // Stop event from bubbling up to the Link
     e.stopPropagation();
-    setIsFavorited(!isFavorited);
+    toggleFavorite(item.id);
   }
 
   return (
@@ -95,6 +98,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
 
 export default function MenuPage() {
   const { user } = useSupabase();
+  const { favoriteIds } = useUserPreferences();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeFilter, setActiveFilter] = useState('all');
@@ -142,6 +146,7 @@ export default function MenuPage() {
   const displayedItems = menuItems.filter(item => {
     const matchesFilter = 
         activeFilter === 'all'
+        || (activeFilter === 'favorites' && favoriteIds.includes(item.id))
         || (activeFilter === item.category);
 
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -193,6 +198,7 @@ export default function MenuPage() {
       <div className="overflow-x-auto py-2 no-scrollbar px-2">
         <div className="flex gap-2">
             <Button variant={activeFilter === 'all' ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => handleFilterClick('all')}>All</Button>
+            <Button variant={activeFilter === 'favorites' ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => handleFilterClick('favorites')}>Favorites</Button>
             {categories.map((category) => (
               <Button key={category.id} variant={activeFilter === category.id ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => handleFilterClick(category.id)}>
                 {category.name}
@@ -207,10 +213,16 @@ export default function MenuPage() {
               <MenuItemGridCard key={item.id} item={item} />
             ))}
         </div>
-         {displayedItems.length === 0 && searchQuery && (
-            <div className="text-center py-16">
-                <p className="text-muted-foreground">No items found for &quot;{searchQuery}&quot;.</p>
-            </div>
+         {displayedItems.length === 0 && (
+          <div className="text-center py-16">
+            {searchQuery ? (
+              <p className="text-muted-foreground">No items found for &quot;{searchQuery}&quot;.</p>
+            ) : activeFilter === 'favorites' ? (
+              <p className="text-muted-foreground">You haven't favorited any items yet.</p>
+            ): (
+              <p className="text-muted-foreground">No items in this category.</p>
+            )}
+          </div>
         )}
       </main>
 

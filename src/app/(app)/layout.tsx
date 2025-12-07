@@ -9,9 +9,10 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { CheckCircle } from "lucide-react";
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from "next/link";
 import { Home, ShoppingCart, ClipboardList } from "lucide-react";
+import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
 
 
 function CartSuccessDialog() {
@@ -34,11 +35,10 @@ function CartSuccessDialog() {
 
 function BottomNavBar() {
     const pathname = usePathname();
-    const searchParams = useSearchParams();
     const { totalItems } = useCart();
 
     const navItems = [
-        { href: '/menu?filter=all', icon: Home, label: 'Home' },
+        { href: '/menu', icon: Home, label: 'Home' },
         { href: '/orders', icon: ClipboardList, label: 'My Orders' },
         { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
     ];
@@ -57,10 +57,7 @@ function BottomNavBar() {
         <nav className="sticky bottom-0 z-50 bg-card border-t mt-auto">
             <div className="flex justify-around items-center h-16">
                 {navItems.map(item => {
-                    const filterParam = searchParams.get('filter');
-                    const isActive = (item.href === '/menu?filter=all' && (pathname === '/menu' && (!filterParam || filterParam === 'all'))) ||
-                                     (item.href !== '/menu?filter=all' && pathname === item.href);
-
+                    const isActive = pathname === item.href;
                     return (
                         <Link href={item.href} key={item.href} className="relative">
                              <div className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -103,7 +100,9 @@ export default function AppLayout({
 }) {
   return (
     <CartProvider>
+      <UserPreferencesProvider>
         <AppLayoutContent>{children}</AppLayoutContent>
+      </UserPreferencesProvider>
     </CartProvider>
   );
 }
