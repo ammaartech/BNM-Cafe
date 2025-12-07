@@ -107,7 +107,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
 }
 
 function MenuPageContent() {
-  const { user } = useSupabase();
+  const { user, isUserLoading } = useSupabase();
   const { favoriteIds } = useUserPreferences();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -117,6 +117,12 @@ function MenuPageContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    if (!isUserLoading && user?.is_anonymous) {
+      router.replace('/');
+    }
+  }, [user, isUserLoading, router]);
 
   useEffect(() => {
     const fetchMenuItems = async () => {
@@ -182,6 +188,14 @@ function MenuPageContent() {
 
     return matchesFilter && matchesSearch;
   });
+
+  if (isUserLoading || user?.is_anonymous) {
+    return (
+        <div className="flex h-full w-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -302,5 +316,3 @@ export default function MenuPage() {
     </Suspense>
   )
 }
-
-    
