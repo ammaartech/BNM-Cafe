@@ -41,15 +41,17 @@ function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchInitialOrders = async () => {
         setIsLoading(true);
-        const { data, error } = await supabase.from('orders').select('*, order_items(*)');
+        const { data, error } = await supabase
+            .from('orders')
+            .select('*, order_items(*)')
+            .order('order_date', { ascending: false });
+
         if (error) {
-            console.error("Error fetching orders:", error);
+            console.error("Error fetching initial orders:", error);
             toast({ title: "Error", description: "Could not fetch orders.", variant: "destructive" });
-            setAllOrders([]);
         } else {
-            // Shape the data to match the Order type
             const orders = data.map((order: any) => ({
                 ...order,
                 orderDate: order.order_date,
@@ -65,9 +67,25 @@ function AdminDashboard() {
             setAllOrders(orders);
         }
         setIsLoading(false);
+    };
+
+    fetchInitialOrders();
+
+    const channel = supabase.channel('realtime-orders')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'orders' },
+            (payload) => {
+                // This is a simple refetch, could be optimized to handle specific events
+                fetchInitialOrders(); 
+            }
+        )
+        .subscribe();
+    
+    return () => {
+        supabase.removeChannel(channel);
     }
-    fetchOrders();
-  }, []);
+  }, [toast]);
   
 
   const handleStatusChange = async (order: Order, status: Order['status']) => {
@@ -75,7 +93,10 @@ function AdminDashboard() {
     if(error) {
         toast({ title: "Update Failed", description: error.message, variant: "destructive"});
     } else {
+        // Optimistic update is no longer strictly necessary due to realtime,
+        // but can make the UI feel faster. The realtime subscription will correct any discrepancy.
         setAllOrders(prevOrders => prevOrders.map(o => o.id === order.id ? {...o, status} : o));
+        toast({ title: "Status Updated", description: `Order #${order.id.slice(0,7)} is now ${status}.`});
     }
   };
   
@@ -97,8 +118,11 @@ function AdminDashboard() {
   }, [allOrders, filter]);
 
   const totalRevenue = useMemo(() => {
-    return filteredOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-  }, [filteredOrders]);
+    const ordersToSum = filter === 'all' 
+        ? allOrders.filter(o => o.status === 'Delivered')
+        : filteredOrders.filter(o => o.status === 'Delivered');
+    return ordersToSum.reduce((sum, order) => sum + order.totalAmount, 0);
+  }, [filteredOrders, allOrders, filter]);
 
   const totalOrders = filteredOrders.length;
   
@@ -170,7 +194,7 @@ function AdminDashboard() {
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Revenue
+             {filter === 'all' ? 'Total Delivered Revenue' : 'Revenue from selection'}
             </CardTitle>
             <IndianRupee className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -239,7 +263,7 @@ function AdminDashboard() {
                     <TableCell>{order.userName}</TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[200px]">
                         {order.items.map(item => (
-                            <div key={item.id} className="font-semibold">{item.name} (x{item.quantity})</div>
+                            <div key={item.id} className="font-semibold truncate">{item.name} (x{item.quantity})</div>
                         ))}
                     </TableCell>
                     <TableCell>
@@ -401,5 +425,3 @@ export default function AdminPage() {
         </div>
     );
 }
-
-    
