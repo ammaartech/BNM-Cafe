@@ -57,15 +57,13 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     }
 
     const isCurrentlyFavorited = favoriteIds.includes(itemId);
-    let previousFavorites = favoriteIds;
+    let previousFavorites = [...favoriteIds];
 
     // Optimistically update the UI
     if (isCurrentlyFavorited) {
-        const newFavorites = favoriteIds.filter(id => id !== itemId);
-        setFavoriteIds(newFavorites);
+        setFavoriteIds(favoriteIds.filter(id => id !== itemId));
     } else {
-        const newFavorites = [...favoriteIds, itemId];
-        setFavoriteIds(newFavorites);
+        setFavoriteIds([...favoriteIds, itemId]);
     }
 
     // Persist the change to the database
