@@ -8,32 +8,12 @@ import {
   DialogTitle,
   DialogDescription
 } from "@/components/ui/dialog";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Home } from "lucide-react";
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from "next/link";
 import { ShoppingCart, ClipboardList, Heart } from "lucide-react";
 import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
 import { cn } from "@/lib/utils";
-
-const HomeIconWithChimney = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        width="24" 
-        height="24" 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="2" 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        {...props}
-    >
-        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
-        <path d="M19 9.5V4h-2v3.5"/>
-    </svg>
-)
-
 
 function CartSuccessDialog() {
     const { addedItemPopup, setAddedItemPopup } = useCart();
@@ -59,7 +39,7 @@ function BottomNavBar() {
     const searchParams = useSearchParams();
 
     const navItems = [
-        { href: '/menu', icon: HomeIconWithChimney, label: 'Home' },
+        { href: '/menu', icon: Home, label: 'Home' },
         { href: '/orders', icon: ClipboardList, label: 'My Orders' },
         { href: '/menu?filter=favorites', icon: Heart, label: 'Favorites' },
         { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
