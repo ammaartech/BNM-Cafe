@@ -3,7 +3,7 @@
 
 import { useSupabase } from "@/lib/supabase/provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { BarChart, IndianRupee, ShoppingCart, Users, AlertCircle, Download, TrendingUp, TrendingDown, Package } from "lucide-react";
+import { BarChart, IndianRupee, ShoppingCart, Users, AlertCircle, Download, TrendingUp, TrendingDown, Package, LogIn } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
@@ -31,6 +31,7 @@ import {
 } from "recharts";
 import { format, subDays, startOfDay } from 'date-fns';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { Input } from "@/components/ui/input";
 
 
 interface AnalyticsData {
@@ -192,10 +193,10 @@ function AdminAnalyticsPage() {
         const headers = ["Product ID", "Product Name", "Units Sold", "Total Revenue (INR)"];
         const rows = data.topProducts.map(p => [p.id, `"${p.name.replace(/"/g, '""')}"`, p.unitsSold, p.revenue.toFixed(2)]);
         
-        let csvContent = headers.join(",") + "\\r\\n";
+        let csvContent = headers.join(",") + "\r\n";
         rows.forEach(rowArray => {
             let row = rowArray.join(",");
-            csvContent += row + "\\r\\n";
+            csvContent += row + "\r\n";
         });
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -276,11 +277,12 @@ function AdminAnalyticsPage() {
                             <LineChart accessibilityLayer data={data.salesOverTime}>
                                 <CartesianGrid vertical={false} />
                                 <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
-                                <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `₹${value}`} />
+                                <YAxis yAxisId="left" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `₹${value}`} />
+                                <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} tickMargin={8} />
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                                 <Legend />
-                                <Line dataKey="revenue" type="monotone" stroke="var(--color-revenue)" strokeWidth={2} dot={false} />
-                                <Line dataKey="sales" type="monotone" stroke="var(--color-sales)" strokeWidth={2} dot={false} />
+                                <Line dataKey="revenue" type="monotone" stroke="var(--color-revenue)" strokeWidth={2} dot={false} yAxisId="left" />
+                                <Line dataKey="sales" type="monotone" stroke="var(--color-sales)" strokeWidth={2} dot={false} yAxisId="right" />
                             </LineChart>
                         </ChartContainer>
                     </CardContent>
@@ -294,7 +296,7 @@ function AdminAnalyticsPage() {
                         <ChartContainer config={topProductsChartConfig} className="min-h-[350px] w-full">
                             <RechartsBarChart accessibilityLayer data={data.topProducts.slice(0, 5)} layout="vertical" margin={{ left: 50 }}>
                                 <CartesianGrid horizontal={false} />
-                                <YAxis dataKey="name" type="category" tickLine={false} tickMargin={10} axisLine={false} />
+                                <YAxis dataKey="name" type="category" tickLine={false} tickMargin={10} axisLine={false} width={120} />
                                 <XAxis dataKey="unitsSold" type="number" hide />
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                                 <Legend />
@@ -339,35 +341,93 @@ function AdminAnalyticsPage() {
     );
 }
 
-export default function AnalyticsPageContainer() {
-    const { user, userRole, isUserLoading } = useSupabase();
+function AdminLoginPage() {
+    const { supabase } = useSupabase();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    if (isUserLoading) {
-        return <AnalyticsSkeleton />;
-    }
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setIsLoading(true);
+        if (!supabase) return;
 
-    if (!user || userRole !== 'admin') {
-        return (
-            <div className="flex items-center justify-center h-full">
-                <Alert variant="destructive" className="max-w-md">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Access Denied</AlertTitle>
-                    <AlertDescription>You must be an administrator to view this page.</AlertDescription>
-                </Alert>
-            </div>
-        );
-    }
-    
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (error) {
+            setError(error.message);
+        }
+        // On success, the main AdminPage component will detect the user and role change, and re-render.
+        setIsLoading(false);
+    };
+
     return (
-        <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
-            <header className="mb-6">
-                <h1 className="text-3xl font-bold tracking-tight text-foreground text-center">
-                    Sales Analytics
-                </h1>
-            </header>
-            <AdminAnalyticsPage />
+        <div className="flex items-center justify-center h-full w-full">
+            <Card className="w-full max-w-sm">
+                <CardHeader>
+                    <CardTitle className="text-2xl text-center">Analytics Login</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <Input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                        <Input
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                        {error && (
+                             <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Login Failed</AlertTitle>
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading ? 'Signing In...' : 'Sign In'}
+                             <LogIn className="ml-2 h-4 w-4" />
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
         </div>
     );
 }
 
+
+export default function AnalyticsPageContainer() {
+    const { user, userRole, isUserLoading } = useSupabase();
+    const isAdmin = user && userRole === 'admin';
+
+    if (isUserLoading) {
+        return <AnalyticsSkeleton />;
+    }
     
+    return (
+        <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
+            {isAdmin ? (
+                 <>
+                    <header className="mb-6">
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground text-center">
+                            Sales Analytics
+                        </h1>
+                    </header>
+                    <AdminAnalyticsPage />
+                </>
+            ) : (
+                <div className="flex-grow flex items-center justify-center">
+                    <AdminLoginPage />
+                </div>
+            )}
+        </div>
+    );
+}
