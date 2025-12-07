@@ -129,10 +129,10 @@ function AdminDashboard() {
     return () => {
         supabase.removeChannel(channel);
     }
-  }, [toast]);
+  }, []);
   
 
-  const handleStatusChange = async (order: Order, newStatus: Order['status']) => {
+  const handleStatusChange = useCallback(async (order: Order, newStatus: Order['status']) => {
     setUpdatingStatus(prev => ({ ...prev, [order.id]: true }));
 
     const originalStatus = order.status;
@@ -148,7 +148,7 @@ function AdminDashboard() {
         toast({ title: "Status Updated", description: `Order #${order.id.slice(0,7)} is now ${newStatus}.`});
     }
     setUpdatingStatus(prev => ({ ...prev, [order.id]: false }));
-  };
+  }, [toast]);
   
   const filteredOrders = useMemo(() => {
     const sorted = [...allOrders].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
@@ -474,3 +474,5 @@ export default function AdminPage() {
         </div>
     );
 }
+
+    
