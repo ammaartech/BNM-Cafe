@@ -1,7 +1,6 @@
 
 "use client";
 
-import { useCollection, useFirestore, useMemoFirebase } from "@/lib/supabase/hooks";
 import { supabase } from "@/lib/supabase/client";
 import type { Order } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

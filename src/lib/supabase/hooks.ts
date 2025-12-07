@@ -16,18 +16,3 @@
 //   }, []);
 //   return data;
 // }
-
-export const useCollection = () => {
-    // Placeholder to avoid breaking imports. Not implemented.
-    return { data: null, isLoading: true };
-}
-
-export const useFirestore = () => {
-    // Placeholder to avoid breaking imports. Not implemented.
-    return null;
-}
-
-export const useMemoFirebase = (callback: () => any) => {
-    // Placeholder to avoid breaking imports. Not implemented.
-    return callback();
-}
