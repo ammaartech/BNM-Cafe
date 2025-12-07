@@ -42,11 +42,8 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
 
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (!isUserLoading) {
       fetchFavorites();
-    } else if (!isUserLoading && !user) {
-      setFavoriteIds([]);
-      setIsLoading(false);
     }
   }, [user, isUserLoading, fetchFavorites]);
 
