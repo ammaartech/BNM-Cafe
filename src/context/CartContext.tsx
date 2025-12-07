@@ -101,7 +101,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   const fetchCart = useCallback(async () => {
-    if (!user || user.is_anonymous || !supabase) {
+    if (!user || !supabase) {
       dispatch({ type: "SET_CART", payload: [] });
       return;
     }
@@ -160,11 +160,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const placeOrder = async () => {
      if (isUserLoading) {
-         toast({ title: "Please wait", description: "Connecting to the cafe..." });
+         toast({ title: "Please wait", description: "Verifying user session..." });
         return;
     }
 
-    if (!user || user.is_anonymous) {
+    if (!user) {
         toast({ title: "Please Log In", description: "You need to be logged in to place an order.", variant: "destructive" });
         router.push('/');
         return;
@@ -180,7 +180,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
     
-    const customerName = userProfile?.name || "Guest";
+    const customerName = userProfile?.name || "Valued Customer";
 
     try {
         const { data: orderData, error: orderError } = await supabase
@@ -228,8 +228,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   // --- DB Cart Actions ---
   const addItem = async (item: MenuItem) => {
-    if (!user || user.is_anonymous || !supabase) {
-      toast({ title: 'Please log in', description: 'You need an account to create a cart.', variant: 'destructive'});
+    if (!user || !supabase) {
+      toast({ title: 'Please log in', description: 'You need an account to add items to your cart.', variant: 'destructive'});
       router.push('/');
       return;
     }
@@ -279,7 +279,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const removeItem = async (id: string) => {
-    if (!user || user.is_anonymous || !supabase) return;
+    if (!user || !supabase) return;
 
     setUpdatingItemId(id);
     const existingItem = state.items.find(i => i.id === id);
@@ -302,7 +302,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateQuantity = async (id: string, quantity: number) => {
-    if (!user || user.is_anonymous || !supabase) return;
+    if (!user || !supabase) return;
     
     setUpdatingItemId(id);
     const item = state.items.find(i => i.id === id);
@@ -350,7 +350,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const clearCart = async () => {
-    if (!user || user.is_anonymous || !supabase) return;
+    if (!user || !supabase) return;
 
     const currentItems = state.items;
     // Optimistic update

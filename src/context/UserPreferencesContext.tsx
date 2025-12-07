@@ -22,7 +22,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchFavorites = useCallback(async () => {
-    if (!user || user.is_anonymous || !supabase) {
+    if (!user || !supabase) {
       setFavoriteIds([]);
       setIsLoading(false);
       return;
@@ -52,7 +52,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
   }, [isUserLoading, user, fetchFavorites]);
 
   const toggleFavorite = async (menuItemId: string) => {
-    if (!user || user.is_anonymous || !supabase) {
+    if (!user || !supabase) {
       toast({
         title: 'Please log in',
         description: 'You need to be logged in to save favorites.',
@@ -110,5 +110,3 @@ export const useUserPreferences = () => {
   }
   return context;
 };
-
-    

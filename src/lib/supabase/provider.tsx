@@ -27,7 +27,8 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
 
   const fetchUserProfile = useCallback(async (currentUser: User) => {
-    // Anonymous users don't have profiles
+    // Anonymous users don't have profiles, but we are removing anonymous login,
+    // so this check is for robustness.
     if (currentUser.is_anonymous) {
       setUserProfile(null);
       setUserRole('customer');
@@ -87,6 +88,8 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
         } else {
           setUserProfile(null);
           setUserRole(null);
+          // When user logs out, or session expires, redirect to login page
+          // unless they are already on an auth or admin page (which has its own login).
           const isAuthPage = window.location.pathname === '/' || window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/register');
           const isAdminPage = window.location.pathname.startsWith('/admin');
            if (!isAuthPage && !isAdminPage) {
