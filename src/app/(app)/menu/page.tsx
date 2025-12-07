@@ -42,22 +42,24 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
 
   return (
     <Card className="overflow-hidden h-full flex flex-col text-left">
-      <Link href={`/menu/${item.category}/${item.id}`} className="block">
-        <div className="relative aspect-square w-full">
-          {itemImage && (
-            <Image
-              src={itemImage.imageUrl}
-              alt={item.name}
-              fill
-              className="object-cover"
-              data-ai-hint={itemImage.imageHint}
-            />
-          )}
-          <Button size="icon" variant="secondary" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-card/70 hover:bg-card" onClick={handleFavoriteClick}>
+       <div className="relative">
+        <Link href={`/menu/${item.category}/${item.id}`} className="block">
+            <div className="relative aspect-square w-full">
+            {itemImage && (
+                <Image
+                src={itemImage.imageUrl}
+                alt={item.name}
+                fill
+                className="object-cover"
+                data-ai-hint={itemImage.imageHint}
+                />
+            )}
+            </div>
+        </Link>
+        <Button size="icon" variant="secondary" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-card/70 hover:bg-card" onClick={handleFavoriteClick}>
             <Heart className={cn("h-4 w-4 text-primary", favorited && "fill-red-500 text-red-500")} />
-          </Button>
-        </div>
-      </Link>
+        </Button>
+      </div>
       <CardHeader>
         <Link href={`/menu/${item.category}/${item.id}`} className="block">
             <CardTitle className="text-base font-semibold">{item.name}</CardTitle>
