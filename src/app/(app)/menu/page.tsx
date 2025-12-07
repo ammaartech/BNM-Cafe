@@ -11,7 +11,7 @@ import {
   CardContent,
   CardTitle
 } from "@/components/ui/card";
-import { LogOut, Search, Plus, X, Minus, Heart, Loader2 } from "lucide-react";
+import { LogOut, Search, Plus, X, Minus, Heart, Loader2, User } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -136,8 +136,8 @@ export default function MenuPage() {
 
   useEffect(() => {
     const filterParam = searchParams.get('filter');
-    if (filterParam) {
-      setActiveFilter(filterParam);
+    if (filterParam === 'favorites') {
+      setActiveFilter('favorites');
     } else {
       setActiveFilter('all');
     }
@@ -169,9 +169,7 @@ export default function MenuPage() {
   }
 
   const handleFilterClick = (filter: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('filter', filter);
-    router.push(`/menu?${params.toString()}`, { scroll: false });
+    router.push(`/menu?filter=${filter}`, { scroll: false });
   }
   
   const displayedItems = menuItems.filter(item => {
@@ -200,7 +198,16 @@ export default function MenuPage() {
             <div className="flex justify-center">
                 <Image src="/bnmlogoB12.png" alt="B.N.M Cafe Logo" width={140} height={40} priority />
             </div>
-            <div className="w-10"></div>
+            { user && !user.is_anonymous ? (
+              <Button variant="ghost" size="icon" asChild className="text-muted-foreground">
+                <Link href="/profile">
+                  <User className="h-6 w-6" />
+                  <span className="sr-only">Profile</span>
+                </Link>
+              </Button>
+            ) : (
+                <div className="w-10"></div>
+            )}
         </div>
         
         <div className="relative flex items-center h-12">
