@@ -76,7 +76,7 @@ function BottomNavBar() {
                                 <span className="text-xs font-medium">{item.label}</span>
                             </div>
                             {item.badge && (
-                                <span className="absolute top-0 right-[-8px] flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                                <span className="absolute top-[-4px] right-[-6px] flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
                                     {item.badge}
                                 </span>
                             )}
