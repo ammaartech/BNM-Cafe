@@ -1,17 +1,50 @@
 
 "use client";
 
-import { menuItems } from "@/lib/data";
 import { notFound, useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import { ArrowLeft, Plus, Star, Minus, Heart } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import { useSupabase } from "@/lib/supabase/provider";
+import { supabase } from "@/lib/supabase/client";
+import type { MenuItem } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
+
+function ItemDetailSkeleton() {
+    return (
+        <div className="flex flex-col h-full">
+            <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-20">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-10 w-10 rounded-full" />
+            </div>
+            <Skeleton className="relative flex-shrink-0 h-96 w-full" />
+             <div className="flex-grow p-6 space-y-4 bg-card rounded-t-3xl -mt-6 z-10 flex flex-col shadow-2xl">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <Skeleton className="h-8 w-48 mb-2" />
+                        <Skeleton className="h-4 w-64" />
+                    </div>
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                </div>
+                <div className="flex-grow"></div>
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="h-12 w-12 rounded-full" />
+                        <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-12 w-12 rounded-full" />
+                    </div>
+                    <Skeleton className="h-8 w-24" />
+                </div>
+                <Skeleton className="w-full h-14 rounded-full" />
+            </div>
+        </div>
+    )
+}
 
 export default function MenuItemDetailPage() {
   const params = useParams();
@@ -20,10 +53,36 @@ export default function MenuItemDetailPage() {
   const { favoriteIds, toggleFavorite } = useUserPreferences();
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [item, setItem] = useState<MenuItem | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   const { category: categoryId, itemId } = params;
 
-  const item = menuItems.find((item) => item.id === itemId && item.category === categoryId);
+  useEffect(() => {
+    const fetchItem = async () => {
+        setIsLoading(true);
+        if(!itemId) return;
+
+        const { data, error } = await supabase
+            .from('menu_items')
+            .select('*')
+            .eq('id', itemId)
+            .single();
+
+        if (error || !data) {
+            console.error('Error fetching item:', error);
+            setItem(null);
+        } else {
+            setItem(data as MenuItem);
+        }
+        setIsLoading(false);
+    };
+    fetchItem();
+  }, [itemId]);
+
+  if (isLoading) {
+    return <ItemDetailSkeleton />;
+  }
 
   if (!item) {
     notFound();
@@ -51,7 +110,7 @@ export default function MenuItemDetailPage() {
             size="icon" 
             variant="ghost" 
             className="h-10 w-10 rounded-full bg-card/60 hover:bg-card/80 text-white"
-            onClick={() => toggleFavorite(item.id, user)}
+            onClick={() => toggleFavorite(item, user)}
           >
             <Heart className={cn(
               "h-6 w-6 transition-all duration-200 ease-in-out",

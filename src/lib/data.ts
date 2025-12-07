@@ -33,6 +33,8 @@ export const categories: Category[] = [
   },
 ];
 
+// This data is now only for seeding purposes or as a fallback.
+// The application will primarily fetch menu items from the database.
 export const menuItems: MenuItem[] = [
   // North Indian
   {
@@ -195,3 +197,19 @@ export const orders: Order[] = [
     items: [{ name: "Chole Bhature", quantity: 1, price: 6.5 }, { name: "Iced Tea", quantity: 1, price: 2.0 }],
   },
 ];
+
+export function generateMenuItemsCSV() {
+  const headers = ['id', 'name', 'description', 'price', 'image', 'category', 'stock'];
+  const rows = menuItems.map(item => 
+    [
+      item.id,
+      `"${item.name.replace(/"/g, '""')}"`,
+      `"${item.description.replace(/"/g, '""')}"`,
+      item.price,
+      item.image,
+      item.category,
+      item.stock
+    ].join(',')
+  );
+  return [headers.join(','), ...rows].join('\\n');
+}

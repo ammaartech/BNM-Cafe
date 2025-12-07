@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { categories, menuItems } from "@/lib/data";
+import { categories } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import {
   Card,
@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import { useSupabase } from "@/lib/supabase/provider";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 function MenuItemGridCard({ item }: { item: MenuItem }) {
@@ -38,7 +39,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault(); 
     e.stopPropagation();
-    toggleFavorite(item.id, user);
+    toggleFavorite(item, user);
   }
 
   return (
@@ -104,10 +105,27 @@ export default function MenuPage() {
   const { favoriteIds } = useUserPreferences();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase.from('menu_items').select('*');
+      if (error) {
+        console.error('Error fetching menu items:', error);
+        setMenuItems([]);
+      } else {
+        setMenuItems(data as MenuItem[]);
+      }
+      setIsLoading(false);
+    };
+    fetchMenuItems();
+  }, []);
 
   useEffect(() => {
     const filterParam = searchParams.get('filter');
@@ -211,14 +229,31 @@ export default function MenuPage() {
       </div>
 
       <main className="flex-grow px-2 py-4 overflow-y-auto">
-        <div className="grid grid-cols-2 gap-4">
-            {displayedItems.map((item) => (
-              <MenuItemGridCard key={item.id} item={item} />
-            ))}
-        </div>
-         {displayedItems.length === 0 && (
+        {isLoading ? (
+            <div className="grid grid-cols-2 gap-4">
+                {[...Array(6)].map((_, i) => (
+                    <Card key={i}>
+                        <Skeleton className="aspect-square w-full" />
+                        <CardHeader><Skeleton className="h-5 w-3/4" /></CardHeader>
+                        <CardContent className="flex justify-between items-center">
+                            <Skeleton className="h-6 w-1/3" />
+                            <Skeleton className="h-8 w-8 rounded-full" />
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        ) : (
+            <div className="grid grid-cols-2 gap-4">
+                {displayedItems.map((item) => (
+                  <MenuItemGridCard key={item.id} item={item} />
+                ))}
+            </div>
+        )}
+         {!isLoading && displayedItems.length === 0 && (
           <div className="text-center py-16">
-            {searchQuery ? (
+            {menuItems.length === 0 ? (
+               <p className="text-muted-foreground">The menu is empty. The admin needs to add items.</p>
+            ) : searchQuery ? (
               <p className="text-muted-foreground">No items found for &quot;{searchQuery}&quot;.</p>
             ) : activeFilter === 'favorites' ? (
               <p className="text-muted-foreground">You haven't favorited any items yet.</p>

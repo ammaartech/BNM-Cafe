@@ -28,12 +28,15 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
-  userId: string;
+  userId?: string; // Optional because old orders might not have it
   userName: string;
   orderDate: string;
   totalAmount: number;
   status: "Pending" | "Ready for Pickup" | "Delivered" | "Cancelled";
   items: OrderItem[];
+  // Legacy fields for old static data
+  date?: string;
+  total?: number;
 }
 
 export interface CartItem extends MenuItem {
