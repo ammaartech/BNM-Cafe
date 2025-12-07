@@ -9,9 +9,9 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { CheckCircle } from "lucide-react";
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import Link from "next/link";
-import { Home, ShoppingCart, ClipboardList, Heart, User } from "lucide-react";
+import { Home, ShoppingCart, ClipboardList, Heart } from "lucide-react";
 import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
 
 
@@ -36,15 +36,16 @@ function CartSuccessDialog() {
 function BottomNavBar() {
     const pathname = usePathname();
     const { totalItems } = useCart();
+    const searchParams = useSearchParams();
 
     const navItems = [
         { href: '/menu', icon: Home, label: 'Home' },
         { href: '/orders', icon: ClipboardList, label: 'My Orders' },
-        { href: '/profile', icon: User, label: 'Profile' },
+        { href: '/menu?filter=favorites', icon: Heart, label: 'Favorites' },
         { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
     ];
     
-    const noNavPages = ['/admin'];
+    const noNavPages = ['/admin', '/profile'];
      if (noNavPages.some(p => pathname.startsWith(p))) {
         return null;
     }
@@ -58,7 +59,8 @@ function BottomNavBar() {
         <nav className="sticky bottom-0 z-50 bg-card border-t mt-auto">
             <div className="flex justify-around items-center h-16">
                 {navItems.map(item => {
-                    const isActive = pathname === item.href;
+                    const isFavoritesActive = item.href.includes('?filter=favorites') && pathname.includes('/menu') && searchParams.get('filter') === 'favorites';
+                    const isActive = pathname === item.href || isFavoritesActive;
                     return (
                         <Link href={item.href} key={item.href} className="relative">
                              <div className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
