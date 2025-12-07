@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { SupabaseClient, User } from '@supabase/supabase-js';
 import { supabase } from './client';
 import type { UserProfile } from '@/lib/types';
@@ -12,6 +12,7 @@ interface SupabaseContextType {
   userProfile: UserProfile | null;
   userRole: UserProfile['role'] | null;
   isUserLoading: boolean;
+  refreshUserProfile: () => Promise<void>;
 }
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined);
@@ -22,6 +23,27 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   const [userRole, setUserRole] = useState<UserProfile['role'] | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
 
+  const fetchUserProfile = useCallback(async (currentUser: User) => {
+    const { data: profile, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', currentUser.id)
+      .single();
+
+    if (profile) {
+      setUserProfile(profile);
+      setUserRole(profile.role || 'customer');
+    }
+  }, []);
+  
+  const refreshUserProfile = useCallback(async () => {
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser) {
+        await fetchUserProfile(currentUser);
+    }
+  }, [fetchUserProfile]);
+
+
   useEffect(() => {
     const getSessionAndUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -29,14 +51,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
       setUser(currentUser);
       
       if (currentUser) {
-        // Fetch user profile
-        const { data: profile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', currentUser.id)
-          .single();
-        setUserProfile(profile);
-        setUserRole(profile?.role || 'customer');
+        await fetchUserProfile(currentUser);
       } else {
         // Handle anonymous user sign in
          const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
@@ -60,13 +75,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
         setUser(currentUser);
         setIsUserLoading(true);
         if (currentUser) {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', currentUser.id)
-            .single();
-          setUserProfile(profile);
-          setUserRole(profile?.role || 'customer');
+          await fetchUserProfile(currentUser);
         } else {
           setUserProfile(null);
           setUserRole(null);
@@ -78,7 +87,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchUserProfile]);
 
   const value = {
     supabase,
@@ -86,6 +95,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     userProfile,
     userRole,
     isUserLoading,
+    refreshUserProfile,
   };
 
   return (

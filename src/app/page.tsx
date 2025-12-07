@@ -59,6 +59,7 @@ function AuthForm() {
       options: {
         data: {
           name: name,
+          avatar_url: `https://api.dicebear.com/8.x/initials/svg?seed=${name}`
         }
       }
     });
@@ -71,7 +72,8 @@ function AuthForm() {
             id: data.user.id,
             name: name,
             email: email,
-            role: 'customer'
+            role: 'customer',
+            avatar_url: `https://api.dicebear.com/8.x/initials/svg?seed=${name}`
         });
 
         if (profileError) {

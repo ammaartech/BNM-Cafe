@@ -5,9 +5,11 @@ import { useSupabase } from '@/lib/supabase/provider';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, User, Mail, Shield, ArrowLeft } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { LogOut, User, Mail, Shield, ArrowLeft, Edit, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRef, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 function ProfileSkeleton() {
     return (
@@ -31,8 +33,11 @@ function ProfileSkeleton() {
 
 
 export default function ProfilePage() {
-  const { user, userProfile, supabase, isUserLoading } = useSupabase();
+  const { user, userProfile, supabase, isUserLoading, refreshUserProfile } = useSupabase();
   const router = useRouter();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const { toast } = useToast();
 
   const handleLogout = async () => {
     if (supabase) {
@@ -40,6 +45,56 @@ export default function ProfilePage() {
     }
     router.push('/');
   };
+
+  const handleAvatarClick = () => {
+      avatarInputRef.current?.click();
+  }
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (!event.target.files || event.target.files.length === 0 || !user || !supabase) {
+          return;
+      }
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+      const filePath = `public/${fileName}`;
+
+      setIsUploading(true);
+
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+
+      if (uploadError) {
+          toast({ title: 'Upload Failed', description: uploadError.message, variant: 'destructive' });
+          setIsUploading(false);
+          return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+      const { error: updateUserError } = await supabase.auth.updateUser({
+          data: { avatar_url: publicUrl }
+      });
+      
+      if (updateUserError) {
+          toast({ title: 'Update Failed', description: updateUserError.message, variant: 'destructive' });
+          setIsUploading(false);
+          return;
+      }
+
+       const { error: updateProfileError } = await supabase
+        .from('users')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+       if (updateProfileError) {
+          toast({ title: 'Profile Sync Failed', description: updateProfileError.message, variant: 'destructive' });
+      }
+
+      await refreshUserProfile();
+      setIsUploading(false);
+      toast({ title: 'Success', description: 'Your profile picture has been updated.' });
+  }
 
   if (isUserLoading) {
       return <ProfileSkeleton />;
@@ -57,6 +112,8 @@ export default function ProfilePage() {
     }
     return name.substring(0, 2);
   };
+  
+  const avatarUrl = user?.user_metadata?.avatar_url || userProfile?.avatar_url;
 
   return (
     <div className="flex flex-col h-full">
@@ -69,10 +126,31 @@ export default function ProfilePage() {
 
         <main className="flex-grow flex flex-col p-4">
             <div className="flex flex-col items-center text-center pt-8">
-                <Avatar className="h-24 w-24 mb-4 text-3xl">
-                    <AvatarImage src={user.user_metadata.avatar_url} alt={userProfile.name} />
-                    <AvatarFallback>{getInitials(userProfile.name)}</AvatarFallback>
-                </Avatar>
+                <div className="relative group">
+                    <Avatar className="h-24 w-24 mb-4 text-3xl">
+                        <AvatarImage src={avatarUrl} alt={userProfile.name} />
+                        <AvatarFallback>{getInitials(userProfile.name)}</AvatarFallback>
+                    </Avatar>
+                    <input 
+                        type="file" 
+                        ref={avatarInputRef} 
+                        onChange={handleAvatarUpload}
+                        className="hidden" 
+                        accept="image/png, image/jpeg" 
+                        disabled={isUploading}
+                    />
+                    <div 
+                        className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        onClick={handleAvatarClick}
+                    >
+                       {isUploading ? (
+                           <Loader2 className="h-8 w-8 text-white animate-spin" />
+                       ) : (
+                           <Edit className="h-8 w-8 text-white" />
+                       )}
+                    </div>
+                </div>
+
                 <h2 className="text-2xl font-bold">{userProfile.name}</h2>
                 <p className="text-muted-foreground">{userProfile.email}</p>
             </div>

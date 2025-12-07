@@ -49,4 +49,5 @@ export interface UserProfile {
     name: string;
     email: string;
     role?: 'customer' | 'admin';
+    avatar_url?: string;
 }
