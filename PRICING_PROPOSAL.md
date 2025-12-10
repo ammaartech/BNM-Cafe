@@ -4,7 +4,7 @@
 
 This document outlines the pricing proposal for the "Campus Cafe Connect" web application, a modern, custom-built online ordering and management system designed specifically for the campus environment. The application provides a seamless digital experience for students and a powerful, data-driven administrative backend for the cafe management. The proposed pricing reflects the software's comprehensive feature set, its direct market value, and the significant return on investment it offers through increased efficiency, higher sales volume, and valuable business insights.
 
-We recommend a **one-time licensing fee of ₹3,75,000**, or a recurring subscription model of **₹1,25,000 per year**.
+We recommend a **one-time licensing fee of ₹1,50,000**, or a recurring subscription model of **₹50,000 per year**.
 
 ---
 
@@ -38,17 +38,17 @@ Given this context, we propose two models:
 
 This model is ideal for an institution that prefers a single capital expenditure.
 
-*   **Software License:** **₹3,75,000**
+*   **Software License:** **₹1,50,000**
     *   This includes the complete, fully functional web application as-is.
     *   Full ownership and rights to use the software in perpetuity within the institution.
-*   **Optional Annual Maintenance & Support Contract:** **₹50,000 / year**
+*   **Optional Annual Maintenance & Support Contract:** **₹25,000 / year**
     *   Includes ongoing bug fixes, security patches, dependency updates, and technical support. This is highly recommended to ensure the long-term health and security of the application.
 
 ### Model B: Annual Subscription (SaaS Model)
 
 This model offers lower upfront costs and includes maintenance and support as part of the package.
 
-*   **Annual Subscription Fee:** **₹1,25,000 / year**
+*   **Annual Subscription Fee:** **₹50,000 / year**
     *   Includes the full use of the software.
     *   All maintenance, support, bug fixes, and security updates are included.
     *   Ensures the college always has a fully managed and up-to-date system.
@@ -57,8 +57,8 @@ This model offers lower upfront costs and includes maintenance and support as pa
 
 ## 4. Recommended Offer
 
-For a college, a one-time purchase is often administratively simpler. Therefore, the primary recommendation is:
+For a college, a one-time purchase is often administratively simpler and can be positioned as a long-term asset. Therefore, the primary recommendation is:
 
-### **A one-time fee of ₹3,75,000 for the software license, plus a first-year-included maintenance package.**
+### **A one-time fee of ₹1,50,000 for the software license, plus a first-year-included maintenance package.**
 
-This figure represents a high-value but fair price. It positions the software as a serious, enterprise-grade asset while still being significantly more cost-effective than building from scratch or licensing a less suitable commercial alternative. It accounts for the robust backend, the polished user experience, and the direct positive impact it will have on the cafe's revenue and operations.
+This figure represents an extremely attractive price point for a custom solution. It is significantly more cost-effective than licensing a less suitable commercial alternative or building from scratch, while still acknowledging the software as a serious, enterprise-grade asset that will directly improve the cafe's revenue and operations.
