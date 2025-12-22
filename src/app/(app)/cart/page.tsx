@@ -4,7 +4,7 @@
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { ArrowLeft, Trash2, Plus, Minus } from "lucide-react";
+import { ArrowLeft, Trash2, Asterisk, Minus } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -68,7 +68,7 @@ export default function CartPage() {
                                         </Button>
                                         <span className="text-lg font-bold w-4 text-center">{item.quantity}</span>
                                         <Button variant="outline" size="icon" className="w-8 h-8 rounded-full" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
-                                            <Plus className="h-4 w-4" />
+                                            <Asterisk className="h-4 w-4" />
                                         </Button>
                                     </div>
                                     <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive -mr-2" onClick={() => removeItem(item.id)}>
