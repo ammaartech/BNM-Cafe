@@ -13,6 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState, useEffect, useCallback } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 function TicketSkeleton() {
     return (
@@ -83,6 +84,7 @@ export default function OrderTicketPage() {
   const router = useRouter();
   const orderId = params.orderId as string;
   const { user, isUserLoading, supabase } = useSupabase();
+  const { toast } = useToast();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -127,9 +129,32 @@ export default function OrderTicketPage() {
           filter: `id=eq.${orderId}`
         },
         (payload) => {
+          const newStatus = payload.new.status;
           setOrder(currentOrder => {
-            if (currentOrder && payload.new.id === currentOrder.id) {
-              return { ...currentOrder, status: payload.new.status };
+            if (currentOrder && payload.new.id === currentOrder.id && newStatus !== currentOrder.status) {
+              
+              if (newStatus === 'Ready for Pickup') {
+                toast({
+                  title: "✅ Your Order is Ready!",
+                  description: `Order #${currentOrder.id.slice(0, 7)} can be picked up now.`,
+                  duration: 5000,
+                });
+              } else if (newStatus === 'Delivered') {
+                toast({
+                    title: "✅ Order Delivered!",
+                    description: `Enjoy your meal!`,
+                    duration: 5000,
+                });
+              } else if (newStatus === 'Cancelled') {
+                 toast({
+                    title: "❌ Order Cancelled",
+                    description: `Your order has been cancelled.`,
+                    variant: "destructive",
+                    duration: 5000,
+                });
+              }
+              
+              return { ...currentOrder, status: newStatus };
             }
             return currentOrder;
           });
@@ -140,7 +165,7 @@ export default function OrderTicketPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [orderId, supabase]);
+  }, [orderId, supabase, toast]);
 
 
   if (isLoading) {
