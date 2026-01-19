@@ -55,26 +55,30 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    const handleAuthChange = async (event: string, session: Session | null) => {
-      setIsUserLoading(true);
+    const updateUserAndProfile = async (session: Session | null) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      
+
       if (currentUser) {
         await fetchUserProfile(currentUser);
       } else {
         setUserProfile(null);
       }
-      setIsUserLoading(false);
     };
-
-    // Set initial user from session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-        handleAuthChange('INITIAL_SESSION', session);
+    
+    // On initial load, get the session and set loading state.
+    // This is the only time we should have a blocking loader.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      await updateUserAndProfile(session);
+      setIsUserLoading(false); // End loading only after the first check
     });
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+    // Listen for subsequent auth state changes.
+    // These updates will happen without setting a global loading state.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // We don't set isUserLoading to true here, to avoid flashing a loader on background token refreshes.
+      await updateUserAndProfile(session);
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -97,7 +101,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
       router.replace('/menu');
     }
 
-  }, [user, isUserLoading, pathname]);
+  }, [user, isUserLoading, pathname, router]);
 
   const value = {
     supabase,
