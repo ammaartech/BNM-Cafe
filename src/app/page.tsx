@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,15 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, LogIn, UserPlus } from 'lucide-react';
+import { AlertCircle, LogIn, UserPlus, CheckCircle } from 'lucide-react';
 import { useSupabase } from '@/lib/supabase/provider';
 import Image from 'next/image';
-import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 function AuthForm() {
   const router = useRouter();
   const { user, isUserLoading, refreshUserProfile } = useSupabase();
-  const { toast } = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,6 +24,7 @@ function AuthForm() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false);
 
   useEffect(() => {
     // If user is loaded and logged in (and not anonymous), redirect them
@@ -31,6 +32,16 @@ function AuthForm() {
       router.replace('/menu');
     }
   }, [user, isUserLoading, router]);
+
+  useEffect(() => {
+    if (showVerificationDialog) {
+        const timer = setTimeout(() => {
+            setShowVerificationDialog(false);
+        }, 3000);
+        return () => clearTimeout(timer);
+    }
+  }, [showVerificationDialog]);
+
 
   if (isUserLoading || (user && !user.is_anonymous)) {
     // Show a loader or a blank screen while loading/redirecting to prevent flickering
@@ -78,11 +89,7 @@ function AuthForm() {
         if (profileError) {
             setError(profileError.message);
         } else {
-            toast({
-              title: "Verification Email Sent",
-              description: "Please check your email (and spam folder) to verify your account.",
-              duration: 5000,
-            });
+            setShowVerificationDialog(true);
             setName('');
             setEmail('');
             setPassword('');
@@ -94,6 +101,18 @@ function AuthForm() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
+       <Dialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
+            <DialogContent className="max-w-xs rounded-2xl p-0">
+                <DialogHeader className="flex flex-col items-center justify-center text-center p-8">
+                <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+                <DialogTitle className="text-xl font-semibold">Verification Email Sent</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                    Please check your email (and spam folder) to verify your account.
+                </DialogDescription>
+                </DialogHeader>
+            </DialogContent>
+        </Dialog>
+
       <div className="w-full max-w-md">
         <div className="text-center mb-6 flex flex-col items-center">
             <Image src="/bnmlogoB.png" alt="B.N.M Cafe Logo" width={150} height={150} priority className="mb-4" />
