@@ -11,7 +11,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, FileText, ShoppingBag, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase/client";
 import { useSupabase } from "@/lib/supabase/provider";
 import { Button } from "@/components/ui/button";
 
@@ -83,7 +82,7 @@ export default function OrderTicketPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.orderId as string;
-  const { user, isUserLoading } = useSupabase();
+  const { user, isUserLoading, supabase } = useSupabase();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -91,7 +90,7 @@ export default function OrderTicketPage() {
 
   useEffect(() => {
     const fetchOrder = async () => {
-        if (!orderId || !user) return;
+        if (!orderId || !user || !supabase) return;
         setIsLoading(true);
 
         const { data, error } = await supabase
@@ -113,10 +112,10 @@ export default function OrderTicketPage() {
     if (!isUserLoading) {
       fetchOrder();
     }
-  }, [orderId, user, isUserLoading]);
+  }, [orderId, user, isUserLoading, supabase]);
 
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId || !supabase) return;
 
     const channel = supabase.channel(`order-ticket-${orderId}`)
       .on(
@@ -129,9 +128,10 @@ export default function OrderTicketPage() {
         },
         (payload) => {
           setOrder(currentOrder => {
-            if (!currentOrder) return null;
-            const updatedOrder = formatOrder(payload.new);
-            return { ...currentOrder, status: updatedOrder.status };
+            if (currentOrder && payload.new.id === currentOrder.id) {
+              return { ...currentOrder, status: payload.new.status };
+            }
+            return currentOrder;
           });
         }
       )
@@ -140,7 +140,7 @@ export default function OrderTicketPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [orderId]);
+  }, [orderId, supabase]);
 
 
   if (isLoading) {
