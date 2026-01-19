@@ -3,7 +3,7 @@
 
 import { useSupabase } from "@/lib/supabase/provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { BarChart, IndianRupee, ShoppingCart, Users, AlertCircle, Download, TrendingUp, TrendingDown, Package, LogIn, LogOut } from "lucide-react";
+import { BarChart, IndianRupee, ShoppingCart, Users, AlertCircle, Download, TrendingUp, TrendingDown, Package, LogIn, LogOut, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
@@ -394,8 +394,8 @@ function AdminLoginPage() {
                             </Alert>
                         )}
                         <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <LogIn className="mr-2 h-4 w-4" />}
                             {isLoading ? 'Signing In...' : 'Sign In'}
-                             <LogIn className="ml-2 h-4 w-4" />
                         </Button>
                     </form>
                 </CardContent>
@@ -406,9 +406,8 @@ function AdminLoginPage() {
 
 
 export default function AnalyticsPageContainer() {
-    const { user, isUserLoading, supabase } = useSupabase();
+    const { user, userProfile, isUserLoading, supabase } = useSupabase();
     const router = useRouter();
-    const isUserLoggedIn = user && !user.is_anonymous;
 
     const handleLogout = async () => {
         if (supabase) {
@@ -421,9 +420,12 @@ export default function AnalyticsPageContainer() {
         return <AnalyticsSkeleton />;
     }
     
+    const isUserAdmin = user && !user.is_anonymous && userProfile?.role === 'admin';
+    const isUserLoggedInButNotAdmin = user && !user.is_anonymous && userProfile?.role !== 'admin';
+
     return (
         <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
-            {isUserLoggedIn ? (
+            {isUserAdmin ? (
                  <>
                     <header className="mb-6 flex justify-between items-center">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground text-center flex-grow">
@@ -437,9 +439,29 @@ export default function AnalyticsPageContainer() {
                 </>
             ) : (
                 <div className="flex-grow flex items-center justify-center">
-                    <AdminLoginPage />
+                     {isUserLoggedInButNotAdmin ? (
+                        <Card className="w-full max-w-sm">
+                            <CardHeader>
+                                <CardTitle className="text-2xl text-center">Access Denied</CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-center">
+                                <Alert variant="destructive" className="mb-4">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertTitle>Permission Error</AlertTitle>
+                                    <AlertDescription>You do not have permission to access the analytics dashboard.</AlertDescription>
+                                </Alert>
+                                <Button variant="outline" onClick={handleLogout} className="w-full">
+                                    <LogOut className="mr-2 h-4 w-4" /> Logout
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <AdminLoginPage />
+                    )}
                 </div>
             )}
         </div>
     );
 }
+
+    

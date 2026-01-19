@@ -433,9 +433,8 @@ function AdminLoginPage() {
 }
 
 export default function AdminPage() {
-    const { user, isUserLoading, supabase } = useSupabase();
+    const { user, userProfile, isUserLoading, supabase } = useSupabase();
     const router = useRouter();
-    const isUserLoggedIn = user && !user.is_anonymous;
 
      const handleLogout = async () => {
         if (supabase) {
@@ -446,15 +445,18 @@ export default function AdminPage() {
 
     if (isUserLoading) {
          return (
-             <div className="flex items-center justify-center h-full">
-                <Skeleton className="h-96 w-full max-w-sm" />
+             <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
          );
     }
     
+    const isUserAdmin = user && !user.is_anonymous && userProfile?.role === 'admin';
+    const isUserLoggedInButNotAdmin = user && !user.is_anonymous && userProfile?.role !== 'admin';
+
     return (
         <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
-            {isUserLoggedIn ? (
+            {isUserAdmin ? (
                 <>
                     <header className="mb-6 flex justify-between items-center">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground text-center flex-grow">
@@ -468,11 +470,31 @@ export default function AdminPage() {
                 </>
             ) : (
                 <div className="flex-grow flex items-center justify-center">
-                    <AdminLoginPage />
+                     {isUserLoggedInButNotAdmin ? (
+                        <Card className="w-full max-w-sm">
+                            <CardHeader>
+                                <CardTitle className="text-2xl text-center">Access Denied</CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-center">
+                                <Alert variant="destructive" className="mb-4">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertTitle>Permission Error</AlertTitle>
+                                    <AlertDescription>You do not have permission to access this page.</AlertDescription>
+                                </Alert>
+                                <Button variant="outline" onClick={handleLogout} className="w-full">
+                                    <LogOut className="mr-2 h-4 w-4" /> Logout
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <AdminLoginPage />
+                    )}
                 </div>
             )}
         </div>
     );
 }
+
+    
 
     
