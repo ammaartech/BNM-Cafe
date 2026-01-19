@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,10 +11,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, LogIn, UserPlus } from 'lucide-react';
 import { useSupabase } from '@/lib/supabase/provider';
 import Image from 'next/image';
+import { useToast } from "@/hooks/use-toast";
 
 function AuthForm() {
   const router = useRouter();
   const { user, isUserLoading, refreshUserProfile } = useSupabase();
+  const { toast } = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -71,14 +72,21 @@ function AuthForm() {
             id: data.user.id,
             name: name,
             email: email,
+            role: 'customer',
         });
 
         if (profileError) {
             setError(profileError.message);
         } else {
-             // Sign in the user automatically after sign up to trigger onAuthStateChange
-            await supabase.auth.signInWithPassword({ email, password });
-            await refreshUserProfile();
+            toast({
+              title: "Verification Email Sent",
+              description: "Please check your email (and spam folder) to verify your account.",
+              duration: 5000,
+            });
+            setName('');
+            setEmail('');
+            setPassword('');
+            setActiveTab('login');
         }
     }
     setIsLoading(false);
