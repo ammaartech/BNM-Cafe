@@ -9,13 +9,22 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { CheckCircle } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
 import BottomNavBar from "./BottomNavBar";
 
 function CartSuccessDialog() {
     const { addedItemPopup, setAddedItemPopup } = useCart();
+
+    useEffect(() => {
+        if (addedItemPopup) {
+            const timer = setTimeout(() => {
+                setAddedItemPopup(null);
+            }, 1200);
+            return () => clearTimeout(timer);
+        }
+    }, [addedItemPopup, setAddedItemPopup]);
 
     return (
         <Dialog open={!!addedItemPopup} onOpenChange={(isOpen) => !isOpen && setAddedItemPopup(null)}>

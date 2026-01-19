@@ -265,7 +265,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
     } else {
       setAddedItemPopup(item);
-      setTimeout(() => setAddedItemPopup(null), 1000);
     }
     setUpdatingItemId(null);
   };
