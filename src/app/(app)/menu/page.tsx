@@ -11,7 +11,7 @@ import {
   CardContent,
   CardTitle
 } from "@/components/ui/card";
-import { LogOut, Search, Asterisk, X, Minus, Heart, Loader2, User } from "lucide-react";
+import { LogOut, Search, Plus, X, Minus, Heart, Loader2, User } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -88,7 +88,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
             </div>
         ) : quantity === 0 ? (
           <Button size="icon" className="h-8 w-8" onClick={() => addItem(item)} disabled={isUpdating}>
-              <Asterisk className="h-4 w-4" />
+              <Plus className="h-4 w-4" />
           </Button>
         ) : (
           <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
               </Button>
               <span className="font-bold text-lg w-4 text-center">{quantity}</span>
               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, quantity + 1)} disabled={isUpdating}>
-                  <Asterisk className="h-4 w-4" />
+                  <Plus className="h-4 w-4" />
               </Button>
           </div>
         )}

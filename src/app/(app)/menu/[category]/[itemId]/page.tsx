@@ -6,7 +6,7 @@ import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
-import { ArrowLeft, Asterisk, Star, Minus, Heart } from "lucide-react";
+import { ArrowLeft, Plus, Star, Minus, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
@@ -151,7 +151,7 @@ export default function MenuItemDetailPage() {
                 </Button>
                 <span className="text-2xl font-bold w-8 text-center">{quantity}</span>
                 <Button variant="outline" size="icon" className="w-12 h-12 rounded-full" onClick={() => setQuantity(q => q + 1)}>
-                    <Asterisk className="h-5 w-5" />
+                    <Plus className="h-5 w-5" />
                 </Button>
             </div>
             <p className="text-3xl font-bold text-foreground">₹{(item.price * quantity).toFixed(2)}</p>
