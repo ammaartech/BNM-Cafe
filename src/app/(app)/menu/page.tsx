@@ -118,12 +118,6 @@ function MenuPageContent() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && user?.is_anonymous) {
-      router.replace('/');
-    }
-  }, [user, isUserLoading, router]);
-
-  useEffect(() => {
     const fetchMenuItems = async () => {
       setIsLoading(true);
       const { data, error } = await supabase.from('menu_items').select('*');
@@ -168,7 +162,7 @@ function MenuPageContent() {
     return matchesFilter && matchesSearch;
   });
 
-  if (isUserLoading || user?.is_anonymous) {
+  if (isUserLoading) {
     return (
         <div className="flex h-full w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
