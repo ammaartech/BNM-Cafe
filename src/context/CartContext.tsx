@@ -164,7 +164,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     0
   );
 
-  const placeOrder = async () => {
+  const placeOrder = useCallback(async () => {
     if (isUserLoading) {
         toast({ title: "Please wait", description: "Verifying user session..." });
         return;
@@ -228,10 +228,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             variant: "destructive"
         })
     }
-  }
+  }, [isUserLoading, user, userProfile, router, state.items, totalPrice, supabase, toast, dispatch]);
 
 
-  const addItem = async (item: MenuItem) => {
+  const addItem = useCallback(async (item: MenuItem) => {
     if (!user || !supabase) {
       toast({ title: 'Session error', description: 'Your session could not be verified. Please refresh.', variant: 'destructive'});
       return;
@@ -269,9 +269,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       setAddedItemPopup(item);
     }
     setUpdatingItemId(null);
-  };
+  }, [user, supabase, toast, state.items, dispatch]);
 
-  const removeItem = async (id: string) => {
+  const removeItem = useCallback(async (id: string) => {
     if (!user || !supabase) return;
 
     setUpdatingItemId(id);
@@ -293,9 +293,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       dispatch({ type: 'ADD_ITEM', payload: existingItem });
     }
     setUpdatingItemId(null);
-  };
+  }, [user, supabase, toast, state.items, dispatch]);
 
-  const updateQuantity = async (id: string, quantity: number) => {
+  const updateQuantity = useCallback(async (id: string, quantity: number) => {
     if (!user || !supabase) return;
     
     setUpdatingItemId(id);
@@ -339,9 +339,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity: originalQuantity }});
     }
     setUpdatingItemId(null);
-  };
+  }, [user, supabase, toast, state.items, dispatch]);
 
-  const clearCart = async () => {
+  const clearCart = useCallback(async () => {
     if (!user || !supabase) return;
 
     const currentItems = state.items;
@@ -356,7 +356,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: 'Error', description: 'Could not clear your cart.', variant: 'destructive' });
       dispatch({ type: 'SET_CART', payload: currentItems });
     }
-  };
+  }, [user, supabase, toast, state.items, dispatch]);
 
 
   return (

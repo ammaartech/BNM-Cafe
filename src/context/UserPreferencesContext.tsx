@@ -54,7 +54,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     }
   }, [isUserLoading, user, fetchFavorites]);
 
-  const toggleFavorite = async (menuItemId: string) => {
+  const toggleFavorite = useCallback(async (menuItemId: string) => {
     if (!user || !supabase) {
       toast({
         title: 'Please log in',
@@ -107,7 +107,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
                 : prev.filter(id => id !== menuItemId)
         );
     }
-  };
+  }, [user, supabase, toast, router, favoriteIds]);
 
   const value = {
     favoriteIds,
