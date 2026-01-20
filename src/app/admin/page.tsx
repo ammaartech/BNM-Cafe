@@ -498,7 +498,7 @@ export default function AdminPage() {
                         <Card className="w-full max-w-sm">
                             <CardHeader>
                                 <CardTitle className="text-2xl text-center">Access Denied</CardTitle>
-                            </Header>
+                            </CardHeader>
                             <CardContent className="text-center">
                                 <Alert variant="destructive" className="mb-4">
                                     <AlertCircle className="h-4 w-4" />
@@ -520,9 +520,3 @@ export default function AdminPage() {
 }
 
     
-
-    
-
-
-    
-
