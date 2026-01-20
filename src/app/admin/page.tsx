@@ -43,7 +43,12 @@ function formatOrder(orderData: any): Order | null {
     orderDate: orderData.order_date,
     totalAmount: orderData.total_amount,
     status: orderData.status,
-    items: orderData.order_items || [],
+    items: orderData.order_items?.map((item: any) => ({
+        id: item.menu_item_id,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+    })) || [],
   };
 }
 

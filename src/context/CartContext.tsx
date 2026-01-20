@@ -195,14 +195,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             price: item.price
         }));
 
-        const { data: newOrder, error: rpcError } = await supabase.rpc('create_new_order', {
+        const { data: newOrderData, error: rpcError } = await supabase.rpc('create_new_order', {
             user_id_param: user.id,
             user_name_param: customerName,
             total_amount_param: totalPrice,
             order_items_param: orderItemsParam
         });
-
+        
         if (rpcError) throw rpcError;
+        
+        const newOrder = newOrderData as Order;
 
         if (!newOrder || !newOrder.id) {
             throw new Error("Order creation failed: No order data returned from function.");
