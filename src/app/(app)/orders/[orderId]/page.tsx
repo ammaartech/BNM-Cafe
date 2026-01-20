@@ -10,10 +10,11 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, FileText, ShoppingBag, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 function TicketSkeleton() {
     return (
@@ -90,82 +91,124 @@ export default function OrderTicketPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<any>(null);
 
+  const fetchOrder = useCallback(async () => {
+    if (!orderId || !user || !supabase) return;
+    setIsLoading(true);
+
+    const { data, error } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('id', orderId)
+        .eq('user_id', user.id)
+        .single();
+
+    if (error) {
+        setError(error);
+        setOrder(null);
+    } else {
+        setOrder(formatOrder(data));
+        setError(null);
+    }
+    setIsLoading(false);
+  }, [orderId, user, supabase]);
+
+
   useEffect(() => {
-    const fetchOrder = async () => {
-        if (!orderId || !user || !supabase) return;
-        setIsLoading(true);
-
-        const { data, error } = await supabase
-            .from('orders')
-            .select('*, order_items(*)')
-            .eq('id', orderId)
-            .eq('user_id', user.id)
-            .single();
-
-        if (error) {
-            setError(error);
-            setOrder(null);
-        } else {
-            setOrder(formatOrder(data));
-        }
-        setIsLoading(false);
-    };
-
     if (!isUserLoading) {
       fetchOrder();
     }
-  }, [orderId, user, isUserLoading, supabase]);
+  }, [isUserLoading, fetchOrder]);
+
+
+  const handleOrderUpdate = useCallback((payload: any) => {
+      const newStatus = payload.new.status;
+      setOrder(currentOrder => {
+        if (currentOrder && payload.new.id === currentOrder.id && newStatus !== currentOrder.status) {
+          
+          if (newStatus === 'Ready for Pickup') {
+            toast({
+              title: "✅ Your Order is Ready!",
+              description: `Order #${currentOrder.id.slice(0, 7)} can be picked up now.`,
+              duration: 5000,
+            });
+          } else if (newStatus === 'Delivered') {
+            toast({
+                title: "✅ Order Delivered!",
+                description: `Enjoy your meal!`,
+                duration: 5000,
+            });
+          } else if (newStatus === 'Cancelled') {
+             toast({
+                title: "❌ Order Cancelled",
+                description: `Your order has been cancelled.`,
+                variant: "destructive",
+                duration: 5000,
+            });
+          }
+          
+          return { ...currentOrder, status: newStatus };
+        }
+        return currentOrder;
+      });
+  }, [toast]);
+
 
   useEffect(() => {
     if (!orderId || !supabase) return;
 
-    const channel = supabase.channel(`order-ticket-${orderId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `id=eq.${orderId}`
-        },
-        (payload) => {
-          const newStatus = payload.new.status;
-          setOrder(currentOrder => {
-            if (currentOrder && payload.new.id === currentOrder.id && newStatus !== currentOrder.status) {
-              
-              if (newStatus === 'Ready for Pickup') {
-                toast({
-                  title: "✅ Your Order is Ready!",
-                  description: `Order #${currentOrder.id.slice(0, 7)} can be picked up now.`,
-                  duration: 5000,
-                });
-              } else if (newStatus === 'Delivered') {
-                toast({
-                    title: "✅ Order Delivered!",
-                    description: `Enjoy your meal!`,
-                    duration: 5000,
-                });
-              } else if (newStatus === 'Cancelled') {
-                 toast({
-                    title: "❌ Order Cancelled",
-                    description: `Your order has been cancelled.`,
-                    variant: "destructive",
-                    duration: 5000,
-                });
-              }
-              
-              return { ...currentOrder, status: newStatus };
-            }
-            return currentOrder;
+    let channel: RealtimeChannel | null = null;
+
+    const setupSubscription = () => {
+        // Prevent setting up multiple subscriptions
+        if (channel) return;
+
+        channel = supabase.channel(`order-ticket-${orderId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'orders',
+              filter: `id=eq.${orderId}`
+            },
+            handleOrderUpdate
+          )
+          .subscribe((status, err) => {
+             if (status === 'SUBSCRIBED') {
+                console.log('Subscribed to order ticket updates!');
+             }
+             if (err) {
+                console.error('Subscription error:', err);
+                toast({ title: "Connection Issue", description: "Could not get real-time order updates.", variant: "destructive"});
+             }
           });
+    };
+
+    const teardownSubscription = () => {
+        if (channel) {
+            supabase.removeChannel(channel);
+            channel = null;
         }
-      )
-      .subscribe();
+    };
+    
+    const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            setupSubscription();
+            // Also re-fetch the latest order state when returning
+            fetchOrder();
+        } else {
+            teardownSubscription();
+        }
+    };
+
+    setupSubscription();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      supabase.removeChannel(channel);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        teardownSubscription();
     };
-  }, [orderId, supabase, toast]);
+  }, [orderId, supabase, toast, handleOrderUpdate, fetchOrder]);
 
 
   if (isLoading) {

@@ -34,6 +34,7 @@ const CartContext = createContext<{
   updateQuantity: (id: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
   updatingItemId: string | null;
+  fetchCart: (userId: string) => Promise<void>;
 }>({
   state: { items: [] },
   dispatch: () => null,
@@ -48,6 +49,7 @@ const CartContext = createContext<{
   updateQuantity: async () => {},
   clearCart: async () => {},
   updatingItemId: null,
+  fetchCart: async () => {},
 });
 
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -371,7 +373,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         removeItem,
         updateQuantity,
         clearCart,
-        updatingItemId
+        updatingItemId,
+        fetchCart
     }}>
       {children}
     </CartContext.Provider>

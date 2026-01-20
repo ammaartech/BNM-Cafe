@@ -23,6 +23,7 @@ import { useSupabase } from "@/lib/supabase/provider";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 
 type OrderFilter = "live" | "delivered" | "all";
@@ -53,83 +54,107 @@ function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState<Record<string, boolean>>({});
 
+  const fetchInitialOrders = useCallback(async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .order('order_date', { ascending: false });
+
+      if (error) {
+          console.error("Error fetching initial orders:", error);
+          toast({ title: "Error", description: "Could not fetch orders.", variant: "destructive" });
+      } else if (data) {
+          const formatted = data.map(formatOrder).filter((o): o is Order => o !== null);
+          setAllOrders(formatted);
+      }
+      setIsLoading(false);
+  }, [toast]);
+
+  const handleRealtimeUpdate = useCallback(async (payload: any) => {
+      const { eventType, new: newRecord, old: oldRecord, table } = payload;
+      if (table !== 'orders') return;
+
+      if (eventType === 'INSERT') {
+          const { data: newOrderData, error } = await supabase
+              .from('orders')
+              .select('*, order_items(*)')
+              .eq('id', newRecord.id)
+              .single();
+          
+          if (!error && newOrderData) {
+              const formattedOrder = formatOrder(newOrderData);
+              if (formattedOrder) {
+                  setAllOrders(currentOrders => [formattedOrder, ...currentOrders]);
+                  toast({ title: "New Order Received!", description: `Order from ${formattedOrder.userName} for ₹${formattedOrder.totalAmount.toFixed(2)}`});
+              }
+          } else {
+               console.error("Error fetching full new order:", error);
+               toast({ title: "Error", description: "Failed to fetch details for a new order.", variant: "destructive"});
+          }
+      } else if (eventType === 'UPDATE') {
+          setAllOrders(currentOrders => 
+              currentOrders.map(order => 
+                  order.id === newRecord.id ? { ...order, status: newRecord.status } : order
+              )
+          );
+      } else if (eventType === 'DELETE') {
+          setAllOrders(currentOrders => 
+              currentOrders.filter(order => order.id !== (oldRecord as any).id)
+          );
+      }
+  }, [toast]);
+  
+
   useEffect(() => {
-    const fetchInitialOrders = async () => {
-        setIsLoading(true);
-        const { data, error } = await supabase
-            .from('orders')
-            .select('*, order_items(*)')
-            .order('order_date', { ascending: false });
-
-        if (error) {
-            console.error("Error fetching initial orders:", error);
-            toast({ title: "Error", description: "Could not fetch orders.", variant: "destructive" });
-        } else if (data) {
-            const formatted = data.map(formatOrder).filter((o): o is Order => o !== null);
-            setAllOrders(formatted);
-        }
-        setIsLoading(false);
-    };
-
     fetchInitialOrders();
 
-    const handleRealtimeUpdate = async (payload: any) => {
-        const { eventType, new: newRecord, old: oldRecord, table } = payload;
-        if (table !== 'orders') return;
+    let channel: RealtimeChannel | null = null;
+    
+    const setupSubscription = () => {
+        if (channel) return;
 
-        if (eventType === 'INSERT') {
-            const { data: newOrderData, error } = await supabase
-                .from('orders')
-                .select('*, order_items(*)')
-                .eq('id', newRecord.id)
-                .single();
-            
-            if (!error && newOrderData) {
-                const formattedOrder = formatOrder(newOrderData);
-                if (formattedOrder) {
-                    setAllOrders(currentOrders => [formattedOrder, ...currentOrders]);
-                    toast({ title: "New Order Received!", description: `Order from ${formattedOrder.userName} for ₹${formattedOrder.totalAmount.toFixed(2)}`});
-                }
-            } else {
-                 console.error("Error fetching full new order:", error);
-                 toast({ title: "Error", description: "Failed to fetch details for a new order.", variant: "destructive"});
-            }
-        } else if (eventType === 'UPDATE') {
-            const formattedOrder = formatOrder(newRecord);
-            if (formattedOrder) {
-                setAllOrders(currentOrders => 
-                    currentOrders.map(order => 
-                        order.id === formattedOrder.id ? { ...order, status: formattedOrder.status } : order
-                    )
-                );
-            }
-        } else if (eventType === 'DELETE') {
-            setAllOrders(currentOrders => 
-                currentOrders.filter(order => order.id !== (oldRecord as any).id)
-            );
+        channel = supabase.channel('realtime-orders')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'orders' },
+                handleRealtimeUpdate
+            )
+            .subscribe((status, err) => {
+                 if (status === 'SUBSCRIBED') {
+                    console.log('Subscribed to real-time orders!');
+                 }
+                 if (status === 'CHANNEL_ERROR') {
+                    console.error('Real-time subscription error:', err);
+                    toast({ title: "Connection Error", description: "Could not connect to real-time updates.", variant: "destructive"});
+                 }
+            });
+    };
+
+    const teardownSubscription = () => {
+        if (channel) {
+            supabase.removeChannel(channel);
+            channel = null;
+        }
+    };
+
+    const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            setupSubscription();
+            fetchInitialOrders(); // Re-fetch all orders to catch up on any missed changes
+        } else {
+            teardownSubscription();
         }
     };
     
-    const channel = supabase.channel('realtime-orders')
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'orders' },
-            handleRealtimeUpdate
-        )
-        .subscribe((status, err) => {
-             if (status === 'SUBSCRIBED') {
-                console.log('Subscribed to real-time orders!');
-             }
-             if (status === 'CHANNEL_ERROR') {
-                console.error('Real-time subscription error:', err);
-                toast({ title: "Connection Error", description: "Could not connect to real-time updates.", variant: "destructive"});
-             }
-        });
+    setupSubscription();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
-        supabase.removeChannel(channel);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        teardownSubscription();
     }
-  }, []);
+  }, [fetchInitialOrders, handleRealtimeUpdate, toast]);
   
 
   const handleStatusChange = useCallback(async (order: Order, newStatus: Order['status']) => {

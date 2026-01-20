@@ -10,6 +10,7 @@ interface UserPreferencesContextType {
   favoriteIds: string[];
   toggleFavorite: (menuItemId: string) => void;
   isLoading: boolean;
+  fetchFavorites: (userId: string) => Promise<void>;
 }
 
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined);
@@ -112,6 +113,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     favoriteIds,
     toggleFavorite,
     isLoading: isLoading || isUserLoading,
+    fetchFavorites,
   };
 
   return (

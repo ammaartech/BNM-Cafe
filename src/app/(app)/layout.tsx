@@ -9,10 +9,11 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { CheckCircle } from "lucide-react";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
+import { useUserPreferences, UserPreferencesProvider } from "@/context/UserPreferencesContext";
 import BottomNavBar from "./BottomNavBar";
+import { useSupabase } from "@/lib/supabase/provider";
 
 function CartSuccessDialog() {
     const { addedItemPopup, setAddedItemPopup } = useCart();
@@ -58,6 +59,26 @@ function NavSkeleton() {
 
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
+    const { user } = useSupabase();
+    const { fetchCart } = useCart();
+    const { fetchFavorites } = useUserPreferences();
+    
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && user) {
+                // Soft re-fetch data when the app becomes visible again
+                fetchCart(user.id);
+                fetchFavorites(user.id);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [user, fetchCart, fetchFavorites]);
+
     return (
         <>
             <main className="flex flex-col flex-grow">
