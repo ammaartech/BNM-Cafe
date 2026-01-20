@@ -15,6 +15,7 @@ import { useSupabase } from "@/lib/supabase/provider";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { useOrderStatus } from "@/context/OrderStatusContext";
 
 function TicketSkeleton() {
     return (
@@ -87,6 +88,7 @@ export default function OrderTicketPage() {
   const orderId = params.orderId as string;
   const { user, supabase } = useSupabase();
   const { toast } = useToast();
+  const { fetchOrdersStatus } = useOrderStatus();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -118,21 +120,19 @@ export default function OrderTicketPage() {
   const handleOrderUpdate = useCallback((payload: any) => {
     console.log('[Realtime] Payload received:', payload);
     const newRecord = payload.new;
-    if (newRecord) {
-        setOrder(currentOrder => {
-            if (!currentOrder) {
-                console.log('[Realtime] Skipping update: no current order in state.');
-                return null;
-            }
-            console.log('[Realtime] Updating order state...');
-            const updatedOrder: Order = {
-                ...currentOrder,
-                status: newRecord.status,
-                pickup_notified_at: newRecord.pickup_notified_at,
-            };
-            return updatedOrder;
-        });
-    }
+    setOrder(currentOrder => {
+        if (!currentOrder || !newRecord) {
+            console.log('[Realtime] Skipping update: no current order or payload.');
+            return currentOrder;
+        }
+        console.log('[Realtime] Updating order state...');
+        // Create a new object to ensure React re-renders
+        return {
+            ...currentOrder,
+            status: newRecord.status,
+            pickup_notified_at: newRecord.pickup_notified_at,
+        };
+    });
   }, []);
 
   const handleManualRefreshClick = async () => {
@@ -143,12 +143,11 @@ export default function OrderTicketPage() {
 
   // This effect handles showing notifications on status change
   useEffect(() => {
-    if (!order || !supabase) {
+    if (!order || !supabase || !user) {
         if (order) previousStatusRef.current = order.status;
         return;
     }
 
-    // Handle "Ready for Pickup" notification with the new DB flag logic
     if (order.status === 'Ready for Pickup' && !order.pickup_notified_at) {
         toast({
             title: "👍 Your Order is Ready!",
@@ -158,17 +157,21 @@ export default function OrderTicketPage() {
         });
         
         const markAsNotified = async () => {
-             await supabase
+             const { error } = await supabase
                 .from('orders')
                 .update({ pickup_notified_at: new Date().toISOString() })
                 .eq('id', order.id);
+            
+            if (!error) {
+                // After successfully notifying, refresh the global badge state
+                fetchOrdersStatus(user.id);
+            }
         };
         markAsNotified();
 
         setOrder(currentOrder => currentOrder ? { ...currentOrder, pickup_notified_at: new Date().toISOString() } : null);
     }
     
-    // Handle other notifications using the previous state ref logic
     if (previousStatusRef.current && order.status !== previousStatusRef.current) {
         const newStatus = order.status;
         if (newStatus === 'Delivered') {
@@ -177,6 +180,7 @@ export default function OrderTicketPage() {
                 description: `Enjoy your meal!`,
                 duration: 5000,
             });
+            fetchOrdersStatus(user.id); // Refresh badge state
           } else if (newStatus === 'Cancelled') {
              toast({
                 title: "❌ Order Cancelled",
@@ -184,12 +188,13 @@ export default function OrderTicketPage() {
                 variant: "destructive",
                 duration: 5000,
             });
+            fetchOrdersStatus(user.id); // Refresh badge state
           }
     }
     
     previousStatusRef.current = order.status;
 
-  }, [order, supabase, toast]);
+  }, [order, supabase, toast, user, fetchOrdersStatus]);
 
 
   useEffect(() => {

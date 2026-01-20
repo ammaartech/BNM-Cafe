@@ -4,11 +4,6 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useSupabase } from '@/lib/supabase/provider';
 
-interface OrderStatus {
-    id: string;
-    status: "Pending" | "Ready for Pickup" | "Delivered" | "Cancelled";
-}
-
 interface OrderStatusContextType {
   hasReadyOrder: boolean;
   fetchOrdersStatus: (userId: string) => Promise<void>;
@@ -18,19 +13,19 @@ const OrderStatusContext = createContext<OrderStatusContextType | undefined>(und
 
 export const OrderStatusProvider = ({ children }: { children: ReactNode }) => {
     const { supabase, user, isUserLoading } = useSupabase();
-    const [ordersStatus, setOrdersStatus] = useState<OrderStatus[]>([]);
+    const [hasReadyOrder, setHasReadyOrder] = useState(false);
 
     const fetchOrdersStatus = useCallback(async (userId: string) => {
         if (!supabase) return;
 
-        const { data, error } = await supabase
+        const { count, error } = await supabase
             .from('orders')
-            .select('id, status')
+            .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
-            .in('status', ['Pending', 'Ready for Pickup']);
-
+            .eq('status', 'Ready for Pickup');
+        
         if (!error) {
-            setOrdersStatus(data || []);
+            setHasReadyOrder((count || 0) > 0);
         }
     }, [supabase]);
 
@@ -38,11 +33,9 @@ export const OrderStatusProvider = ({ children }: { children: ReactNode }) => {
         if (!isUserLoading && user) {
             fetchOrdersStatus(user.id);
         } else if (!isUserLoading && !user) {
-            setOrdersStatus([]);
+            setHasReadyOrder(false);
         }
     }, [user, isUserLoading, fetchOrdersStatus]);
-
-    const hasReadyOrder = ordersStatus.some(order => order.status === 'Ready for Pickup');
 
     const value = {
         hasReadyOrder,
