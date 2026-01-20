@@ -2,7 +2,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { SupabaseClient, User, Session } from '@supabase/supabase-js';
+import { SupabaseClient, User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from './client';
 import type { UserProfile } from '@/lib/types';
 import { useRouter, usePathname } from 'next/navigation';
@@ -12,7 +12,6 @@ interface SupabaseContextType {
   user: User | null;
   userProfile: UserProfile | null;
   isUserLoading: boolean;
-  refreshUserProfile: () => Promise<void>;
 }
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined);
@@ -43,36 +42,41 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
       setUserProfile(profile || null);
     }
   }, []);
-  
-  const refreshUserProfile = useCallback(async () => {
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (currentUser) {
-        await fetchUserProfile(currentUser);
-    }
-  }, [fetchUserProfile]);
-
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // This function handles the logic for setting user and profile.
+    const processSession = async (session: Session | null) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-
       if (currentUser) {
         await fetchUserProfile(currentUser);
       } else {
         setUserProfile(null);
       }
-      // Stop loading only after the initial session is handled.
-      // Subsequent events (TOKEN_REFRESHED, etc.) will not change the loading state.
-      if (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT') {
-        setIsUserLoading(false);
-      }
+    };
+
+    // Handle the initial session on page load to prevent UI flicker.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      await processSession(session);
+      setIsUserLoading(false); // Initial load is complete.
     });
+
+    // Listen for subsequent auth events like sign-in or sign-out.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        // We only need to re-process the full session on explicit sign-in or sign-out events.
+        // TOKEN_REFRESHED events are handled automatically by the Supabase client and don't require a profile refetch.
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          await processSession(session);
+        }
+      }
+    );
 
     return () => {
       subscription.unsubscribe();
     };
   }, [fetchUserProfile]);
+
 
   useEffect(() => {
     if (isUserLoading) return;
@@ -97,7 +101,6 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     user,
     userProfile,
     isUserLoading,
-    refreshUserProfile,
   };
 
   return (
@@ -114,3 +117,4 @@ export const useSupabase = () => {
   }
   return context;
 };
+
