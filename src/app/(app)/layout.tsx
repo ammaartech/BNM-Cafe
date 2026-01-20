@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUserPreferences, UserPreferencesProvider } from "@/context/UserPreferencesContext";
 import BottomNavBar from "./BottomNavBar";
 import { useSupabase } from "@/lib/supabase/provider";
+import { OrderStatusProvider, useOrderStatus } from "@/context/OrderStatusContext";
 
 function CartSuccessDialog() {
     const { addedItemPopup, setAddedItemPopup } = useCart();
@@ -62,6 +63,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const { user } = useSupabase();
     const { fetchCart } = useCart();
     const { fetchFavorites } = useUserPreferences();
+    const { fetchOrdersStatus } = useOrderStatus();
     
     useEffect(() => {
         const handleVisibilityChange = () => {
@@ -69,6 +71,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 // Soft re-fetch data when the app becomes visible again
                 fetchCart(user.id);
                 fetchFavorites(user.id);
+                fetchOrdersStatus(user.id);
             }
         };
 
@@ -77,7 +80,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [user, fetchCart, fetchFavorites]);
+    }, [user, fetchCart, fetchFavorites, fetchOrdersStatus]);
 
     return (
         <>
@@ -100,7 +103,9 @@ export default function AppLayout({
   return (
     <CartProvider>
       <UserPreferencesProvider>
-        <AppLayoutContent>{children}</AppLayoutContent>
+        <OrderStatusProvider>
+            <AppLayoutContent>{children}</AppLayoutContent>
+        </OrderStatusProvider>
       </UserPreferencesProvider>
     </CartProvider>
   );

@@ -6,17 +6,19 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { Home, ShoppingCart, ClipboardList, Heart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { cn } from "@/lib/utils";
+import { useOrderStatus } from "@/context/OrderStatusContext";
 
 export default function BottomNavBar() {
     const pathname = usePathname();
     const { totalItems } = useCart();
+    const { hasReadyOrder } = useOrderStatus();
     const searchParams = useSearchParams();
 
     const navItems = [
         { href: '/menu', icon: Home, label: 'Home' },
         { href: '/orders', icon: ClipboardList, label: 'My Orders' },
         { href: '/menu?filter=favorites', icon: Heart, label: 'Favorites' },
-        { href: '/cart', icon: ShoppingCart, label: 'Cart', badge: totalItems > 0 ? totalItems : null },
+        { href: '/cart', icon: ShoppingCart, label: 'Cart' },
     ];
     
     const noNavPages = ['/admin', '/profile'];
@@ -48,9 +50,14 @@ export default function BottomNavBar() {
                                  )} />
                                 <span className="text-xs font-medium">{item.label}</span>
                             </div>
-                            {item.badge && (
+                            {item.label === 'Cart' && totalItems > 0 && (
                                 <span className="absolute top-[-4px] right-[-6px] flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                                    {item.badge}
+                                    {totalItems}
+                                </span>
+                            )}
+                            {item.label === 'My Orders' && hasReadyOrder && (
+                                <span className="absolute top-0 right-0 flex h-2.5 w-2.5">
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
                                 </span>
                             )}
                         </Link>
