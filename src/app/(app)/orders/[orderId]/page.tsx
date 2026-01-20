@@ -84,7 +84,7 @@ export default function OrderTicketPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.orderId as string;
-  const { user, isUserLoading, supabase } = useSupabase();
+  const { user, supabase } = useSupabase();
   const { toast } = useToast();
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -153,45 +153,57 @@ export default function OrderTicketPage() {
 
 
   useEffect(() => {
-    if (isUserLoading) return;
-    if (!orderId || !supabase) return;
+    // We now wait for the user object to be available instead of checking isUserLoading
+    if (!user || !orderId || !supabase) {
+      return;
+    }
 
     let channel: RealtimeChannel | null = null;
 
     const setupSubscription = () => {
-        if (channel) return;
-        channel = supabase.channel(`order-ticket-${orderId}`)
-          .on(
-            'postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
-            handleOrderUpdate
-          )
-          .subscribe((status, err) => {
-             if (status === 'SUBSCRIBED') {
-                console.log('Subscribed to order ticket updates!');
-             }
-             if (err) {
-                console.error('Subscription error:', err);
-                toast({ title: "Connection Issue", description: "Could not get real-time order updates.", variant: "destructive"});
-             }
-          });
+      if (channel) return;
+      channel = supabase
+        .channel(`order-ticket-${orderId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+            filter: `id=eq.${orderId}`,
+          },
+          handleOrderUpdate
+        )
+        .subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('Subscribed to order ticket updates!');
+          }
+          if (err) {
+            console.error('Subscription error:', err);
+            toast({
+              title: 'Connection Issue',
+              description: 'Could not get real-time order updates.',
+              variant: 'destructive',
+            });
+          }
+        });
     };
 
     const teardownSubscription = () => {
-        if (channel) {
-            supabase.removeChannel(channel);
-            channel = null;
-        }
+      if (channel) {
+        supabase.removeChannel(channel);
+        channel = null;
+      }
     };
-    
+
     const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
-            // Immediately fetch the latest order state when returning to the tab
-            fetchOrder();
-            setupSubscription();
-        } else {
-            teardownSubscription();
-        }
+      if (document.visibilityState === 'visible') {
+        // Immediately fetch the latest order state when returning to the tab
+        fetchOrder();
+        setupSubscription();
+      } else {
+        teardownSubscription();
+      }
     };
 
     fetchOrder(); // Initial fetch
@@ -199,10 +211,10 @@ export default function OrderTicketPage() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-        teardownSubscription();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      teardownSubscription();
     };
-  }, [orderId, supabase, isUserLoading, toast, handleOrderUpdate, fetchOrder]);
+  }, [orderId, supabase, user, toast, handleOrderUpdate, fetchOrder]);
 
 
   if (isLoading) {

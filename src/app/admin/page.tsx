@@ -1,7 +1,6 @@
 
 "use client";
 
-import { supabase } from "@/lib/supabase/client";
 import type { Order } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -23,7 +22,7 @@ import { useSupabase } from "@/lib/supabase/provider";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 
 
 type OrderFilter = "live" | "delivered" | "all";
@@ -47,7 +46,7 @@ function formatOrder(orderData: any): Order | null {
   };
 }
 
-function AdminDashboard() {
+function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
   const [filter, setFilter] = useState<OrderFilter>("live");
   const { toast } = useToast();
   const [allOrders, setAllOrders] = useState<Order[]>([]);
@@ -55,6 +54,7 @@ function AdminDashboard() {
   const [updatingStatus, setUpdatingStatus] = useState<Record<string, boolean>>({});
 
   const fetchInitialOrders = useCallback(async () => {
+      if (!supabase) return;
       // Don't set loading to true for soft refreshes
       // setIsLoading(true); 
       const { data, error } = await supabase
@@ -70,9 +70,10 @@ function AdminDashboard() {
           setAllOrders(formatted);
       }
       setIsLoading(false);
-  }, [toast]);
+  }, [toast, supabase]);
 
   const handleRealtimeUpdate = useCallback(async (payload: any) => {
+      if (!supabase) return;
       const { eventType, new: newRecord, old: oldRecord, table } = payload;
       if (table !== 'orders') return;
 
@@ -104,10 +105,11 @@ function AdminDashboard() {
               currentOrders.filter(order => order.id !== (oldRecord as any).id)
           );
       }
-  }, [toast]);
+  }, [toast, supabase]);
   
 
   useEffect(() => {
+    if (!supabase) return;
     let channel: RealtimeChannel | null = null;
     
     const setupSubscription = () => {
@@ -155,10 +157,11 @@ function AdminDashboard() {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
         teardownSubscription();
     }
-  }, [fetchInitialOrders, handleRealtimeUpdate, toast]);
+  }, [fetchInitialOrders, handleRealtimeUpdate, toast, supabase]);
   
 
   const handleStatusChange = useCallback(async (order: Order, newStatus: Order['status']) => {
+    if (!supabase) return;
     setUpdatingStatus(prev => ({ ...prev, [order.id]: true }));
 
     const originalStatus = order.status;
@@ -174,7 +177,7 @@ function AdminDashboard() {
         toast({ title: "Status Updated", description: `Order #${order.id.slice(0,7)} is now ${newStatus}.`});
     }
     setUpdatingStatus(prev => ({ ...prev, [order.id]: false }));
-  }, [toast]);
+  }, [toast, supabase]);
   
   const filteredOrders = useMemo(() => {
     const sorted = [...allOrders].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
@@ -492,7 +495,7 @@ export default function AdminPage() {
                             <LogOut className="mr-2 h-4 w-4" /> Logout
                         </Button>
                     </header>
-                    <AdminDashboard />
+                    <AdminDashboard supabase={supabase} />
                 </>
             ) : (
                 <div className="flex-grow flex items-center justify-center">
