@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, FileText, ShoppingBag, ArrowLeft } from "lucide-react";
+import { AlertCircle, FileText, ShoppingBag, ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
@@ -91,6 +91,7 @@ export default function OrderTicketPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const [isManualFetching, setIsManualFetching] = useState(false);
   const previousStatusRef = useRef<Order['status'] | null>(null);
 
   const fetchOrder = useCallback(async () => {
@@ -133,6 +134,12 @@ export default function OrderTicketPage() {
         });
     }
   }, []);
+
+  const handleManualRefreshClick = async () => {
+      setIsManualFetching(true);
+      await fetchOrder();
+      setIsManualFetching(false);
+  }
 
   // This effect handles showing notifications on status change
   useEffect(() => {
@@ -303,7 +310,7 @@ export default function OrderTicketPage() {
             </div>
              <div>
                 <dt className="text-muted-foreground font-semibold">Status</dt>
-                <dd className="mt-1">
+                <dd className="mt-1 flex items-center gap-2">
                      <Badge 
                           variant={order.status === 'Delivered' ? 'default' : order.status === 'Cancelled' ? 'destructive' : 'secondary'}
                           className={cn('font-semibold', {
@@ -313,6 +320,14 @@ export default function OrderTicketPage() {
                         >
                             {order.status}
                         </Badge>
+                        <Button variant="outline" size="sm" onClick={handleManualRefreshClick} disabled={isManualFetching} className="h-7 px-2 py-1">
+                            {isManualFetching ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                                <RefreshCw className="h-3 w-3" />
+                            )}
+                            <span className="ml-1.5 text-xs">Check</span>
+                        </Button>
                 </dd>
             </div>
             <div>
