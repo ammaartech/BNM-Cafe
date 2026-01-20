@@ -90,6 +90,7 @@ export default function OrderTicketPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const previousStatusRef = useRef<Order['status'] | null>(null);
 
   const fetchOrder = useCallback(async () => {
     if (!orderId || !user || !supabase) return;
@@ -115,14 +116,18 @@ export default function OrderTicketPage() {
 
 
   const handleOrderUpdate = useCallback((payload: any) => {
-      const newStatus = payload.new.status;
-      setOrder(currentOrder => {
-        if (currentOrder && payload.new.id === currentOrder.id && newStatus !== currentOrder.status) {
-          
-          if (newStatus === 'Ready for Pickup') {
+      // The realtime event just triggers a refetch of the source of truth
+      fetchOrder();
+  }, [fetchOrder]);
+
+  // This effect handles showing notifications on status change
+  useEffect(() => {
+    if (order && previousStatusRef.current && order.status !== previousStatusRef.current) {
+        const newStatus = order.status;
+        if (newStatus === 'Ready for Pickup') {
             toast({
-              title: "✅ Your Order is Ready!",
-              description: `Order #${currentOrder.id.slice(0, 7)} can be picked up now.`,
+              title: "👍 Your Order is Ready!",
+              description: `Order #${order.id.slice(0, 7)} can be picked up now.`,
               duration: 5000,
             });
           } else if (newStatus === 'Delivered') {
@@ -139,12 +144,12 @@ export default function OrderTicketPage() {
                 duration: 5000,
             });
           }
-          
-          return { ...currentOrder, status: newStatus };
-        }
-        return currentOrder;
-      });
-  }, [toast]);
+    }
+    // Always update the ref to the latest status after checking
+    if (order) {
+        previousStatusRef.current = order.status;
+    }
+  }, [order, toast]);
 
 
   useEffect(() => {
@@ -315,5 +320,3 @@ export default function OrderTicketPage() {
     </>
   );
 }
-
-    
