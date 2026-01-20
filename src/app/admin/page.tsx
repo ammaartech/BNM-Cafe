@@ -152,7 +152,7 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
         clearInterval(periodicRefetchInterval);
         document.removeEventListener('visibilitychange', handleVisibilityChange);
     }
-  }, [fetchAllOrders, handleRealtimeUpdate, supabase, toast]);
+  }, []);
   
 
   const handleStatusChange = useCallback(async (order: Order, newStatus: Order['status']) => {
@@ -518,5 +518,7 @@ export default function AdminPage() {
         </div>
     );
 }
+
+    
 
     
