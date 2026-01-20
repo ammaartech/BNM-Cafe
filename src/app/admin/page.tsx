@@ -53,31 +53,31 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
   const [isLoading, setIsLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState<Record<string, boolean>>({});
 
-  const fetchInitialOrders = useCallback(async () => {
-      if (!supabase) return;
-      // Don't set loading to true for soft refreshes
-      // setIsLoading(true); 
-      const { data, error } = await supabase
-          .from('orders')
-          .select('*, order_items(*)')
-          .order('order_date', { ascending: false });
+  const fetchAllOrders = useCallback(async () => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .order('order_date', { ascending: false });
 
-      if (error) {
-          console.error("Error fetching initial orders:", error);
-          toast({ title: "Error", description: "Could not fetch orders.", variant: "destructive" });
-      } else if (data) {
-          const formatted = data.map(formatOrder).filter((o): o is Order => o !== null);
-          setAllOrders(formatted);
-      }
-      setIsLoading(false);
-  }, [toast, supabase]);
+    if (error) {
+        console.error("Error fetching orders:", error);
+        toast({ title: "Error", description: "Could not fetch orders.", variant: "destructive" });
+    } else if (data) {
+        const formatted = data.map(formatOrder).filter((o): o is Order => o !== null);
+        setAllOrders(formatted);
+    }
+  }, [supabase, toast]);
 
   const handleRealtimeUpdate = useCallback(async (payload: any) => {
       if (!supabase) return;
       const { eventType, new: newRecord, old: oldRecord, table } = payload;
       if (table !== 'orders') return;
 
+      console.log('Admin: Realtime event received:', eventType, newRecord);
+
       if (eventType === 'INSERT') {
+          // Fetch full order with items, as payload only has `orders` table data
           const { data: newOrderData, error } = await supabase
               .from('orders')
               .select('*, order_items(*)')
@@ -105,59 +105,54 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
               currentOrders.filter(order => order.id !== (oldRecord as any).id)
           );
       }
-  }, [toast, supabase]);
+  }, [supabase, toast]);
   
 
   useEffect(() => {
     if (!supabase) return;
-    let channel: RealtimeChannel | null = null;
+
+    // 1. Initial fetch
+    fetchAllOrders().then(() => setIsLoading(false));
+
+    // 2. Realtime subscription (persistent)
+    const channel = supabase.channel('realtime-admin-orders')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'orders' },
+            handleRealtimeUpdate
+        )
+        .subscribe((status, err) => {
+             if (status === 'SUBSCRIBED') {
+                console.log('Admin: Subscribed to real-time orders!');
+             }
+             if (status === 'CHANNEL_ERROR' || err) {
+                console.error('Admin: Real-time subscription error:', err);
+                toast({ title: "Connection Error", description: "Could not connect to real-time updates.", variant: "destructive"});
+             }
+        });
     
-    const setupSubscription = () => {
-        if (channel) return;
+    // 3. Safety Net: Periodic refetch every 60 seconds
+    const periodicRefetchInterval = setInterval(() => {
+        console.log("Admin: Performing periodic safety refetch.");
+        fetchAllOrders();
+    }, 60000);
 
-        channel = supabase.channel('realtime-orders')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'orders' },
-                handleRealtimeUpdate
-            )
-            .subscribe((status, err) => {
-                 if (status === 'SUBSCRIBED') {
-                    console.log('Subscribed to real-time orders!');
-                 }
-                 if (status === 'CHANNEL_ERROR' || err) {
-                    console.error('Real-time subscription error:', err);
-                    toast({ title: "Connection Error", description: "Could not connect to real-time updates.", variant: "destructive"});
-                 }
-            });
-    };
-
-    const teardownSubscription = () => {
-        if (channel) {
-            supabase.removeChannel(channel);
-            channel = null;
-        }
-    };
-
+    // 4. Safety Net: Refetch on visibility change
     const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
-            // Re-fetch all orders to catch up on any missed changes
-            fetchInitialOrders(); 
-            setupSubscription();
-        } else {
-            teardownSubscription();
+            console.log("Admin: Tab is visible, performing safety refetch.");
+            fetchAllOrders();
         }
     };
-    
-    fetchInitialOrders();
-    setupSubscription();
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
+    // 5. Cleanup
     return () => {
+        supabase.removeChannel(channel);
+        clearInterval(periodicRefetchInterval);
         document.removeEventListener('visibilitychange', handleVisibilityChange);
-        teardownSubscription();
     }
-  }, [fetchInitialOrders, handleRealtimeUpdate, toast, supabase]);
+  }, [fetchAllOrders, handleRealtimeUpdate, supabase, toast]);
   
 
   const handleStatusChange = useCallback(async (order: Order, newStatus: Order['status']) => {
@@ -503,7 +498,7 @@ export default function AdminPage() {
                         <Card className="w-full max-w-sm">
                             <CardHeader>
                                 <CardTitle className="text-2xl text-center">Access Denied</CardTitle>
-                            </CardHeader>
+                            </Header>
                             <CardContent className="text-center">
                                 <Alert variant="destructive" className="mb-4">
                                     <AlertCircle className="h-4 w-4" />
@@ -530,3 +525,4 @@ export default function AdminPage() {
 
 
     
+
