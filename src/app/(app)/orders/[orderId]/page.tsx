@@ -106,7 +106,7 @@ export default function OrderTicketPage() {
     if (error) {
         setError(error);
         setOrder(null);
-    } else {
+    } else if (data) {
         setOrder(formatOrder(data));
         setError(null);
     }
@@ -115,20 +115,19 @@ export default function OrderTicketPage() {
 
 
   const handleOrderUpdate = useCallback((payload: any) => {
+    console.log('[Realtime] Payload received:', payload);
     const newRecord = payload.new;
     if (newRecord) {
         setOrder(currentOrder => {
-            // If there's no current order, we can't update it.
-            if (!currentOrder) return null;
-
-            // The realtime payload won't include joined `order_items`.
-            // We create a new state object by taking the existing items
-            // and merging in the new top-level fields from the payload.
+            if (!currentOrder) {
+                console.log('[Realtime] Skipping update: no current order in state.');
+                return null;
+            }
+            console.log('[Realtime] Updating order state...');
             const updatedOrder: Order = {
                 ...currentOrder,
                 status: newRecord.status,
                 pickup_notified_at: newRecord.pickup_notified_at,
-                // Add any other fields from the `orders` table that might change
             };
             return updatedOrder;
         });
@@ -138,8 +137,6 @@ export default function OrderTicketPage() {
   // This effect handles showing notifications on status change
   useEffect(() => {
     if (!order || !supabase) {
-        // If order is not loaded, do nothing.
-        // Also update previous status ref on initial load.
         if (order) previousStatusRef.current = order.status;
         return;
     }
@@ -153,7 +150,6 @@ export default function OrderTicketPage() {
             className: "bg-yellow-500 text-white border-yellow-500",
         });
         
-        // Mark as notified in the database. Fire-and-forget.
         const markAsNotified = async () => {
              await supabase
                 .from('orders')
@@ -162,14 +158,12 @@ export default function OrderTicketPage() {
         };
         markAsNotified();
 
-        // Optimistically update local state to prevent re-triggering before a refetch
         setOrder(currentOrder => currentOrder ? { ...currentOrder, pickup_notified_at: new Date().toISOString() } : null);
     }
     
     // Handle other notifications using the previous state ref logic
     if (previousStatusRef.current && order.status !== previousStatusRef.current) {
         const newStatus = order.status;
-        // The ready for pickup is handled above, so we can exclude it here.
         if (newStatus === 'Delivered') {
             toast({
                 title: "✅ Order Delivered!",
@@ -186,7 +180,6 @@ export default function OrderTicketPage() {
           }
     }
     
-    // Always update the ref to the latest status after checking
     previousStatusRef.current = order.status;
 
   }, [order, supabase, toast]);
@@ -215,10 +208,10 @@ export default function OrderTicketPage() {
         )
         .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
-            console.log('Subscribed to order ticket updates!');
+            console.log(`[Realtime] Subscribed to order ticket updates for ${orderId}!`);
           }
           if (err) {
-            console.error('Subscription error:', err);
+            console.error('[Realtime] Subscription error:', err);
             toast({
               title: 'Connection Issue',
               description: 'Could not get real-time order updates.',
@@ -370,5 +363,3 @@ export default function OrderTicketPage() {
     </>
   );
 }
-
-    
