@@ -22,7 +22,8 @@ export const OrderStatusProvider = ({ children }: { children: ReactNode }) => {
             .from('orders')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
-            .eq('status', 'Ready for Pickup');
+            .eq('status', 'Ready for Pickup')
+            .not('pickup_notified_at', 'is', null);
         
         if (!error) {
             setHasReadyOrder((count || 0) > 0);
