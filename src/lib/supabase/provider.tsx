@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { SupabaseClient, User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from './client';
 import type { UserProfile } from '@/lib/types';
@@ -19,7 +19,7 @@ const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined
 export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [isUserLoading, setIsUserLoading] = useState(true); // Start as true
+  const [isUserLoading, setIsUserLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -43,9 +43,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  useEffect(() => {
-    // This function handles the logic for setting user and profile.
-    const processSession = async (session: Session | null) => {
+  const processSession = useCallback(async (session: Session | null) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
@@ -53,8 +51,10 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUserProfile(null);
       }
-    };
+    }, [fetchUserProfile]);
 
+
+  useEffect(() => {
     // Handle the initial session on page load to prevent UI flicker.
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       await processSession(session);
@@ -64,8 +64,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     // Listen for subsequent auth events like sign-in or sign-out.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // We only need to re-process the full session on explicit sign-in or sign-out events.
-        // TOKEN_REFRESHED events are handled automatically by the Supabase client and don't require a profile refetch.
+        // We only re-process on explicit sign-in/out, not on token refreshes.
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
           await processSession(session);
         }
@@ -75,7 +74,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [fetchUserProfile]);
+  }, [processSession]);
 
 
   useEffect(() => {
@@ -84,24 +83,22 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     const isAuthPage = pathname === '/';
     const isAdminPage = pathname.startsWith('/admin');
 
-    // If there is no user and they are not on an auth or admin page, redirect them.
     if (!user && !isAuthPage && !isAdminPage) {
       router.replace('/');
     }
     
-    // If there IS a logged-in (not anonymous) user and they are on the auth page, redirect to menu.
     if (user && !user.is_anonymous && isAuthPage) {
       router.replace('/menu');
     }
 
   }, [user, isUserLoading, pathname, router]);
 
-  const value = {
+  const value = useMemo(() => ({
     supabase,
     user,
     userProfile,
     isUserLoading,
-  };
+  }), [user, userProfile, isUserLoading]);
 
   return (
     <SupabaseContext.Provider value={value}>
@@ -117,4 +114,3 @@ export const useSupabase = () => {
   }
   return context;
 };
-
