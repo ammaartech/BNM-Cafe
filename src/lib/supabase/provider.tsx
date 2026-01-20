@@ -20,7 +20,7 @@ const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined
 export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [isUserLoading, setIsUserLoading] = useState(true);
+  const [isUserLoading, setIsUserLoading] = useState(true); // Start as true
   const router = useRouter();
   const pathname = usePathname();
 
@@ -39,10 +39,8 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     if (error && error.code !== 'PGRST116') {
       console.error('Error fetching user profile:', error);
       setUserProfile(null);
-    } else if (profile) {
-      setUserProfile(profile);
     } else {
-      setUserProfile(null);
+      setUserProfile(profile || null);
     }
   }, []);
   
@@ -55,7 +53,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    const updateUserAndProfile = async (session: Session | null) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
@@ -64,20 +62,11 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUserProfile(null);
       }
-    };
-    
-    // On initial load, get the session and set loading state.
-    // This is the only time we should have a blocking loader.
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      await updateUserAndProfile(session);
-      setIsUserLoading(false); // End loading only after the first check
-    });
-
-    // Listen for subsequent auth state changes.
-    // These updates will happen without setting a global loading state.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // We don't set isUserLoading to true here, to avoid flashing a loader on background token refreshes.
-      await updateUserAndProfile(session);
+      // Stop loading only after the initial session is handled.
+      // Subsequent events (TOKEN_REFRESHED, etc.) will not change the loading state.
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT') {
+        setIsUserLoading(false);
+      }
     });
 
     return () => {

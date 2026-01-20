@@ -16,7 +16,7 @@ import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import type { MenuItem, UserProfile } from "@/lib/types";
+import type { MenuItem } from "@/lib/types";
 import { useState, useEffect, Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
@@ -107,7 +107,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
 }
 
 function MenuPageContent() {
-  const { user, isUserLoading } = useSupabase();
+  const { user, userProfile, isUserLoading } = useSupabase();
   const { favoriteIds } = useUserPreferences();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -116,7 +116,6 @@ function MenuPageContent() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     if (!isUserLoading && user?.is_anonymous) {
@@ -147,26 +146,6 @@ function MenuPageContent() {
       setActiveFilter('all');
     }
   }, [searchParams]);
-
-   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (user && !user.is_anonymous) {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        if (error && error.code !== 'PGRST116') { // Ignore 'exact one row' error
-          console.error('Error fetching user profile:', error);
-        } else {
-          setUserProfile(data);
-        }
-      } else {
-        setUserProfile(null);
-      }
-    };
-    fetchUserProfile();
-  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
