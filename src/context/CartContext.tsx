@@ -188,37 +188,34 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-        const { data: orderData, error: orderError } = await supabase
-            .from('orders')
-            .insert({
-                user_id: user.id,
-                user_name: customerName,
-                total_amount: totalPrice,
-                status: "Pending",
-            })
-            .select()
-            .single();
-
-        if (orderError) throw orderError;
-
-        const newOrderId = orderData.id;
-
-        const orderItemsToInsert = state.items.map(item => ({
-            order_id: newOrderId,
-            menu_item_id: item.id,
+        const orderItemsParam = state.items.map(item => ({
+            id: item.id,
+            name: item.name,
             quantity: item.quantity,
-            price: item.price,
-            name: item.name
+            price: item.price
         }));
 
-        const { error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert);
-        if (itemsError) throw itemsError;
+        const { data: newOrder, error: rpcError } = await supabase.rpc('create_new_order', {
+            user_id_param: user.id,
+            user_name_param: customerName,
+            total_amount_param: totalPrice,
+            order_items_param: orderItemsParam
+        });
+
+        if (rpcError) throw rpcError;
+
+        if (!newOrder || !newOrder.id) {
+            throw new Error("Order creation failed: No order data returned from function.");
+        }
 
         const { error: clearCartError } = await supabase.from('user_cart_items').delete().eq('user_id', user.id);
-        if (clearCartError) throw clearCartError;
+        if (clearCartError) {
+          // This is not a critical failure, the order is placed. Log it.
+          console.error("Failed to clear user cart after order placement:", clearCartError);
+        }
 
         dispatch({type: 'CLEAR_CART' });
-        router.push(`/orders/${newOrderId}`);
+        router.push(`/orders/${newOrder.id}`);
 
     } catch(error: any) {
         console.error("Error placing order:", error);

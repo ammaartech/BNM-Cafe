@@ -28,6 +28,7 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
+  daily_order_id?: string;
   userId?: string; // Optional because old orders might not have it
   userName: string;
   orderDate: string;

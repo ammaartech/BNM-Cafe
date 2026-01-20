@@ -37,6 +37,7 @@ function formatOrder(orderData: any): Order | null {
   if (!orderData || !orderData.id) return null;
   return {
     id: orderData.id,
+    daily_order_id: orderData.daily_order_id,
     userId: orderData.user_id,
     userName: orderData.user_name,
     orderDate: orderData.order_date,
@@ -77,7 +78,6 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
       console.log('Admin: Realtime event received:', eventType, newRecord);
 
       if (eventType === 'INSERT') {
-          // Fetch full order with items, as payload only has `orders` table data
           const { data: newOrderData, error } = await supabase
               .from('orders')
               .select('*, order_items(*)')
@@ -88,7 +88,7 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
               const formattedOrder = formatOrder(newOrderData);
               if (formattedOrder) {
                   setAllOrders(currentOrders => [formattedOrder, ...currentOrders]);
-                  toast({ title: "New Order Received!", description: `Order from ${formattedOrder.userName} for ₹${formattedOrder.totalAmount.toFixed(2)}`});
+                  toast({ title: "New Order Received!", description: `Order #${formattedOrder.daily_order_id} from ${formattedOrder.userName} for ₹${formattedOrder.totalAmount.toFixed(2)}`});
               }
           } else {
                console.error("Error fetching full new order:", error);
@@ -97,7 +97,7 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
       } else if (eventType === 'UPDATE') {
           setAllOrders(currentOrders => 
               currentOrders.map(order => 
-                  order.id === newRecord.id ? { ...order, status: newRecord.status } : order
+                  order.id === newRecord.id ? { ...order, status: newRecord.status, daily_order_id: newRecord.daily_order_id } : order
               )
           );
       } else if (eventType === 'DELETE') {
@@ -111,10 +111,8 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
   useEffect(() => {
     if (!supabase) return;
 
-    // 1. Initial fetch
     fetchAllOrders().then(() => setIsLoading(false));
 
-    // 2. Realtime subscription (persistent)
     const channel = supabase.channel('realtime-admin-orders')
         .on(
             'postgres_changes',
@@ -131,13 +129,11 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
              }
         });
     
-    // 3. Safety Net: Periodic refetch every 60 seconds
     const periodicRefetchInterval = setInterval(() => {
         console.log("Admin: Performing periodic safety refetch.");
         fetchAllOrders();
     }, 60000);
 
-    // 4. Safety Net: Refetch on visibility change
     const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
             console.log("Admin: Tab is visible, performing safety refetch.");
@@ -146,7 +142,6 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // 5. Cleanup
     return () => {
         supabase.removeChannel(channel);
         clearInterval(periodicRefetchInterval);
@@ -169,7 +164,7 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
         setAllOrders(prevOrders => prevOrders.map(o => o.id === order.id ? { ...o, status: originalStatus } : o));
         toast({ title: "Update Failed", description: error.message, variant: "destructive"});
     } else {
-        toast({ title: "Status Updated", description: `Order #${order.id.slice(0,7)} is now ${newStatus}.`});
+        toast({ title: "Status Updated", description: `Order #${(order.daily_order_id || order.id.slice(0,7))} is now ${newStatus}.`});
     }
     setUpdatingStatus(prev => ({ ...prev, [order.id]: false }));
   }, [toast, supabase]);
@@ -332,7 +327,7 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
                     const isUpdating = updatingStatus[order.id];
                     return (
                         <TableRow key={order.id}>
-                            <TableCell className="font-medium">#{order.id.slice(0, 7)}</TableCell>
+                            <TableCell className="font-medium">#{order.daily_order_id || order.id.slice(0, 7)}</TableCell>
                             <TableCell>{order.userName}</TableCell>
                             <TableCell className="text-xs text-muted-foreground max-w-[200px]">
                                 {order.items?.map(item => (
@@ -518,7 +513,3 @@ export default function AdminPage() {
         </div>
     );
 }
-
-    
-
-    

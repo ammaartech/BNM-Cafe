@@ -70,6 +70,7 @@ export default function OrdersPage() {
                     orderDate: d.order_date,
                     totalAmount: d.total_amount,
                     userName: d.user_name,
+                    daily_order_id: d.daily_order_id,
                     items: [], // Items are not needed for this list view
                 }));
                 setOrders(formattedOrders);
@@ -120,7 +121,7 @@ export default function OrdersPage() {
                                 <CardContent className="p-4">
                                      <div className="flex justify-between items-center">
                                         <div className="grid gap-1">
-                                            <p className="font-semibold text-sm">Order #{order.id.slice(0, 7)}</p>
+                                            <p className="font-semibold text-sm">Order #{order.daily_order_id || order.id.slice(0, 7)}</p>
                                             <p className="text-xs text-muted-foreground">
                                                 {new Date(order.orderDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                                             </p>
