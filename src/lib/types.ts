@@ -34,6 +34,7 @@ export interface Order {
   totalAmount: number;
   status: "Pending" | "Ready for Pickup" | "Delivered" | "Cancelled";
   items: OrderItem[];
+  pickup_notified_at?: string | null;
   // Legacy fields for old static data
   date?: string;
   total?: number;

@@ -75,7 +75,8 @@ function formatOrder(data: any): Order {
             name: item.name,
             quantity: item.quantity,
             price: item.price,
-        })) || []
+        })) || [],
+        pickup_notified_at: data.pickup_notified_at,
     };
 }
 
@@ -94,9 +95,7 @@ export default function OrderTicketPage() {
 
   const fetchOrder = useCallback(async () => {
     if (!orderId || !user || !supabase) return;
-    // Don't set loading to true for soft-refreshes
-    // setIsLoading(true);
-
+    
     const { data, error } = await supabase
         .from('orders')
         .select('*, order_items(*)')
@@ -116,21 +115,55 @@ export default function OrderTicketPage() {
 
 
   const handleOrderUpdate = useCallback((payload: any) => {
-      // The realtime event just triggers a refetch of the source of truth
-      fetchOrder();
-  }, [fetchOrder]);
+    const newRecord = payload.new;
+    if (newRecord) {
+        setOrder(currentOrder => {
+            // Avoid reverting to an older state if a full fetch just happened
+            if (currentOrder && new Date(currentOrder.orderDate) > new Date(newRecord.order_date)) {
+                return currentOrder;
+            }
+            // Update only the status from the realtime event
+            return { ...currentOrder!, status: newRecord.status };
+        });
+    }
+  }, []);
 
   // This effect handles showing notifications on status change
   useEffect(() => {
-    if (order && previousStatusRef.current && order.status !== previousStatusRef.current) {
+    if (!order || !supabase) {
+        // If order is not loaded, do nothing.
+        // Also update previous status ref on initial load.
+        if (order) previousStatusRef.current = order.status;
+        return;
+    }
+
+    // Handle "Ready for Pickup" notification with the new DB flag logic
+    if (order.status === 'Ready for Pickup' && !order.pickup_notified_at) {
+        toast({
+            title: "👍 Your Order is Ready!",
+            description: `Order #${order.id.slice(0, 7)} can be picked up now.`,
+            duration: 5000,
+            className: "bg-accent text-accent-foreground border-accent",
+        });
+        
+        // Mark as notified in the database. Fire-and-forget.
+        const markAsNotified = async () => {
+             await supabase
+                .from('orders')
+                .update({ pickup_notified_at: new Date().toISOString() })
+                .eq('id', order.id);
+        };
+        markAsNotified();
+
+        // Optimistically update local state to prevent re-triggering before a refetch
+        setOrder(currentOrder => currentOrder ? { ...currentOrder, pickup_notified_at: new Date().toISOString() } : null);
+    }
+    
+    // Handle other notifications using the previous state ref logic
+    if (previousStatusRef.current && order.status !== previousStatusRef.current) {
         const newStatus = order.status;
-        if (newStatus === 'Ready for Pickup') {
-            toast({
-              title: "👍 Your Order is Ready!",
-              description: `Order #${order.id.slice(0, 7)} can be picked up now.`,
-              duration: 5000,
-            });
-          } else if (newStatus === 'Delivered') {
+        // The ready for pickup is handled above, so we can exclude it here.
+        if (newStatus === 'Delivered') {
             toast({
                 title: "✅ Order Delivered!",
                 description: `Enjoy your meal!`,
@@ -145,15 +178,14 @@ export default function OrderTicketPage() {
             });
           }
     }
+    
     // Always update the ref to the latest status after checking
-    if (order) {
-        previousStatusRef.current = order.status;
-    }
-  }, [order, toast]);
+    previousStatusRef.current = order.status;
+
+  }, [order, supabase, toast]);
 
 
   useEffect(() => {
-    // We now wait for the user object to be available instead of checking isUserLoading
     if (!user || !orderId || !supabase) {
       return;
     }
@@ -198,7 +230,6 @@ export default function OrderTicketPage() {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Immediately fetch the latest order state when returning to the tab
         fetchOrder();
         setupSubscription();
       } else {
