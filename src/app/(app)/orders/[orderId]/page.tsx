@@ -118,12 +118,19 @@ export default function OrderTicketPage() {
     const newRecord = payload.new;
     if (newRecord) {
         setOrder(currentOrder => {
-            // Avoid reverting to an older state if a full fetch just happened
-            if (currentOrder && new Date(currentOrder.orderDate) > new Date(newRecord.order_date)) {
-                return currentOrder;
-            }
-            // Update only the status from the realtime event
-            return { ...currentOrder!, status: newRecord.status };
+            // If there's no current order, we can't update it.
+            if (!currentOrder) return null;
+
+            // The realtime payload won't include joined `order_items`.
+            // We create a new state object by taking the existing items
+            // and merging in the new top-level fields from the payload.
+            const updatedOrder: Order = {
+                ...currentOrder,
+                status: newRecord.status,
+                pickup_notified_at: newRecord.pickup_notified_at,
+                // Add any other fields from the `orders` table that might change
+            };
+            return updatedOrder;
         });
     }
   }, []);
@@ -143,7 +150,7 @@ export default function OrderTicketPage() {
             title: "👍 Your Order is Ready!",
             description: `Order #${order.id.slice(0, 7)} can be picked up now.`,
             duration: 5000,
-            className: "bg-accent text-accent-foreground border-accent",
+            className: "bg-yellow-500 text-white border-yellow-500",
         });
         
         // Mark as notified in the database. Fire-and-forget.
@@ -363,3 +370,5 @@ export default function OrderTicketPage() {
     </>
   );
 }
+
+    
