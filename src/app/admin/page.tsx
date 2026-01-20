@@ -55,7 +55,8 @@ function AdminDashboard() {
   const [updatingStatus, setUpdatingStatus] = useState<Record<string, boolean>>({});
 
   const fetchInitialOrders = useCallback(async () => {
-      setIsLoading(true);
+      // Don't set loading to true for soft refreshes
+      // setIsLoading(true); 
       const { data, error } = await supabase
           .from('orders')
           .select('*, order_items(*)')
@@ -107,8 +108,6 @@ function AdminDashboard() {
   
 
   useEffect(() => {
-    fetchInitialOrders();
-
     let channel: RealtimeChannel | null = null;
     
     const setupSubscription = () => {
@@ -124,7 +123,7 @@ function AdminDashboard() {
                  if (status === 'SUBSCRIBED') {
                     console.log('Subscribed to real-time orders!');
                  }
-                 if (status === 'CHANNEL_ERROR') {
+                 if (status === 'CHANNEL_ERROR' || err) {
                     console.error('Real-time subscription error:', err);
                     toast({ title: "Connection Error", description: "Could not connect to real-time updates.", variant: "destructive"});
                  }
@@ -140,13 +139,15 @@ function AdminDashboard() {
 
     const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
+            // Re-fetch all orders to catch up on any missed changes
+            fetchInitialOrders(); 
             setupSubscription();
-            fetchInitialOrders(); // Re-fetch all orders to catch up on any missed changes
         } else {
             teardownSubscription();
         }
     };
     
+    fetchInitialOrders();
     setupSubscription();
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
@@ -521,5 +522,8 @@ export default function AdminPage() {
 }
 
     
+
+    
+
 
     

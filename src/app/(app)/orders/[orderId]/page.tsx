@@ -93,7 +93,8 @@ export default function OrderTicketPage() {
 
   const fetchOrder = useCallback(async () => {
     if (!orderId || !user || !supabase) return;
-    setIsLoading(true);
+    // Don't set loading to true for soft-refreshes
+    // setIsLoading(true);
 
     const { data, error } = await supabase
         .from('orders')
@@ -111,13 +112,6 @@ export default function OrderTicketPage() {
     }
     setIsLoading(false);
   }, [orderId, user, supabase]);
-
-
-  useEffect(() => {
-    if (!isUserLoading) {
-      fetchOrder();
-    }
-  }, [isUserLoading, fetchOrder]);
 
 
   const handleOrderUpdate = useCallback((payload: any) => {
@@ -154,23 +148,17 @@ export default function OrderTicketPage() {
 
 
   useEffect(() => {
+    if (isUserLoading) return;
     if (!orderId || !supabase) return;
 
     let channel: RealtimeChannel | null = null;
 
     const setupSubscription = () => {
-        // Prevent setting up multiple subscriptions
         if (channel) return;
-
         channel = supabase.channel(`order-ticket-${orderId}`)
           .on(
             'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'orders',
-              filter: `id=eq.${orderId}`
-            },
+            { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
             handleOrderUpdate
           )
           .subscribe((status, err) => {
@@ -193,14 +181,15 @@ export default function OrderTicketPage() {
     
     const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
-            setupSubscription();
-            // Also re-fetch the latest order state when returning
+            // Immediately fetch the latest order state when returning to the tab
             fetchOrder();
+            setupSubscription();
         } else {
             teardownSubscription();
         }
     };
 
+    fetchOrder(); // Initial fetch
     setupSubscription();
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
@@ -208,7 +197,7 @@ export default function OrderTicketPage() {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
         teardownSubscription();
     };
-  }, [orderId, supabase, toast, handleOrderUpdate, fetchOrder]);
+  }, [orderId, supabase, isUserLoading, toast, handleOrderUpdate, fetchOrder]);
 
 
   if (isLoading) {
@@ -326,3 +315,5 @@ export default function OrderTicketPage() {
     </>
   );
 }
+
+    
