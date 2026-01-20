@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useSupabase } from '@/lib/supabase/provider';
+import { usePathname } from 'next/navigation';
 
 interface OrderStatusContextType {
   hasReadyOrder: boolean;
@@ -14,6 +15,7 @@ const OrderStatusContext = createContext<OrderStatusContextType | undefined>(und
 export const OrderStatusProvider = ({ children }: { children: ReactNode }) => {
     const { supabase, user, isUserLoading } = useSupabase();
     const [hasReadyOrder, setHasReadyOrder] = useState(false);
+    const pathname = usePathname();
 
     const fetchOrdersStatus = useCallback(async (userId: string) => {
         if (!supabase) return;
@@ -36,7 +38,7 @@ export const OrderStatusProvider = ({ children }: { children: ReactNode }) => {
         } else if (!isUserLoading && !user) {
             setHasReadyOrder(false);
         }
-    }, [user, isUserLoading, fetchOrdersStatus]);
+    }, [user, isUserLoading, fetchOrdersStatus, pathname]);
 
     const value = {
         hasReadyOrder,
