@@ -196,7 +196,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             price: item.price
         }));
 
-        const { data: newOrderData, error: rpcError } = await supabase.rpc('create_new_order_with_stations', {
+        const { data: newOrderData, error: rpcError } = await supabase.rpc('create_new_order', {
             user_id_param: user.id,
             user_name_param: customerName,
             total_amount_param: totalPrice,
