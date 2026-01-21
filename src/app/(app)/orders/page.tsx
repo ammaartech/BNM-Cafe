@@ -4,16 +4,23 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSupabase } from "@/lib/supabase/provider";
-import type { Order } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Order, OrderStatus } from "@/lib/types";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShoppingBag, Package, ChevronRight, AlertCircle, ArrowLeft } from "lucide-react";
+import { Package, ChevronRight, AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
+
+const statusDisplayMap: { [key in OrderStatus]?: string } = {
+    PENDING: 'Pending',
+    READY: 'Ready for Pickup',
+    DELIVERED: 'Delivered',
+    CANCELLED: 'Cancelled',
+};
 
 function OrdersSkeleton() {
     return (
@@ -126,13 +133,13 @@ export default function OrdersPage() {
                                                 {new Date(order.orderDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                                             </p>
                                             <Badge
-                                                variant={order.status === 'Delivered' ? 'default' : order.status === 'Cancelled' ? 'destructive' : 'secondary'}
+                                                variant={order.status === 'DELIVERED' ? 'default' : order.status === 'CANCELLED' ? 'destructive' : 'secondary'}
                                                 className={cn('font-semibold w-fit mt-1', {
-                                                    'bg-green-600 text-white': order.status === 'Delivered',
-                                                    'bg-yellow-500 text-white': order.status === 'Ready for Pickup',
+                                                    'bg-green-600 text-white': order.status === 'DELIVERED',
+                                                    'bg-yellow-500 text-white': order.status === 'READY',
                                                 })}
                                             >
-                                                {order.status}
+                                                {statusDisplayMap[order.status] || order.status}
                                             </Badge>
                                         </div>
                                         <div className="flex items-center gap-2">

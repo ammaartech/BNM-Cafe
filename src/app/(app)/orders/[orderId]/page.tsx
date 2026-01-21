@@ -2,13 +2,13 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import type { Order, OrderItem } from "@/lib/types";
+import type { Order, OrderItem, OrderStatus } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, FileText, ShoppingBag, ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
+import { AlertCircle, FileText, ShoppingBag, ArrowLeft, RefreshCw, Loader2, CheckCircle2, Clock, CookingPot, XCircle, Package } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
@@ -16,6 +16,13 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useOrderStatus } from "@/context/OrderStatusContext";
+
+const statusDisplayMap: { [key in OrderStatus]?: { label: string; icon: React.ReactNode } } = {
+    PENDING: { label: 'Pending', icon: <Clock className="h-4 w-4" /> },
+    READY: { label: 'Ready for Pickup', icon: <CookingPot className="h-4 w-4" /> },
+    DELIVERED: { label: 'Delivered', icon: <CheckCircle2 className="h-4 w-4" /> },
+    CANCELLED: { label: 'Cancelled', icon: <XCircle className="h-4 w-4" /> },
+};
 
 function TicketSkeleton() {
     return (
@@ -150,7 +157,7 @@ export default function OrderTicketPage() {
         return;
     }
 
-    if (order.status === 'Ready for Pickup' && !order.pickup_notified_at) {
+    if (order.status === 'READY' && !order.pickup_notified_at) {
         toast({
             title: "👍 Your Order is Ready!",
             description: `Order #${order.daily_order_id || order.id.slice(0, 7)} can be picked up now.`,
@@ -176,14 +183,14 @@ export default function OrderTicketPage() {
     
     if (previousStatusRef.current && order.status !== previousStatusRef.current) {
         const newStatus = order.status;
-        if (newStatus === 'Delivered') {
+        if (newStatus === 'DELIVERED') {
             toast({
                 title: "✅ Order Delivered!",
                 description: `Enjoy your meal!`,
                 duration: 5000,
             });
             fetchOrdersStatus(user.id); // Refresh badge state
-          } else if (newStatus === 'Cancelled') {
+          } else if (newStatus === 'CANCELLED') {
              toast({
                 title: "❌ Order Cancelled",
                 description: `Your order has been cancelled.`,
@@ -286,9 +293,10 @@ export default function OrderTicketPage() {
     );
   }
 
-  const subtotal = order.totalAmount / 1.05;
-  const gst = order.totalAmount - subtotal;
+  const subtotal = order.totalAmount > 0 ? order.totalAmount / 1.05 : 0;
+  const gst = order.totalAmount > 0 ? order.totalAmount - subtotal : 0;
   const total = order.totalAmount;
+  const statusDisplay = statusDisplayMap[order.status] || { label: order.status, icon: <Package className="h-4 w-4" /> };
 
 
   return (
@@ -319,13 +327,13 @@ export default function OrderTicketPage() {
                 <dt className="text-muted-foreground font-semibold">Status</dt>
                 <dd className="mt-1 flex items-center gap-2">
                      <Badge 
-                          variant={order.status === 'Delivered' ? 'default' : order.status === 'Cancelled' ? 'destructive' : 'secondary'}
+                          variant={order.status === 'DELIVERED' ? 'default' : order.status === 'CANCELLED' ? 'destructive' : 'secondary'}
                           className={cn('font-semibold', {
-                              'bg-green-600 text-white': order.status === 'Delivered',
-                              'bg-yellow-500 text-white': order.status === 'Ready for Pickup',
+                              'bg-green-600 text-white': order.status === 'DELIVERED',
+                              'bg-yellow-500 text-white': order.status === 'READY',
                           })}
                         >
-                            {order.status}
+                            {statusDisplay.label}
                         </Badge>
                         <Button variant="outline" size="sm" onClick={handleManualRefreshClick} disabled={isManualFetching} className="h-7 px-2 py-1">
                             {isManualFetching ? (
@@ -353,7 +361,7 @@ export default function OrderTicketPage() {
                         <div>
                             <p className="font-medium">{item.name}</p>
                             <p className="text-sm text-muted-foreground">
-                                {item.quantity} x ₹{item.price.toFixed(2)}
+                                {item.quantity} x {item.price.toFixed(2)}
                             </p>
                         </div>
                         <p className="font-medium">₹{(item.quantity * item.price).toFixed(2)}</p>

@@ -3,9 +3,8 @@
 
 import type { Order, OrderStatus } from "@/lib/types";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { LogIn, AlertCircle, LogOut, Loader2, CheckCircle2, Clock, CookingPot, Truck, XCircle, Package } from "lucide-react";
+import { LogIn, AlertCircle, LogOut, Loader2, CheckCircle2, Clock, CookingPot, XCircle, Package } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useState, useMemo, useEffect, useCallback } from "react";
@@ -18,14 +17,17 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 
-const statusIcons: { [key in OrderStatus]: React.ReactNode } = {
-    PENDING: <Clock className="h-4 w-4" />,
-    "Ready for Pickup": <CookingPot className="h-4 w-4" />,
-    Delivered: <CheckCircle2 className="h-4 w-4" />,
-    Cancelled: <XCircle className="h-4 w-4" />,
+const statusDisplayMap: { [key in OrderStatus]?: { label: string; icon: React.ReactNode } } = {
+    PENDING: { label: 'Pending', icon: <Clock className="h-4 w-4" /> },
+    READY: { label: 'Ready for Pickup', icon: <CookingPot className="h-4 w-4" /> },
+    DELIVERED: { label: 'Delivered', icon: <CheckCircle2 className="h-4 w-4" /> },
+    CANCELLED: { label: 'Cancelled', icon: <XCircle className="h-4 w-4" /> },
 };
 
+
 function OrderCard({ order, onUpdateStatus }: { order: Order; onUpdateStatus: (id: string, status: OrderStatus) => void }) {
+    const statusDisplay = statusDisplayMap[order.status] || { label: order.status, icon: <Package className="h-4 w-4" /> };
+
     return (
         <Card className="shadow-md">
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
@@ -53,24 +55,24 @@ function OrderCard({ order, onUpdateStatus }: { order: Order; onUpdateStatus: (i
             </CardContent>
             <CardFooter className="flex justify-between items-center">
                  <Badge 
-                    variant={order.status === 'Delivered' ? 'default' : order.status === 'Cancelled' ? 'destructive' : 'secondary'}
+                    variant={order.status === 'DELIVERED' ? 'default' : order.status === 'CANCELLED' ? 'destructive' : 'secondary'}
                     className={cn('font-semibold text-sm', {
-                        'bg-yellow-500 text-white': order.status === 'Ready for Pickup',
-                        'bg-green-600 text-white': order.status === 'Delivered',
+                        'bg-yellow-500 text-white': order.status === 'READY',
+                        'bg-green-600 text-white': order.status === 'DELIVERED',
                     })}
                 >
-                    {statusIcons[order.status]}
-                    <span className="ml-2">{order.status}</span>
+                    {statusDisplay.icon}
+                    <span className="ml-2">{statusDisplay.label}</span>
                 </Badge>
                 <div className="flex gap-2">
                     {order.status === 'PENDING' && (
                         <>
-                            <Button size="sm" variant="outline" onClick={() => onUpdateStatus(order.id, 'Cancelled')}>Cancel</Button>
-                            <Button size="sm" onClick={() => onUpdateStatus(order.id, 'Ready for Pickup')}>Mark as Ready</Button>
+                            <Button size="sm" variant="outline" onClick={() => onUpdateStatus(order.id, 'CANCELLED')}>Cancel</Button>
+                            <Button size="sm" onClick={() => onUpdateStatus(order.id, 'READY')}>Mark as Ready</Button>
                         </>
                     )}
-                    {order.status === 'Ready for Pickup' && (
-                        <Button size="sm" onClick={() => onUpdateStatus(order.id, 'Delivered')}>Mark as Delivered</Button>
+                    {order.status === 'READY' && (
+                        <Button size="sm" onClick={() => onUpdateStatus(order.id, 'DELIVERED')}>Mark as Delivered</Button>
                     )}
                 </div>
             </CardFooter>
@@ -155,9 +157,9 @@ function AdminDashboard({ supabase }: { supabase: any }) {
     }
   };
 
-  const liveOrders = useMemo(() => orders.filter(o => o.status === 'PENDING' || o.status === 'Ready for Pickup').sort((a,b) => new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime()), [orders]);
-  const deliveredOrders = useMemo(() => orders.filter(o => o.status === 'Delivered'), [orders]);
-  const cancelledOrders = useMemo(() => orders.filter(o => o.status === 'Cancelled'), [orders]);
+  const liveOrders = useMemo(() => orders.filter(o => o.status === 'PENDING' || o.status === 'READY').sort((a,b) => new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime()), [orders]);
+  const deliveredOrders = useMemo(() => orders.filter(o => o.status === 'DELIVERED'), [orders]);
+  const cancelledOrders = useMemo(() => orders.filter(o => o.status === 'CANCELLED'), [orders]);
   
   if (isLoading) {
     return (

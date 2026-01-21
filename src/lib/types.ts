@@ -29,7 +29,7 @@ export interface OrderItem {
     price: number;
 }
 
-export type OrderStatus = "PENDING" | "Ready for Pickup" | "Delivered" | "Cancelled";
+export type OrderStatus = "PENDING" | "COOKING" | "READY" | "PICKED_UP" | "DELIVERED" | "CANCELLED";
 
 export interface Order {
   id:string;
