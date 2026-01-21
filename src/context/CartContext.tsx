@@ -250,14 +250,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       dispatch({ type: 'ADD_ITEM', payload: { ...item, quantity: 1 } });
     }
 
-    const upsertPayload = { user_id: user.id, menu_item_uuid: item.uuid, quantity: (existingItem?.quantity || 0) + 1 };
+    const upsertPayload = {
+      user_id: user.id,
+      menu_item_uuid: item.uuid,
+      quantity: (existingItem?.quantity || 0) + 1
+    };
+
     console.log('ADD TO CART PAYLOAD', upsertPayload);
+
     const { error } = await supabase
       .from('user_cart_items')
-      .upsert(
-        upsertPayload,
-        { onConflict: 'user_id,menu_item_uuid' }
-      );
+      .upsert(upsertPayload, { onConflict: 'user_id,menu_item_uuid' });
 
     if (error) {
       toast({ title: 'Error', description: 'Could not add item to cart.', variant: 'destructive'});
