@@ -10,7 +10,7 @@ import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { Station } from "@/lib/types";
+import type { Station, UserProfile } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -83,7 +83,7 @@ function StaffLoginPage() {
 }
 
 // Station Selection Component
-function StationSelectionView({ stations }: { stations: Station[] }) {
+function StationSelectionView({ stations, userProfile }: { stations: Station[], userProfile: UserProfile | null }) {
    return (
     <>
       <div className="text-center mb-8">
@@ -92,13 +92,22 @@ function StationSelectionView({ stations }: { stations: Station[] }) {
         <p className="text-muted-foreground">Choose your assigned station to view live orders.</p>
       </div>
       
-      {stations.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
-          {stations.map((station) => (
-            <Link href={`/staff/station/${station.code}`} key={station.id} className="block">
-              <Card className="h-full hover:bg-primary/10 hover:border-primary transition-all duration-200 shadow-lg">
+      {stations.length > 0 || userProfile?.role === 'admin' ? (
+        <div className="flex flex-wrap justify-center gap-6 w-full max-w-4xl">
+          {userProfile?.role === 'admin' && (
+            <Link href="/staff/admin/kot" className="block w-full sm:w-auto">
+              <Card className="h-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-lg sm:min-w-[200px]">
                 <CardHeader>
-                  <CardTitle className="text-2xl text-center font-semibold">{station.name}</CardTitle>
+                  <CardTitle className="text-xl text-center font-semibold">Master KOT</CardTitle>
+                </CardHeader>
+              </Card>
+            </Link>
+          )}
+          {stations.map((station) => (
+            <Link href={`/staff/station/${station.code}`} key={station.id} className="block w-full sm:w-auto">
+              <Card className="h-full hover:bg-primary/10 hover:border-primary transition-all duration-200 shadow-lg sm:min-w-[200px]">
+                <CardHeader>
+                  <CardTitle className="text-xl text-center font-semibold">{station.name}</CardTitle>
                 </CardHeader>
               </Card>
             </Link>
@@ -110,7 +119,7 @@ function StationSelectionView({ stations }: { stations: Station[] }) {
                 <HardHat className="w-8 h-8 text-destructive" />
                 <div>
                     <CardTitle>No Active Stations</CardTitle>
-                    <p className="text-muted-foreground">Please contact an administrator to set up kitchen stations.</p>
+                    <p className="text-muted-foreground">No station is assigned to your account.</p>
                 </div>
             </CardHeader>
         </Card>
@@ -128,13 +137,20 @@ export default function StationSelectionPage() {
 
     useEffect(() => {
         async function getStations() {
-            if (!supabase) return;
+            if (!supabase || !userProfile) return;
             setIsLoading(true);
-            const { data, error } = await supabase
+            
+            let query = supabase
                 .from("stations")
                 .select("id, name, code")
-                .eq("active", true)
-                .order("sort_order", { ascending: true });
+                .eq("active", true);
+
+            // If user is staff, filter by their assigned station_id
+            if (userProfile.role === 'staff' && userProfile.station_id) {
+                query = query.eq('id', userProfile.station_id);
+            }
+
+            const { data, error } = await query.order("sort_order", { ascending: true });
 
             if (error) {
                 console.error("Error fetching stations:", error);
@@ -216,7 +232,7 @@ export default function StationSelectionPage() {
                 </Button>
             </header>
             <main className="flex-grow flex flex-col items-center justify-center p-4">
-                <StationSelectionView stations={stations} />
+                <StationSelectionView stations={stations} userProfile={userProfile} />
             </main>
         </div>
     );
