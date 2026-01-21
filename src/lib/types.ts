@@ -23,8 +23,8 @@ export interface Category {
 }
 
 export interface OrderItem {
-    id: string;
-    uuid: string;
+    id: string; // This is order_items.id (UUID)
+    uuid: string; // This is menu_items.uuid (UUID)
     name: string;
     quantity: number;
     price: number;
@@ -80,3 +80,11 @@ export type KotTicket = {
   stationStatus: StationOrderStatus;
   items: StationOrderItem[];
 };
+
+export interface Station {
+  id: string;
+  code: string;
+  name: string;
+  active: boolean;
+  sort_order: number;
+}
