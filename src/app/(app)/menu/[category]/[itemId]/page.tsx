@@ -65,7 +65,7 @@ export default function MenuItemDetailPage() {
 
         const { data, error } = await supabase
             .from('menu_items')
-            .select('*')
+            .select('*, uuid')
             .eq('id', itemId)
             .single();
 

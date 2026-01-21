@@ -250,6 +250,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       dispatch({ type: 'ADD_ITEM', payload: { ...item, quantity: 1 } });
     }
 
+    console.log('ADDING TO CART', { menu_item_uuid: item.uuid });
     const { error } = await supabase
       .from('user_cart_items')
       .upsert(
