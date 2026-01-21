@@ -1,9 +1,9 @@
+
 import StationDashboard from '@/components/staff/StationDashboard';
-import { AlertTriangle } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import type { Station } from '@/lib/types';
 
 export const revalidate = 0;
 
@@ -15,59 +15,17 @@ type StationPageProps = {
 
 export default async function StationDashboardPage({ params }: StationPageProps) {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center p-4">
-             <Alert variant="destructive" className="max-w-md">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Access Denied</AlertTitle>
-                <AlertDescription>You must be logged in to view this page.</AlertDescription>
-            </Alert>
-        </div>
-    )
-  }
-
-  // Fetch user profile AND station data in parallel for efficiency
-  const [
-    { data: userProfile },
-    { data: station, error: stationError }
-  ] = await Promise.all([
-    supabase.from('users').select('role, station_id').eq('id', user.id).single(),
-    supabase.from('stations').select('id, name, code').eq('code', params.station_code).single()
-  ]);
+  
+  // Middleware has already verified that the user is authenticated and authorized to see this page.
+  // We just need to fetch the station data to render the dashboard.
+  const { data: station, error: stationError } = await supabase
+    .from('stations')
+    .select('id, name, code')
+    .eq('code', params.station_code)
+    .single<Station>();
 
   if (stationError || !station) {
     notFound();
-  }
-
-  if (!userProfile) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center p-4">
-             <Alert variant="destructive" className="max-w-md">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Access Denied</AlertTitle>
-                <AlertDescription>Could not verify your user profile.</AlertDescription>
-            </Alert>
-        </div>
-    )
-  }
-
-  const isAdmin = userProfile.role === 'admin';
-  const isStaffForThisStation = userProfile.role === 'staff' && userProfile.station_id === station.id;
-
-  // Explicitly deny access if the user is NOT an admin AND NOT the correct staff member.
-  if (!isAdmin && !isStaffForThisStation) {
-     return (
-        <div className="flex h-screen w-full items-center justify-center p-4">
-             <Alert variant="destructive" className="max-w-md">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Access Denied</AlertTitle>
-                <AlertDescription>You do not have permission to view this station's dashboard.</AlertDescription>
-            </Alert>
-        </div>
-    )
   }
 
   return (
