@@ -10,9 +10,19 @@ export async function middleware(req: NextRequest) {
 
   const { data: { session } } = await supabase.auth.getSession()
 
-  // Rule: /staff/** requires authentication
+  // Rule: /staff/** requires authentication, except for the login page itself.
   if (!session) {
+    // Allow access to the login page
+    if (req.nextUrl.pathname === '/staff/login') {
+      return res
+    }
+    // For all other staff pages, redirect to login.
     return NextResponse.redirect(new URL('/staff/login', req.url))
+  }
+
+  // If the user is authenticated and tries to visit the login page, redirect them to the station selector.
+  if (req.nextUrl.pathname === '/staff/login') {
+      return NextResponse.redirect(new URL('/staff/station', req.url))
   }
 
   // Fetch user profile from the database to check their role
@@ -22,7 +32,7 @@ export async function middleware(req: NextRequest) {
     .eq('id', session.user.id)
     .single<Pick<UserProfile, 'role' | 'station_id'>>()
 
-  // If we can't find a profile, something is wrong. Redirect to login.
+  // If we can't find a profile, something is wrong. Redirect to login with an error.
   if (profileError || !userProfile) {
     return NextResponse.redirect(new URL('/staff/login?error=profile_not_found', req.url))
   }
@@ -66,18 +76,17 @@ export async function middleware(req: NextRequest) {
       }
     }
     
-    // If we've reached here, the staff member is accessing their own dashboard, the main selection page, or the admin KOT page (which they will be denied from on the page level). Allow the request to proceed.
+    // Allow the request to proceed (e.g., to /staff/station or their own dashboard).
     return res
   }
 
-  // Rule: If user is not admin or staff, deny access to all /staff routes.
+  // Rule: If user is authenticated but not admin or staff, deny access to all /staff routes by redirecting to the main app.
   return NextResponse.redirect(new URL('/', req.url))
 }
 
-// Configure the middleware to run only on staff-related pages.
+// Configure the middleware to run on all staff-related pages.
 export const config = {
   matcher: [
-    '/staff/station/:path*',
-    '/staff/admin/:path*',
+    '/staff/:path*',
   ],
 }
