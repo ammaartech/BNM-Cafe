@@ -33,7 +33,7 @@ export type OrderStatus = "PENDING" | "COOKING" | "READY" | "PICKED_UP" | "DELIV
 
 export interface Order {
   id:string;
-  daily_order_id?: string;
+  display_order_id?: string;
   userId?: string; // Optional because old orders might not have it
   userName: string;
   orderDate: string;

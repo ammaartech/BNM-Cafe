@@ -33,7 +33,7 @@ function KOTCard({ order, onUpdateStatus }: { order: Order; onUpdateStatus: (id:
         <Card className="flex flex-col shadow-lg bg-card rounded-lg">
             <CardHeader className="p-4 bg-muted/50 rounded-t-lg">
                 <div className="flex justify-between items-baseline">
-                    <CardTitle className="text-2xl font-bold">#{(order.daily_order_id || order.id.slice(0, 5)).toUpperCase()}</CardTitle>
+                    <CardTitle className="text-2xl font-bold">#{(order.display_order_id || order.id.slice(0, 5)).toUpperCase()}</CardTitle>
                     <p className="text-xs text-muted-foreground font-mono">
                         {new Date(order.orderDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </p>
@@ -87,7 +87,7 @@ function ArchivedOrderCard({ order }: { order: Order }) {
         <Card className="shadow-md">
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                 <div>
-                    <CardTitle className="text-lg font-bold">Order #{(order.daily_order_id || order.id.slice(0, 7)).toUpperCase()}</CardTitle>
+                    <CardTitle className="text-lg font-bold">Order #{(order.display_order_id || order.id.slice(0, 7)).toUpperCase()}</CardTitle>
                     <p className="text-sm text-muted-foreground">{order.userName}</p>
                 </div>
                  <div className="text-right">
@@ -132,7 +132,7 @@ function AdminDashboard({ supabase }: { supabase: any }) {
   const formatOrderFromDb = useCallback((dbOrder: any): Order => {
     return {
       id: dbOrder.id,
-      daily_order_id: dbOrder.daily_order_id,
+      display_order_id: dbOrder.display_order_id,
       userId: dbOrder.user_id,
       userName: dbOrder.user_name,
       orderDate: dbOrder.order_date,

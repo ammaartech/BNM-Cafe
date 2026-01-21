@@ -73,7 +73,7 @@ function TicketSkeleton() {
 function formatOrder(data: any): Order {
     return {
         id: data.id,
-        daily_order_id: data.daily_order_id,
+        display_order_id: data.display_order_id,
         userId: data.user_id,
         userName: data.user_name,
         orderDate: data.order_date,
@@ -139,7 +139,7 @@ export default function OrderTicketPage() {
             ...currentOrder,
             status: newRecord.status,
             pickup_notified_at: newRecord.pickup_notified_at,
-            daily_order_id: newRecord.daily_order_id,
+            display_order_id: newRecord.display_order_id,
         };
     });
   }, []);
@@ -160,7 +160,7 @@ export default function OrderTicketPage() {
     if (order.status === 'READY' && !order.pickup_notified_at) {
         toast({
             title: "👍 Your Order is Ready!",
-            description: `Order #${order.daily_order_id || order.id.slice(0, 7)} can be picked up now.`,
+            description: `Order #${order.display_order_id || order.id.slice(0, 7)} can be picked up now.`,
             duration: 5000,
             className: "bg-yellow-500 text-white border-yellow-500",
         });
@@ -313,7 +313,7 @@ export default function OrderTicketPage() {
             <FileText className="h-8 w-8 text-primary"/>
             <div>
                 <CardTitle className="text-2xl font-bold">Order Ticket</CardTitle>
-                <CardDescription>Order #{order.daily_order_id || order.id.slice(0, 7)}</CardDescription>
+                <CardDescription>Order #{order.display_order_id || order.id.slice(0, 7)}</CardDescription>
             </div>
         </div>
       </CardHeader>
