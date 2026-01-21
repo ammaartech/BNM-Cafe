@@ -91,6 +91,7 @@ function formatOrder(data: any): Order {
         status: data.status,
         items: data.order_items?.map((item: any) => ({
             id: item.menu_item_id,
+            uuid: item.id,
             name: item.name,
             quantity: item.quantity,
             price: item.price,
@@ -113,6 +114,13 @@ export default function OrderTicketPage() {
   const [error, setError] = useState<any>(null);
   const [isManualFetching, setIsManualFetching] = useState(false);
   const previousStatusRef = useRef<Order['status'] | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        audioRef.current = new Audio('/notification-sound-effects-copyright-free_g2XT3kky.mp3');
+    }
+  }, []);
 
   const fetchOrder = useCallback(async () => {
     if (!orderId || !user || !supabase) return;
@@ -165,10 +173,19 @@ export default function OrderTicketPage() {
         return;
     }
 
+    const newStatus = order.status;
+    const prevStatus = previousStatusRef.current;
+
+    if (prevStatus && prevStatus !== 'READY' && newStatus === 'READY') {
+      audioRef.current?.play().catch(error => {
+          console.warn("Audio playback failed. User may need to interact with the page first.", error);
+      });
+    }
+
     if (order.status === 'READY' && !order.pickup_notified_at) {
         toast({
             title: "👍 Your Order is Ready!",
-            description: `Order #${order.display_order_id || order.id.slice(0, 7)} can be picked up now.`,
+            description: `Order #${order.display_order_id || '...'} can be picked up now.`,
             duration: 5000,
             className: "bg-yellow-500 text-white border-yellow-500",
         });
@@ -188,8 +205,7 @@ export default function OrderTicketPage() {
         setOrder(currentOrder => currentOrder ? { ...currentOrder, pickup_notified_at: new Date().toISOString() } : null);
     }
     
-    if (previousStatusRef.current && order.status !== previousStatusRef.current) {
-        const newStatus = order.status;
+    if (prevStatus && order.status !== prevStatus) {
         if (newStatus === 'DELIVERED') {
             toast({
                 title: "✅ Order Delivered!",
@@ -319,7 +335,7 @@ export default function OrderTicketPage() {
             <div className="text-center p-8 bg-muted/30 rounded-t-2xl">
                 <p className="text-sm text-muted-foreground">Order Number</p>
                 <h2 className="text-6xl font-bold tracking-tighter text-primary">
-                    {order.display_order_id || order.id.slice(0, 7)}
+                    {order.display_order_id || '---'}
                 </h2>
                 <p className="text-muted-foreground mt-2">{order.userName}</p>
                 <p className="text-xs text-muted-foreground">
@@ -339,7 +355,7 @@ export default function OrderTicketPage() {
                 <h3 className="text-lg font-semibold flex items-center gap-2 text-muted-foreground"><ShoppingBag className="h-5 w-5"/>Items</h3>
                 <ul className="space-y-3">
                     {order.items.map((item: OrderItem, index: number) => (
-                        <li key={index} className="flex justify-between items-baseline text-base">
+                        <li key={item.uuid || index} className="flex justify-between items-baseline text-base">
                             <div>
                                 <p className="font-medium">{item.name}</p>
                                 <p className="text-sm text-muted-foreground">

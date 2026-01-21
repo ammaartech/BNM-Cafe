@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { LogIn, AlertCircle, LogOut, Loader2, CheckCircle2, Clock, CookingPot, XCircle, Package } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/lib/supabase/provider";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,7 @@ function KOTCard({ order, onUpdateStatus }: { order: Order; onUpdateStatus: (id:
         <Card className="flex flex-col shadow-lg bg-card rounded-lg">
             <CardHeader className="p-4 bg-muted/50 rounded-t-lg">
                 <div className="flex justify-between items-baseline">
-                    <CardTitle className="text-2xl font-bold">#{(order.display_order_id || order.id.slice(0, 5)).toUpperCase()}</CardTitle>
+                    <CardTitle className="text-2xl font-bold">#{(order.display_order_id || '...').toUpperCase()}</CardTitle>
                     <p className="text-xs text-muted-foreground font-mono">
                         {new Date(order.orderDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </p>
@@ -87,7 +87,7 @@ function ArchivedOrderCard({ order }: { order: Order }) {
         <Card className="shadow-md">
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                 <div>
-                    <CardTitle className="text-lg font-bold">Order #{(order.display_order_id || order.id.slice(0, 7)).toUpperCase()}</CardTitle>
+                    <CardTitle className="text-lg font-bold">Order #{(order.display_order_id || '...').toUpperCase()}</CardTitle>
                     <p className="text-sm text-muted-foreground">{order.userName}</p>
                 </div>
                  <div className="text-right">
@@ -128,6 +128,14 @@ function AdminDashboard({ supabase }: { supabase: any }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const prevOrdersRef = useRef<Map<string, OrderStatus>>(new Map());
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        audioRef.current = new Audio('/notification-sound-effects-copyright-free_g2XT3kky.mp3');
+    }
+  }, []);
 
   const formatOrderFromDb = useCallback((dbOrder: any): Order => {
     return {
@@ -187,6 +195,25 @@ function AdminDashboard({ supabase }: { supabase: any }) {
     };
 
   }, [fetchOrders, supabase, toast]);
+
+  useEffect(() => {
+      if (isLoading) return;
+
+      const currentOrdersMap = new Map(orders.map(o => [o.id, o.status]));
+
+      orders.forEach(order => {
+          const prevStatus = prevOrdersRef.current.get(order.id);
+          // Check for transition from something other than READY to READY
+          if (prevStatus && prevStatus !== 'READY' && order.status === 'READY') {
+              audioRef.current?.play().catch(error => {
+                  console.warn("Audio playback failed. This can happen if the user hasn't interacted with the page yet.", error);
+              });
+          }
+      });
+
+      prevOrdersRef.current = currentOrdersMap;
+  }, [orders, isLoading]);
+
 
   const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
     const originalOrders = orders;
