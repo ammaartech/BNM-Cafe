@@ -190,7 +190,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     try {
         const orderItemsParam = state.items.map(item => ({
-            id: item.uuid,
+            id: item.id,
             name: item.name,
             quantity: item.quantity,
             price: item.price
@@ -207,11 +207,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         
         if (rpcError) throw rpcError;
         
-        const newOrder = newOrderData as Order;
-
-        if (!newOrder || !newOrder.id) {
+        if (!newOrderData || !newOrderData.order_id) {
             throw new Error("Order creation failed: No order data returned from function.");
         }
+
+        const orderId = newOrderData.order_id;
 
         const { error: clearCartError } = await supabase.from('user_cart_items').delete().eq('user_id', user.id);
         if (clearCartError) {
@@ -220,7 +220,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         }
 
         dispatch({type: 'CLEAR_CART' });
-        router.push(`/orders/${newOrder.id}`);
+        router.push(`/orders/${orderId}`);
 
     } catch(error: any) {
         console.error("Error placing order:", error);
