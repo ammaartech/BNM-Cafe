@@ -30,10 +30,10 @@ function KOTCard({ order, onUpdateStatus }: { order: Order; onUpdateStatus: (id:
     const statusDisplay = statusDisplayMap[order.status] || { label: order.status, icon: <Package className="h-4 w-4" /> };
 
     return (
-        <Card className="w-80 flex-shrink-0 flex flex-col shadow-lg bg-card rounded-lg">
+        <Card className="flex flex-col shadow-lg bg-card rounded-lg">
             <CardHeader className="p-4 bg-muted/50 rounded-t-lg">
                 <div className="flex justify-between items-baseline">
-                    <CardTitle className="text-2xl font-bold">#{order.daily_order_id || order.id.slice(0, 5)}</CardTitle>
+                    <CardTitle className="text-2xl font-bold">#{(order.daily_order_id || order.id.slice(0, 5)).toUpperCase()}</CardTitle>
                     <p className="text-xs text-muted-foreground font-mono">
                         {new Date(order.orderDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </p>
@@ -87,7 +87,7 @@ function ArchivedOrderCard({ order }: { order: Order }) {
         <Card className="shadow-md">
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                 <div>
-                    <CardTitle className="text-lg font-bold">Order #{order.daily_order_id || order.id.slice(0, 7)}</CardTitle>
+                    <CardTitle className="text-lg font-bold">Order #{(order.daily_order_id || order.id.slice(0, 7)).toUpperCase()}</CardTitle>
                     <p className="text-sm text-muted-foreground">{order.userName}</p>
                 </div>
                  <div className="text-right">
@@ -139,7 +139,7 @@ function AdminDashboard({ supabase }: { supabase: any }) {
       totalAmount: dbOrder.total_amount,
       status: dbOrder.status,
       items: dbOrder.order_items?.map((item: any) => ({
-        id: item.menu_item_uuid,
+        id: item.menu_item_id,
         uuid: item.menu_item_uuid,
         name: item.name,
         quantity: item.quantity,
@@ -218,12 +218,12 @@ function AdminDashboard({ supabase }: { supabase: any }) {
             <TabsTrigger value="delivered">Delivered ({deliveredOrders.length})</TabsTrigger>
             <TabsTrigger value="cancelled">Cancelled ({cancelledOrders.length})</TabsTrigger>
         </TabsList>
-        <TabsContent value="live" className="mt-2 flex-grow">
-            <div className="flex gap-4 overflow-x-auto p-4 bg-muted/40 rounded-lg h-full">
+        <TabsContent value="live" className="mt-2 flex-grow overflow-y-auto">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4 p-4">
                 {liveOrders.length > 0 ? (
                     liveOrders.map(order => <KOTCard key={order.id} order={order} onUpdateStatus={handleUpdateStatus} />)
                 ) : (
-                    <div className="w-full flex items-center justify-center text-center py-16 text-muted-foreground">
+                    <div className="w-full flex items-center justify-center text-center py-16 text-muted-foreground col-span-full">
                         <div>
                             <Package className="mx-auto h-12 w-12" />
                             <p className="mt-4">No live orders right now.</p>
@@ -389,4 +389,3 @@ export default function AdminPage() {
         </div>
     );
 }
-
