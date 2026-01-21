@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 function CheckoutSkeleton() {
     return (
-      <div className="grid md:grid-cols-3 gap-8">
+      <div className="grid md:grid-cols-3 gap-8 p-4">
         <div className="md:col-span-2 space-y-6">
             <Card>
                 <CardHeader>
@@ -92,7 +92,7 @@ export default function CheckoutPage() {
 
   if (totalItems === 0 && !isPlacingOrder) {
     return (
-        <div className="flex-grow flex items-center justify-center">
+        <div className="flex-grow flex items-center justify-center p-4">
             <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Your cart is empty</AlertTitle>
@@ -105,8 +105,8 @@ export default function CheckoutPage() {
   }
 
   return (
-     <div className="flex flex-col h-full">
-        <div className="flex items-center gap-4 mb-6">
+     <div className="flex flex-col h-full p-4">
+        <div className="flex items-center gap-4 mb-2">
             <Button variant="ghost" size="icon" asChild>
                 <Link href="/cart">
                     <ArrowLeft />
@@ -114,7 +114,7 @@ export default function CheckoutPage() {
             </Button>
             <h1 className="text-2xl font-bold">Checkout</h1>
         </div>
-        <div className="flex-grow space-y-6">
+        <div className="flex-grow space-y-4 pt-2">
             <Card>
                 <CardHeader>
                     <CardTitle>Items in Order ({totalItems})</CardTitle>
@@ -124,7 +124,7 @@ export default function CheckoutPage() {
                         {state.items.map(item => {
                             const itemImage = PlaceHolderImages.find(img => img.id === item.image);
                             return (
-                                <li key={item.id} className="flex items-center gap-4 p-4">
+                                <li key={item.id} className="flex items-center gap-4 p-6">
                                     {itemImage && (
                                     <Image
                                         src={itemImage.imageUrl}
@@ -149,12 +149,12 @@ export default function CheckoutPage() {
             </Card>
         </div>
         
-        <div className="mt-auto pt-6 space-y-6">
+        <div className="mt-auto pt-4 space-y-4">
             <Card>
                 <CardHeader>
                     <CardTitle>Order Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="p-6 space-y-4">
                     <div className="flex justify-between text-muted-foreground">
                         <span>Subtotal</span>
                         <span>₹{subTotal.toFixed(2)}</span>
@@ -171,7 +171,7 @@ export default function CheckoutPage() {
                 </CardContent>
             </Card>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
                  <Dialog>
                     <DialogTrigger asChild>
                         <Button className="h-12 w-1/2 text-base font-bold" variant="default">
