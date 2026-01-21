@@ -417,51 +417,55 @@ export default function AnalyticsPageContainer() {
     };
 
     if (isUserLoading) {
-        return <AnalyticsSkeleton />;
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
     }
     
     const isUserAdmin = user && !user.is_anonymous && userProfile?.role === 'admin';
-    const isUserLoggedInButNotAdmin = user && !user.is_anonymous && userProfile?.role !== 'admin';
+    
+    if (!isUserAdmin) {
+        const isUserLoggedInButNotAdmin = user && !user.is_anonymous && userProfile?.role !== 'admin';
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
+                <div className="flex-grow flex items-center justify-center">
+                    {isUserLoggedInButNotAdmin ? (
+                       <Card className="w-full max-w-sm">
+                           <CardHeader>
+                               <CardTitle className="text-2xl text-center">Access Denied</CardTitle>
+                           </CardHeader>
+                           <CardContent className="text-center">
+                               <Alert variant="destructive" className="mb-4">
+                                   <AlertCircle className="h-4 w-4" />
+                                   <AlertTitle>Permission Error</AlertTitle>
+                                   <AlertDescription>You do not have permission to access the analytics dashboard.</AlertDescription>
+                               </Alert>
+                               <Button variant="outline" onClick={handleLogout} className="w-full">
+                                   <LogOut className="mr-2 h-4 w-4" /> Logout
+                               </Button>
+                           </CardContent>
+                       </Card>
+                   ) : (
+                       <AdminLoginPage />
+                   )}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
-            {isUserAdmin ? (
-                 <>
-                    <header className="mb-6 flex justify-between items-center">
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground text-center flex-grow">
-                            Sales Analytics
-                        </h1>
-                        <Button variant="outline" onClick={handleLogout}>
-                            <LogOut className="mr-2 h-4 w-4" /> Logout
-                        </Button>
-                    </header>
-                    <AdminAnalyticsPage />
-                </>
-            ) : (
-                <div className="flex-grow flex items-center justify-center">
-                     {isUserLoggedInButNotAdmin ? (
-                        <Card className="w-full max-w-sm">
-                            <CardHeader>
-                                <CardTitle className="text-2xl text-center">Access Denied</CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-center">
-                                <Alert variant="destructive" className="mb-4">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <AlertTitle>Permission Error</AlertTitle>
-                                    <AlertDescription>You do not have permission to access the analytics dashboard.</AlertDescription>
-                                </Alert>
-                                <Button variant="outline" onClick={handleLogout} className="w-full">
-                                    <LogOut className="mr-2 h-4 w-4" /> Logout
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <AdminLoginPage />
-                    )}
-                </div>
-            )}
+            <header className="mb-6 flex justify-between items-center">
+                <h1 className="text-3xl font-bold tracking-tight text-foreground text-center flex-grow">
+                    Sales Analytics
+                </h1>
+                <Button variant="outline" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" /> Logout
+                </Button>
+            </header>
+            <AdminAnalyticsPage />
         </div>
     );
 }
-
-    

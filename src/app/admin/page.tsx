@@ -152,7 +152,7 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
         clearInterval(periodicRefetchInterval);
         document.removeEventListener('visibilitychange', handleVisibilityChange);
     }
-  }, []);
+  }, [supabase, toast, fetchAllOrders, handleRealtimeUpdate]);
   
 
   const handleStatusChange = useCallback(async (order: Order, newStatus: Order['status']) => {
@@ -476,25 +476,13 @@ export default function AdminPage() {
     }
     
     const isUserAdmin = user && !user.is_anonymous && userProfile?.role === 'admin';
-    const isUserLoggedInButNotAdmin = user && !user.is_anonymous && userProfile?.role !== 'admin';
 
-    return (
-        <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
-            {isUserAdmin ? (
-                <>
-                    <header className="mb-6 flex justify-between items-center">
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground text-center flex-grow">
-                            Admin Dashboard
-                        </h1>
-                        <Button variant="outline" onClick={handleLogout}>
-                            <LogOut className="mr-2 h-4 w-4" /> Logout
-                        </Button>
-                    </header>
-                    <AdminDashboard supabase={supabase} />
-                </>
-            ) : (
+    if (!isUserAdmin) {
+        const isUserLoggedInButNotAdmin = user && !user.is_anonymous && userProfile?.role !== 'admin';
+        return (
+             <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
                 <div className="flex-grow flex items-center justify-center">
-                     {isUserLoggedInButNotAdmin ? (
+                    {isUserLoggedInButNotAdmin ? (
                         <Card className="w-full max-w-sm">
                             <CardHeader>
                                 <CardTitle className="text-2xl text-center">Access Denied</CardTitle>
@@ -514,7 +502,21 @@ export default function AdminPage() {
                         <AdminLoginPage />
                     )}
                 </div>
-            )}
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
+            <header className="mb-6 flex justify-between items-center">
+                <h1 className="text-3xl font-bold tracking-tight text-foreground text-center flex-grow">
+                    Admin Dashboard
+                </h1>
+                <Button variant="outline" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" /> Logout
+                </Button>
+            </header>
+            <AdminDashboard supabase={supabase} />
         </div>
     );
 }
