@@ -7,7 +7,6 @@ import type { KotTicket } from '@/lib/types';
 import { KotTicketCard } from '@/components/staff/KotTicketCard';
 import { Button } from '@/components/ui/button';
 import { LogOut, Loader2, WifiOff, ServerCrash } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 
 type StationDashboardProps = {
@@ -19,14 +18,14 @@ type StationDashboardProps = {
 };
 
 export default function StationDashboard({ station }: StationDashboardProps) {
-  const { supabase, user } = useSupabase();
+  const { supabase } = useSupabase();
   const router = useRouter();
   const [tickets, setTickets] = useState<KotTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchInitialData = useCallback(async () => {
-    setIsLoading(true);
+    // Don't set loading to true here on refetch, only on initial load
     setError(null);
     if (!supabase) return;
 
@@ -44,38 +43,42 @@ export default function StationDashboard({ station }: StationDashboardProps) {
   }, [supabase, station.code]);
 
   useEffect(() => {
+    setIsLoading(true);
     fetchInitialData();
   }, [fetchInitialData]);
 
   useEffect(() => {
     if (!supabase) return;
 
-    // Listen for new orders for this station
-    const newOrderChannel = supabase
-      .channel(`station-new-orders-${station.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'order_stations', filter: `station_id=eq.${station.id}` },
-        () => {
-          // New order detected, refetch everything to ensure consistency.
-          // For a more granular approach, you could fetch just the new ticket.
-          fetchInitialData();
+    const channel = supabase
+      .channel(`station-dashboard-${station.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => fetchInitialData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_stations' }, () => fetchInitialData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchInitialData())
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Realtime connected for station ${station.name}`);
         }
-      )
-      .subscribe();
+        if (err) {
+            console.error('Realtime subscription error', err);
+            setError('Realtime connection failed. Data may be out of date.');
+        }
+      });
+      
+    // Safety refetch when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchInitialData();
+      }
+    };
 
-    // Listen to updates on items and the overall order
-    const updateChannel = supabase
-      .channel(`station-updates-${station.id}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_items' }, () => fetchInitialData())
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, () => fetchInitialData())
-      .subscribe();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      supabase.removeChannel(newOrderChannel);
-      supabase.removeChannel(updateChannel);
+      supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [supabase, station.id, fetchInitialData]);
+  }, [supabase, station.id, fetchInitialData, station.name]);
 
   const handleLogout = async () => {
     if (supabase) {
@@ -92,52 +95,48 @@ export default function StationDashboard({ station }: StationDashboardProps) {
     };
   }, [tickets]);
 
+  const columns = [
+    { title: 'Pending', tickets: pending, count: pending.length },
+    { title: 'Cooking', tickets: cooking, count: cooking.length },
+    { title: 'Ready', tickets: ready, count: ready.length },
+  ];
+
   return (
     <div className="flex flex-col h-full w-full">
-      <header className="p-4 bg-background border-b shadow-sm flex justify-between items-center">
-        <h1 className="text-2xl font-bold tracking-tight">{station.name} Station Dashboard</h1>
-        <Button variant="outline" onClick={handleLogout}>
+      <header className="p-3 bg-card border-b shadow-sm flex justify-between items-center flex-shrink-0">
+        <h1 className="text-xl font-bold tracking-tight">{station.name} Station</h1>
+        <Button variant="outline" onClick={handleLogout} size="sm">
           <LogOut className="mr-2 h-4 w-4" /> Logout
         </Button>
       </header>
 
-      {isLoading && (
+      {isLoading ? (
         <div className="flex-grow flex items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
-      )}
-
-      {!isLoading && error && (
+      ) : error ? (
         <div className="flex-grow flex items-center justify-center text-center">
             <div className="p-8 border-2 border-dashed border-destructive/50 rounded-2xl">
                 <ServerCrash className="h-12 w-12 text-destructive mx-auto mb-4" />
                 <h2 className="text-2xl font-bold text-destructive">Connection Error</h2>
                 <p className="text-muted-foreground max-w-sm">{error}</p>
-                <Button onClick={fetchInitialData} className="mt-6">Try Again</Button>
+                <Button onClick={() => { setIsLoading(true); fetchInitialData(); }} className="mt-6">Try Again</Button>
             </div>
         </div>
-      )}
-      
-      {!isLoading && !error && (
-        <main className="flex-grow flex overflow-x-auto p-4 gap-4">
-          <div className="flex-shrink-0 w-80 md:w-96">
-            <h2 className="text-lg font-semibold mb-2 px-2">Pending ({pending.length})</h2>
-            <div className="space-y-4 h-full overflow-y-auto rounded-lg p-1">
-              {pending.map(ticket => <KotTicketCard key={ticket.orderId} ticket={ticket} stationId={station.id} />)}
+      ) : (
+        <main className="flex-grow flex overflow-x-auto p-2 sm:p-4 gap-4">
+          {columns.map(column => (
+            <div key={column.title} className="flex-shrink-0 w-[300px] sm:w-[350px] md:w-[400px] flex flex-col">
+              <h2 className="text-lg font-semibold mb-2 px-2 text-foreground/80">{column.title} ({column.count})</h2>
+              <div className="space-y-4 flex-grow overflow-y-auto rounded-lg p-1 no-scrollbar">
+                {column.tickets.length > 0 ? (
+                  column.tickets.map(ticket => <KotTicketCard key={ticket.orderId} ticket={ticket} stationId={station.id} />)
+                ) : (
+                    <div className="text-center text-muted-foreground pt-10 text-sm">No orders in this state.</div>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="flex-shrink-0 w-80 md:w-96">
-            <h2 className="text-lg font-semibold mb-2 px-2">Cooking ({cooking.length})</h2>
-            <div className="space-y-4 h-full overflow-y-auto rounded-lg p-1">
-              {cooking.map(ticket => <KotTicketCard key={ticket.orderId} ticket={ticket} stationId={station.id} />)}
-            </div>
-          </div>
-          <div className="flex-shrink-0 w-80 md:w-96">
-            <h2 className="text-lg font-semibold mb-2 px-2">Ready for Pickup ({ready.length})</h2>
-            <div className="space-y-4 h-full overflow-y-auto rounded-lg p-1">
-              {ready.map(ticket => <KotTicketCard key={ticket.orderId} ticket={ticket} stationId={station.id} />)}
-            </div>
-          </div>
+          ))}
         </main>
       )}
     </div>

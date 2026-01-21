@@ -27,25 +27,25 @@
   }
 
   .dark {
-    --background: 150 25% 9%;
-    --foreground: 0 0% 98%;
-    --card: 150 20% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 150 25% 9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 150 40% 35%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 150 20% 15%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 150 20% 15%;
+    --background: 224 18% 18%; /* KOT Dark Blue/Gray */
+    --foreground: 210 20% 90%;
+    --card: 225 15% 25%; /* Slightly lighter card background */
+    --card-foreground: 210 20% 95%;
+    --popover: 224 18% 18%;
+    --popover-foreground: 210 20% 90%;
+    --primary: 40 95% 55%; /* KOT Amber/Yellow */
+    --primary-foreground: 224 20% 10%;
+    --secondary: 220 15% 30%;
+    --secondary-foreground: 210 20% 90%;
+    --muted: 220 15% 30%;
     --muted-foreground: 220 10% 65%;
-    --accent: 39 90% 60%;
-    --accent-foreground: 150 46% 10%;
-    --destructive: 0 62.8% 30.6%;
+    --accent: 40 95% 55%;
+    --accent-foreground: 224 20% 10%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 150 20% 18%;
-    --input: 150 20% 18%;
-    --ring: 150 40% 35%;
+    --border: 220 15% 35%;
+    --input: 220 15% 35%;
+    --ring: 40 95% 55%;
   }
 }
 

@@ -24,9 +24,9 @@ export default async function StationSelectionPage() {
   const stations = await getStations();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-muted/40 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
       <div className="text-center mb-8">
-        <Image src="/bnmlogoB.png" alt="B.N.M Cafe Logo" width={120} height={120} priority className="mx-auto mb-4" />
+        <Image src="/bnmlogoB.png" alt="B.N.M Cafe Logo" width={120} height={120} priority className="mx-auto mb-4 invert" />
         <h1 className="text-3xl font-bold tracking-tight">Select Your Station</h1>
         <p className="text-muted-foreground">Choose your assigned station to view live orders.</p>
       </div>
@@ -35,9 +35,9 @@ export default async function StationSelectionPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
           {stations.map((station) => (
             <Link href={`/staff/station/${station.code}`} key={station.id} className="block">
-              <Card className="h-full hover:bg-primary/5 hover:border-primary transition-all duration-200">
+              <Card className="h-full hover:bg-primary/10 hover:border-primary transition-all duration-200 shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-2xl text-center">{station.name}</CardTitle>
+                  <CardTitle className="text-2xl text-center font-semibold">{station.name}</CardTitle>
                 </CardHeader>
               </Card>
             </Link>

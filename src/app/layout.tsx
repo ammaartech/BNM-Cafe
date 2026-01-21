@@ -33,14 +33,14 @@ function RootLayoutContent({
     const isAuthPage = pathname === '/';
 
     const layoutClass = () => {
-        if (isAdminPage) return 'max-w-7xl';
         if (isStaffPage) return 'w-full max-w-full';
+        if (isAdminPage) return 'max-w-7xl';
         if (isAuthPage) return 'w-full';
         return 'max-w-md shadow-2xl';
     }
 
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="en" className={cn(isStaffPage && 'dark')} suppressHydrationWarning>
             <head>
                 <title>B.N.M Cafe</title>
                 <meta name="description" content="Your university cafe companion" />
