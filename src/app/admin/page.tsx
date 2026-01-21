@@ -43,7 +43,7 @@ function KOTCard({ order, onUpdateStatus }: { order: Order; onUpdateStatus: (id:
                     {formatDistanceToNow(new Date(order.orderDate), { addSuffix: true })}
                 </p>
             </CardHeader>
-            <CardContent className="p-4 flex-grow overflow-y-auto">
+            <CardContent className="p-4">
                 <ul className="space-y-2">
                     {order.items.map((item, index) => (
                         <li key={item.uuid || index} className="flex text-base items-center">
@@ -53,7 +53,7 @@ function KOTCard({ order, onUpdateStatus }: { order: Order; onUpdateStatus: (id:
                     ))}
                 </ul>
             </CardContent>
-            <CardFooter className="p-3 border-t flex flex-col items-stretch gap-2">
+            <CardFooter className="p-3 border-t flex flex-col items-stretch gap-2 mt-auto">
                  <Badge 
                     variant={order.status === 'READY' ? 'default' : 'secondary'}
                     className={cn('font-semibold text-sm w-full justify-center py-1.5', {
@@ -91,7 +91,7 @@ function ArchivedOrderCard({ order }: { order: Order }) {
                     <p className="text-sm text-muted-foreground">{order.userName}</p>
                 </div>
                  <div className="text-right">
-                    <p className="text-sm font-bold">₹{order.totalAmount.toFixed(2)}</p>
+                    <p className="text-sm font-bold">₹{typeof order.totalAmount === 'number' ? order.totalAmount.toFixed(2) : "—"}</p>
                     <p className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(order.orderDate), { addSuffix: true })}
                     </p>
@@ -140,7 +140,7 @@ function AdminDashboard({ supabase }: { supabase: any }) {
       status: dbOrder.status,
       items: dbOrder.order_items?.map((item: any) => ({
         id: item.menu_item_id,
-        uuid: item.menu_item_uuid,
+        uuid: item.id, // The PK of order_items is uuid, let's use it for key
         name: item.name,
         quantity: item.quantity,
         price: item.price,
@@ -172,18 +172,25 @@ function AdminDashboard({ supabase }: { supabase: any }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, 
       (payload) => {
           console.log('Realtime change received!', payload);
+          // A bit heavy, but ensures data consistency.
           fetchOrders();
       })
-      .subscribe();
+      .subscribe((status, err) => {
+          if (err) {
+              console.error("Realtime subscription error", err);
+              toast({ title: "Connection issue", description: "Could not connect to real-time updates", variant: "destructive"});
+          }
+      });
     
     return () => {
         supabase.removeChannel(channel);
     };
 
-  }, [fetchOrders, supabase]);
+  }, [fetchOrders, supabase, toast]);
 
   const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
     const originalOrders = orders;
+    // Optimistic update
     setOrders(prevOrders => prevOrders.map(o => o.id === orderId ? { ...o, status } : o));
 
     const { error } = await supabase
@@ -193,9 +200,11 @@ function AdminDashboard({ supabase }: { supabase: any }) {
 
     if (error) {
         toast({ title: "Error", description: `Could not update order status. ${error.message}`, variant: "destructive" });
+        // Rollback on error
         setOrders(originalOrders);
     } else {
-        toast({ title: "Success", description: `Order status updated.`});
+        toast({ title: "Success", description: `Order status updated to ${status}.`});
+        // We don't need to refetch because we optimistically updated and RT will catch it anyway
     }
   };
 
@@ -213,13 +222,15 @@ function AdminDashboard({ supabase }: { supabase: any }) {
 
   return (
     <Tabs defaultValue="live" className="w-full flex flex-col flex-grow">
-        <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="live">Live KOT ({liveOrders.length})</TabsTrigger>
-            <TabsTrigger value="delivered">Delivered ({deliveredOrders.length})</TabsTrigger>
-            <TabsTrigger value="cancelled">Cancelled ({cancelledOrders.length})</TabsTrigger>
-        </TabsList>
+        <div className="px-4">
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="live">Live KOT ({liveOrders.length})</TabsTrigger>
+                <TabsTrigger value="delivered">Delivered ({deliveredOrders.length})</TabsTrigger>
+                <TabsTrigger value="cancelled">Cancelled ({cancelledOrders.length})</TabsTrigger>
+            </TabsList>
+        </div>
         <TabsContent value="live" className="mt-2 flex-grow overflow-y-auto">
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4 p-4">
+             <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4 p-4 items-start">
                 {liveOrders.length > 0 ? (
                     liveOrders.map(order => <KOTCard key={order.id} order={order} onUpdateStatus={handleUpdateStatus} />)
                 ) : (
@@ -232,7 +243,7 @@ function AdminDashboard({ supabase }: { supabase: any }) {
                 )}
             </div>
         </TabsContent>
-        <TabsContent value="delivered" className="flex-grow overflow-y-auto pr-2">
+        <TabsContent value="delivered" className="flex-grow overflow-y-auto p-4">
              <div className="space-y-4">
                 {deliveredOrders.length > 0 ? (
                      deliveredOrders.map(order => <ArchivedOrderCard key={order.id} order={order} />)
@@ -243,7 +254,7 @@ function AdminDashboard({ supabase }: { supabase: any }) {
                 )}
             </div>
         </TabsContent>
-        <TabsContent value="cancelled" className="flex-grow overflow-y-auto pr-2">
+        <TabsContent value="cancelled" className="flex-grow overflow-y-auto p-4">
              <div className="space-y-4">
                 {cancelledOrders.length > 0 ? (
                      cancelledOrders.map(order => <ArchivedOrderCard key={order.id} order={order} />)
@@ -328,7 +339,7 @@ export default function AdminPage() {
         if (supabase) {
             await supabase.auth.signOut();
         }
-        router.push('/');
+        // No need to push, the provider will handle redirect.
     };
 
     if (isUserLoading) {
