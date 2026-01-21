@@ -80,12 +80,12 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (isUserLoading) return;
     
-    const isAuthPage = pathname === '/';
+    const isAuthPage = pathname === '/login';
     const isAdminPage = pathname.startsWith('/admin');
 
     // If user is not logged in, and they are on a protected page, redirect to auth page.
     if (!user && !isAuthPage && !isAdminPage) {
-      router.replace('/');
+      router.replace('/login');
     }
     
     // If user is logged in (and not anon) and they are on the auth page, redirect to menu.
