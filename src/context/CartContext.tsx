@@ -190,11 +190,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     try {
         const orderItemsParam = state.items.map(item => ({
-            uuid: item.uuid,
+            id: item.uuid,
             name: item.name,
             quantity: item.quantity,
             price: item.price
         }));
+
+        console.log("ORDER ITEMS PAYLOAD", orderItemsParam);
 
         const { data: newOrderData, error: rpcError } = await supabase.rpc('create_new_order', {
             user_id_param: user.id,
