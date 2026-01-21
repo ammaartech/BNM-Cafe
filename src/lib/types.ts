@@ -30,6 +30,8 @@ export interface OrderItem {
     price: number;
 }
 
+export type OrderStatus = "PENDING" | "COOKING" | "READY_FOR_PICKUP" | "DELIVERED" | "CANCELLED";
+
 export interface Order {
   id:string;
   daily_order_id?: string;
@@ -37,7 +39,7 @@ export interface Order {
   userName: string;
   orderDate: string;
   totalAmount: number;
-  status: "PENDING" | "COOKING" | "READY_FOR_PICKUP" | "DELIVERED" | "CANCELLED";
+  status: OrderStatus;
   items: OrderItem[];
   pickup_notified_at?: string | null;
   // Legacy fields for old static data
@@ -60,17 +62,21 @@ export interface UserProfile {
 }
 
 // Types for Staff KOT Dashboard
+export type StationOrderItemStatus = 'PENDING' | 'COOKING' | 'READY' | 'PICKED_UP';
+export type StationOrderStatus = 'PENDING' | 'COOKING' | 'READY' | 'PICKED_UP';
+
+
 export type StationOrderItem = {
   id: string; // order_items.id
   name: string;
   quantity: number;
-  status: 'PENDING' | 'COOKING' | 'READY' | 'PICKED_UP';
+  status: StationOrderItemStatus;
 };
 
 export type KotTicket = {
   orderId: string;
   dailyOrderId: string;
   orderDate: string;
-  stationStatus: 'PENDING' | 'COOKING' | 'READY' | 'PICKED_UP';
+  stationStatus: StationOrderStatus;
   items: StationOrderItem[];
 };

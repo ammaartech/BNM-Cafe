@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { CartItem, MenuItem, Order, OrderItem, UserProfile } from "@/lib/types";
@@ -255,12 +256,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       menu_item_uuid: item.uuid,
       quantity: (existingItem?.quantity || 0) + 1
     };
+    
+    console.log('ADD TO CART PAYLOAD', upsertPayload);
 
     const { error } = await supabase
       .from('user_cart_items')
       .upsert(upsertPayload, { onConflict: 'user_id,menu_item_uuid' });
 
     if (error) {
+      console.error("Error adding item to cart:", error);
       toast({ title: 'Error', description: 'Could not add item to cart.', variant: 'destructive'});
       if (existingItem) {
         dispatch({ type: 'UPDATE_QUANTITY', payload: { id: item.id, quantity: existingItem.quantity }});
