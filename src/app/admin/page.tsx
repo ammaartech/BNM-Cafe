@@ -117,7 +117,7 @@ function AdminDashboard({ supabase }: { supabase: any }) {
                                 </Badge>
                             </TableCell>
                             <TableCell>{new Date(order.orderDate).toLocaleString()}</TableCell>
-                            <TableCell className="text-right">₹{order.totalAmount.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">₹{(order.totalAmount || 0).toFixed(2)}</TableCell>
                         </TableRow>
                     ))
                 ) : (

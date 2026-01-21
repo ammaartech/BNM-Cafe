@@ -133,7 +133,7 @@ function AdminAnalyticsPage() {
             }
 
             // 1. Calculate KPIs
-            const totalRevenue = ordersData.reduce((acc, order) => acc + order.total_amount, 0);
+            const totalRevenue = ordersData.reduce((acc, order) => acc + (order.total_amount || 0), 0);
             const totalOrders = ordersData.length;
             const totalCustomers = new Set(ordersData.map(o => o.user_id)).size;
 
@@ -147,7 +147,7 @@ function AdminAnalyticsPage() {
                 const dayOrders = ordersData.filter(o => format(new Date(o.order_date), 'yyyy-MM-dd') === date);
                 return {
                     date: format(new Date(date), 'MMM dd'),
-                    revenue: dayOrders.reduce((sum, order) => sum + order.total_amount, 0),
+                    revenue: dayOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
                     sales: dayOrders.length
                 };
             });
@@ -155,17 +155,22 @@ function AdminAnalyticsPage() {
             // 3. Aggregate Top Products
             const productSales = new Map<string, { name: string; unitsSold: number; revenue: number; id: string }>();
             ordersData.forEach(order => {
-                order.order_items.forEach((item: any) => {
+                (order.order_items || []).forEach((item: any) => {
                     const existing = productSales.get(item.menu_item_id);
+                    const itemRevenue = (item.price || 0) * (item.quantity || 0);
+                    const itemQuantity = item.quantity || 0;
+
+                    if (itemQuantity === 0) return; // Don't process items with 0 quantity
+
                     if (existing) {
-                        existing.unitsSold += item.quantity;
-                        existing.revenue += item.price * item.quantity;
-                    } else {
+                        existing.unitsSold += itemQuantity;
+                        existing.revenue += itemRevenue;
+                    } else if (item.menu_item_id) {
                         productSales.set(item.menu_item_id, {
                             id: item.menu_item_id,
                             name: item.name,
-                            unitsSold: item.quantity,
-                            revenue: item.price * item.quantity,
+                            unitsSold: itemQuantity,
+                            revenue: itemRevenue,
                         });
                     }
                 });
@@ -173,7 +178,7 @@ function AdminAnalyticsPage() {
 
             const topProducts = Array.from(productSales.values())
                 .sort((a, b) => b.unitsSold - a.unitsSold)
-                .map(p => ({ ...p, price: p.revenue / p.unitsSold, quantity: p.unitsSold }));
+                .map(p => ({ ...p, price: p.unitsSold > 0 ? p.revenue / p.unitsSold : 0, quantity: p.unitsSold }));
 
 
             setData({
@@ -192,7 +197,7 @@ function AdminAnalyticsPage() {
         if (!data?.topProducts) return;
         
         const headers = ["Product ID", "Product Name", "Units Sold", "Total Revenue (INR)"];
-        const rows = data.topProducts.map(p => [p.id, `"${p.name.replace(/"/g, '""')}"`, p.unitsSold, p.revenue.toFixed(2)]);
+        const rows = data.topProducts.map(p => [p.id, `"${p.name.replace(/"/g, '""')}"`, p.unitsSold, (p.revenue || 0).toFixed(2)]);
         
         let csvContent = headers.join(",") + "\r\n";
         rows.forEach(rowArray => {
@@ -236,7 +241,7 @@ function AdminAnalyticsPage() {
                         <IndianRupee className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">₹{data.totalRevenue.toFixed(2)}</div>
+                        <div className="text-2xl font-bold">₹{(data.totalRevenue || 0).toFixed(2)}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -330,7 +335,7 @@ function AdminAnalyticsPage() {
                                 <TableRow key={product.id}>
                                     <TableCell className="font-medium">{product.name}</TableCell>
                                     <TableCell className="text-center">{product.unitsSold}</TableCell>
-                                    <TableCell className="text-right">₹{product.revenue.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">₹{(product.revenue || 0).toFixed(2)}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
