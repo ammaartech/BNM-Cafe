@@ -126,8 +126,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const menuItemIds = cartData.map(item => item.menu_item_id);
     const { data: menuItemsData, error: menuItemsError } = await supabase
         .from('menu_items')
-        .select('*')
-        .in('id', menuItemIds);
+        .select('*, uuid')
+        .in('uuid', menuItemIds);
     
     if (menuItemsError) {
         console.error("Error fetching menu items for cart:", menuItemsError);
@@ -137,7 +137,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const loadedCartItems: CartItem[] = cartData.map(cartItem => {
-        const menuItem = menuItemsData.find(mi => mi.id === cartItem.menu_item_id);
+        const menuItem = menuItemsData.find(mi => mi.uuid === cartItem.menu_item_id);
         if (!menuItem) return null;
         return {
             ...menuItem,
@@ -189,7 +189,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     try {
         const orderItemsParam = state.items.map(item => ({
-            id: item.id,
+            id: item.uuid,
             name: item.name,
             quantity: item.quantity,
             price: item.price
@@ -253,7 +253,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const { error } = await supabase
       .from('user_cart_items')
       .upsert(
-        { user_id: user.id, menu_item_id: item.id, quantity: (existingItem?.quantity || 0) + 1 },
+        { user_id: user.id, menu_item_id: item.uuid, quantity: (existingItem?.quantity || 0) + 1 },
         { onConflict: 'user_id,menu_item_id' }
       );
 
@@ -285,7 +285,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const { error } = await supabase
       .from('user_cart_items')
       .delete()
-      .match({ user_id: user.id, menu_item_id: id });
+      .match({ user_id: user.id, menu_item_id: existingItem.uuid });
 
     if (error) {
       toast({ title: 'Error', description: 'Could not remove item from cart.', variant: 'destructive' });
@@ -323,13 +323,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const { error: deleteError } = await supabase
             .from('user_cart_items')
             .delete()
-            .match({ user_id: user.id, menu_item_id: id });
+            .match({ user_id: user.id, menu_item_id: item.uuid });
         error = deleteError;
     } else {
         const { error: updateError } = await supabase
             .from('user_cart_items')
             .update({ quantity })
-            .match({ user_id: user.id, menu_item_id: id });
+            .match({ user_id: user.id, menu_item_id: item.uuid });
         error = updateError;
     }
 

@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 
 export interface MenuItem {
   id: string;
+  uuid: string;
   name: string;
   description: string;
   price: number;
