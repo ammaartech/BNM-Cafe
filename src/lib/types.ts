@@ -22,14 +22,14 @@ export interface Category {
 }
 
 export interface OrderItem {
-    id: string; // This is order_items.id (UUID)
-    uuid: string; // This is menu_items.uuid (UUID)
+    id: string;
+    uuid: string;
     name: string;
     quantity: number;
     price: number;
 }
 
-export type OrderStatus = "PENDING" | "COOKING" | "READY_FOR_PICKUP" | "DELIVERED" | "CANCELLED";
+export type OrderStatus = "PENDING" | "Ready for Pickup" | "Delivered" | "Cancelled";
 
 export interface Order {
   id:string;
@@ -56,5 +56,5 @@ export interface UserProfile {
     id: string;
     name: string;
     email: string;
-    role: 'admin' | 'customer' | 'staff';
+    role: 'admin' | 'customer';
 }
