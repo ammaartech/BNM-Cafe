@@ -1,4 +1,5 @@
 
+
 import type { LucideIcon } from "lucide-react";
 
 export interface MenuItem {
@@ -22,11 +23,11 @@ export interface Category {
 }
 
 export interface OrderItem {
-    id: string; // This will be the menu_item_id
+    id: string;
+    uuid: string;
     name: string;
     quantity: number;
     price: number;
-    uuid: string;
 }
 
 export interface Order {
@@ -36,13 +37,14 @@ export interface Order {
   userName: string;
   orderDate: string;
   totalAmount: number;
-  status: "Pending" | "Ready for Pickup" | "Delivered" | "Cancelled" | "COOKING";
+  status: "PENDING" | "COOKING" | "READY_FOR_PICKUP" | "DELIVERED" | "CANCELLED";
   items: OrderItem[];
   pickup_notified_at?: string | null;
   // Legacy fields for old static data
   date?: string;
   total?: number;
 }
+
 
 export interface CartItem extends MenuItem {
   quantity: number;
@@ -53,5 +55,22 @@ export interface UserProfile {
     id: string;
     name: string;
     email: string;
-    role: 'admin' | 'customer';
+    role: 'admin' | 'customer' | 'staff';
+    station_id?: string;
 }
+
+// Types for Staff KOT Dashboard
+export type StationOrderItem = {
+  id: string; // order_items.id
+  name: string;
+  quantity: number;
+  status: 'PENDING' | 'COOKING' | 'READY' | 'PICKED_UP';
+};
+
+export type KotTicket = {
+  orderId: string;
+  dailyOrderId: string;
+  orderDate: string;
+  stationStatus: 'PENDING' | 'COOKING' | 'READY' | 'PICKED_UP';
+  items: StationOrderItem[];
+};

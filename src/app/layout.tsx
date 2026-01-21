@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { Metadata } from "next";
@@ -28,7 +29,15 @@ function RootLayoutContent({
 }>) {
     const pathname = usePathname();
     const isAdminPage = pathname.startsWith('/admin');
+    const isStaffPage = pathname.startsWith('/staff');
     const isAuthPage = pathname === '/';
+
+    const layoutClass = () => {
+        if (isAdminPage) return 'max-w-7xl';
+        if (isStaffPage) return 'w-full max-w-full';
+        if (isAuthPage) return 'w-full';
+        return 'max-w-md shadow-2xl';
+    }
 
     return (
         <html lang="en" suppressHydrationWarning>
@@ -39,8 +48,7 @@ function RootLayoutContent({
             <body className={`font-sans antialiased ${inter.variable}`}>
                 <div className={cn(
                     "mx-auto bg-background min-h-dvh flex flex-col",
-                    isAdminPage ? "max-w-7xl" : 
-                    isAuthPage ? "w-full" : "max-w-md shadow-2xl"
+                    layoutClass()
                 )}>
                     <SupabaseProvider>
                         {children}
