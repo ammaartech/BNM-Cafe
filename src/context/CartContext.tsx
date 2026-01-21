@@ -189,13 +189,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     try {
         const orderItemsParam = state.items.map(item => ({
-            id: item.uuid,
+            uuid: item.uuid,
             name: item.name,
             quantity: item.quantity,
             price: item.price
         }));
 
-        const { data: newOrderData, error: rpcError } = await supabase.rpc('create_new_order', {
+        const { data: newOrderData, error: rpcError } = await supabase.rpc('create_new_order_with_stations', {
             user_id_param: user.id,
             user_name_param: customerName,
             total_amount_param: totalPrice,
@@ -255,8 +255,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       menu_item_uuid: item.uuid,
       quantity: (existingItem?.quantity || 0) + 1
     };
-
-    console.log('ADD TO CART PAYLOAD', upsertPayload);
 
     const { error } = await supabase
       .from('user_cart_items')

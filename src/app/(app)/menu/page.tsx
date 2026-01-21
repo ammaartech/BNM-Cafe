@@ -120,7 +120,7 @@ function MenuPageContent() {
   useEffect(() => {
     const fetchMenuItems = async () => {
       setIsLoading(true);
-      const { data, error } = await supabase.from('menu_items').select('id, uuid, name, description, price, image, category, stock');
+      const { data, error } = await supabase.from('menu_items').select('id, uuid, name, description, price, image, category, stock, station_id');
       if (error) {
         console.error('Error fetching menu items:', error);
         setMenuItems([]);

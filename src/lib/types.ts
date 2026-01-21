@@ -10,6 +10,7 @@ export interface MenuItem {
   image: string;
   category: "south-indian" | "north-indian" | "refreshments" | "chats";
   stock: number;
+  station_id?: string;
 }
 
 export interface Category {
@@ -25,16 +26,17 @@ export interface OrderItem {
     name: string;
     quantity: number;
     price: number;
+    uuid: string;
 }
 
 export interface Order {
-  id: string;
+  id:string;
   daily_order_id?: string;
   userId?: string; // Optional because old orders might not have it
   userName: string;
   orderDate: string;
   totalAmount: number;
-  status: "Pending" | "Ready for Pickup" | "Delivered" | "Cancelled";
+  status: "Pending" | "Ready for Pickup" | "Delivered" | "Cancelled" | "COOKING";
   items: OrderItem[];
   pickup_notified_at?: string | null;
   // Legacy fields for old static data
