@@ -11,7 +11,6 @@ export interface MenuItem {
   image: string;
   category: "south-indian" | "north-indian" | "refreshments" | "chats";
   stock: number;
-  station_id?: string;
 }
 
 export interface Category {
@@ -58,33 +57,4 @@ export interface UserProfile {
     name: string;
     email: string;
     role: 'admin' | 'customer' | 'staff';
-    station_id?: string;
-}
-
-// Types for Staff KOT Dashboard
-export type StationOrderItemStatus = 'PENDING' | 'COOKING' | 'READY' | 'PICKED_UP';
-export type StationOrderStatus = 'PENDING' | 'COOKING' | 'READY' | 'PICKED_UP';
-
-
-export type StationOrderItem = {
-  id: string; // order_items.id
-  name: string;
-  quantity: number;
-  status: StationOrderItemStatus;
-};
-
-export type KotTicket = {
-  orderId: string;
-  dailyOrderId: string;
-  orderDate: string;
-  stationStatus: StationOrderStatus;
-  items: StationOrderItem[];
-};
-
-export interface Station {
-  id: string;
-  code: string;
-  name: string;
-  active: boolean;
-  sort_order: number;
 }

@@ -80,15 +80,15 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (isUserLoading) return;
     
-    // This logic handles redirection for the main customer-facing app.
-    // Staff routes are now protected by middleware.
     const isAuthPage = pathname === '/';
-    const isStaffRoute = pathname.startsWith('/staff');
+    const isAdminPage = pathname.startsWith('/admin');
 
-    if (!user && !isAuthPage && !isStaffRoute) {
+    // If user is not logged in, and they are on a protected page, redirect to auth page.
+    if (!user && !isAuthPage && !isAdminPage) {
       router.replace('/');
     }
     
+    // If user is logged in (and not anon) and they are on the auth page, redirect to menu.
     if (user && !user.is_anonymous && isAuthPage) {
       router.replace('/menu');
     }

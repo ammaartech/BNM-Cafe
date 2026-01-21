@@ -217,11 +217,6 @@ function AuthForm() {
             </Card>
           </TabsContent>
         </Tabs>
-        <div className="mt-6 text-center">
-            <Link href="/staff/station" className={cn(buttonVariants({ variant: "link" }), "text-muted-foreground")}>
-                Access Station Dashboard &rarr;
-            </Link>
-        </div>
       </div>
     </div>
   );
