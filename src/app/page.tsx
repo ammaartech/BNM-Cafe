@@ -13,6 +13,9 @@ import { AlertCircle, LogIn, UserPlus, CheckCircle } from 'lucide-react';
 import { useSupabase } from '@/lib/supabase/provider';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import Link from 'next/link';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 function AuthForm() {
   const router = useRouter();
@@ -214,6 +217,11 @@ function AuthForm() {
             </Card>
           </TabsContent>
         </Tabs>
+        <div className="mt-6 text-center">
+            <Link href="/staff/station" className={cn(buttonVariants({ variant: "link" }), "text-muted-foreground")}>
+                Access Station Dashboard &rarr;
+            </Link>
+        </div>
       </div>
     </div>
   );
