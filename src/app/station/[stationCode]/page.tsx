@@ -114,9 +114,12 @@ export default function StationPage() {
             .select('*, order:orders(*, order_items(*))')
             .eq('station_id', stationId)
             .in('status', ['PENDING', 'READY'])
-            .order('created_at', { referencedTable: 'order', ascending: true });
+            .order('order_date', { foreignTable: 'orders', ascending: true });
 
-        if (orderStationsError) throw orderStationsError;
+        if (orderStationsError) {
+             console.error("Error fetching station orders:", orderStationsError);
+             throw orderStationsError;
+        }
 
         // 4. Process the data client-side to filter items for this station
         const processedOrders: StationOrder[] = rawOrderStations
