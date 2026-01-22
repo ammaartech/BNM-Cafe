@@ -1,108 +1,125 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useSupabase } from '@/lib/supabase/provider';
-import type { Station, StationOrder, OrderStationStatus, OrderItem } from '@/lib/types';
+import type { Station, OrderStationStatus } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock, CookingPot, Package, Check, Loader2, AlertCircle } from 'lucide-react';
-import { useToast } from "@/hooks/use-toast";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  ArrowLeft,
+  Clock,
+  CookingPot,
+  Check,
+  Package,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-/* ---------------------------------- */
-/* Status display mapping              */
-/* ---------------------------------- */
+/* -------------------- STATUS UI -------------------- */
 
-const statusDisplayMap: {
-  [key in OrderStationStatus]: {
-    label: string;
-    icon: React.ReactNode;
-    className: string;
-  };
-} = {
+const statusMap: Record<
+  OrderStationStatus,
+  { label: string; className: string; icon: React.ReactNode }
+> = {
   PENDING: {
     label: 'Pending',
-    icon: <Clock className="h-4 w-4" />,
     className: 'bg-blue-500 text-white',
+    icon: <Clock className="h-4 w-4" />,
   },
   READY: {
     label: 'Ready',
-    icon: <CookingPot className="h-4 w-4" />,
     className: 'bg-yellow-500 text-white',
+    icon: <CookingPot className="h-4 w-4" />,
   },
   PICKED_UP: {
     label: 'Picked Up',
-    icon: <Check className="h-4 w-4" />,
     className: 'bg-green-600 text-white',
+    icon: <Check className="h-4 w-4" />,
   },
 };
 
-/* ---------------------------------- */
-/* KOT Card Component                  */
-/* ---------------------------------- */
+/* -------------------- TYPES -------------------- */
+
+type StationOrder = {
+  orderStationId: string;
+  orderId: string;
+  displayOrderId: string;
+  userName: string;
+  orderDate: string;
+  status: OrderStationStatus;
+  items: {
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+  }[];
+};
+
+/* -------------------- CARD -------------------- */
 
 function KOTCard({
   order,
-  onUpdateStatus,
+  onUpdate,
 }: {
   order: StationOrder;
-  onUpdateStatus: (
-    orderStationId: string,
-    orderId: string,
-    status: OrderStationStatus
-  ) => void;
+  onUpdate: (osId: string, orderId: string, status: OrderStationStatus) => void;
 }) {
-  const statusDisplay = statusDisplayMap[order.status];
+  const meta = statusMap[order.status];
 
   return (
-    <Card className="flex flex-col shadow-lg bg-card rounded-lg w-[300px]">
-      <CardHeader className="p-4 bg-muted/50 rounded-t-lg">
-        <div className="flex justify-between items-baseline">
-          <CardTitle className="text-2xl font-bold">
-            #{(order.displayOrderId || '...').toUpperCase()}
+    <Card className="w-[300px] shadow-md">
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-xl font-bold">
+            #{order.displayOrderId}
           </CardTitle>
-          <p className="text-xs text-muted-foreground font-mono">
+          <span className="text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(order.orderDate), { addSuffix: true })}
-          </p>
+          </span>
         </div>
         <p className="text-sm font-medium">{order.userName}</p>
       </CardHeader>
 
-      <CardContent className="p-4 flex-grow">
-        <ul className="space-y-2">
-          {order.items.map((item, index) => (
-            <li key={item.uuid || index} className="flex text-base items-center">
-              <span className="w-8 text-center font-bold">
-                {item.quantity}x
-              </span>
-              <span className="flex-1 font-semibold">{item.name}</span>
+      <CardContent>
+        <ul className="space-y-1">
+          {order.items.map((item) => (
+            <li key={item.id} className="flex gap-2">
+              <span className="font-bold w-6">{item.quantity}x</span>
+              <span className="font-medium">{item.name}</span>
             </li>
           ))}
         </ul>
       </CardContent>
 
-      <CardFooter className="p-3 border-t flex flex-col items-stretch gap-2 mt-auto">
+      <CardFooter className="flex flex-col gap-2">
         <Badge
           className={cn(
-            'font-semibold text-sm w-full justify-center py-1.5',
-            statusDisplay.className
+            'w-full justify-center py-1.5 text-sm',
+            meta.className
           )}
         >
-          {statusDisplay.icon}
-          <span className="ml-2">{statusDisplay.label}</span>
+          {meta.icon}
+          <span className="ml-2">{meta.label}</span>
         </Badge>
 
         {order.status === 'PENDING' && (
           <Button
-            size="sm"
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700"
             onClick={() =>
-              onUpdateStatus(order.orderStationId, order.orderId, 'READY')
+              onUpdate(order.orderStationId, order.orderId, 'READY')
             }
           >
             Mark as Ready
@@ -111,10 +128,8 @@ function KOTCard({
 
         {order.status === 'READY' && (
           <Button
-            size="sm"
-            className="w-full"
             onClick={() =>
-              onUpdateStatus(order.orderStationId, order.orderId, 'PICKED_UP')
+              onUpdate(order.orderStationId, order.orderId, 'PICKED_UP')
             }
           >
             Mark as Picked Up
@@ -125,35 +140,27 @@ function KOTCard({
   );
 }
 
-/* ---------------------------------- */
-/* Station Page                        */
-/* ---------------------------------- */
+/* -------------------- PAGE -------------------- */
 
 export default function StationPage() {
-  const router = useRouter();
-  const params = useParams();
-  const stationCode = params.stationCode as string;
-
+  const { stationCode } = useParams();
   const { supabase, isUserLoading } = useSupabase();
   const { toast } = useToast();
 
   const [station, setStation] = useState<Station | null>(null);
   const [orders, setOrders] = useState<StationOrder[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  /* ---------------------------------- */
-  /* Fetch station + live orders        */
-  /* ---------------------------------- */
+  /* -------------------- FETCH -------------------- */
 
   const fetchData = useCallback(async () => {
-    if (!supabase || !stationCode) return;
-
-    setIsLoading(true);
+    if (!supabase) return;
+    setLoading(true);
     setError(null);
 
     try {
-      // 1. Resolve station
+      /* 1. Station */
       const { data: stationData, error: stationError } = await supabase
         .from('stations')
         .select('id, name')
@@ -161,93 +168,56 @@ export default function StationPage() {
         .single();
 
       if (stationError || !stationData) {
-        throw new Error(
-          stationError?.message ||
-            `Station with code "${stationCode}" not found.`
-        );
+        throw new Error('Station not found');
       }
 
-      setStation(stationData as Station);
+      setStation(stationData);
       const stationId = stationData.id;
 
-      // 2. Get menu items for this station
-      const { data: stationMenuItems, error: menuItemsError } = await supabase
-        .from('menu_items')
-        .select('uuid')
-        .eq('station_id', stationId);
-
-      if (menuItemsError) throw menuItemsError;
-
-      const stationMenuItemUuids = new Set(
-        stationMenuItems.map((item) => item.uuid)
-      );
-
-      // 3. Fetch live orders for this station (Admin Live KOT parity)
-      const { data: rawOrders, error: ordersError } = await supabase
+      /* 2. LIVE ORDERS (EXACTLY LIKE ADMIN) */
+      const { data, error } = await supabase
         .from('orders')
-        .select(`
+        .select(
+          `
           id,
           display_order_id,
           user_name,
           order_date,
           order_stations!inner (
             id,
-            status,
-            station_id
+            status
           ),
           order_items (
             id,
             name,
             quantity,
-            price,
-            menu_item_uuid
+            price
           )
-        `)
+        `
+        )
         .in('status', ['PENDING', 'READY'])
         .eq('order_stations.station_id', stationId)
         .neq('order_stations.status', 'PICKED_UP')
         .order('order_date', { ascending: true });
 
-      if (ordersError) throw ordersError;
+      if (error) throw error;
 
-      // 4. Build StationOrder objects
-      const processedOrders: StationOrder[] = rawOrders
-        .map((order: any) => {
-          const stationTicket = order.order_stations[0];
+      const mapped: StationOrder[] = data.map((o: any) => ({
+        orderStationId: o.order_stations[0].id,
+        orderId: o.id,
+        displayOrderId: o.display_order_id,
+        userName: o.user_name,
+        orderDate: o.order_date,
+        status: o.order_stations[0].status,
+        items: o.order_items,
+      }));
 
-          const stationItems: OrderItem[] = order.order_items
-            .filter((item: any) =>
-              stationMenuItemUuids.has(item.menu_item_uuid)
-            )
-            .map((item: any) => ({
-              id: item.menu_item_uuid,
-              uuid: item.id,
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price,
-              menu_item_id: item.menu_item_uuid,
-            }));
-
-          if (stationItems.length === 0) return null;
-
-          return {
-            orderStationId: stationTicket.id,
-            orderId: order.id,
-            displayOrderId: order.display_order_id,
-            userName: order.user_name,
-            orderDate: order.order_date,
-            status: stationTicket.status as OrderStationStatus,
-            items: stationItems,
-          };
-        })
-        .filter(Boolean) as StationOrder[];
-
-      setOrders(processedOrders);
+      setOrders(mapped);
     } catch (e: any) {
-      console.error('Error fetching station data:', e);
+      console.error(e);
       setError(e.message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }, [supabase, stationCode]);
 
@@ -255,133 +225,57 @@ export default function StationPage() {
     if (!isUserLoading) fetchData();
   }, [isUserLoading, fetchData]);
 
-  /* ---------------------------------- */
-  /* Realtime subscriptions             */
-  /* ---------------------------------- */
+  /* -------------------- ACTIONS -------------------- */
 
-  useEffect(() => {
-    if (!supabase) return;
+  const updateStatus = async (
+    osId: string,
+    orderId: string,
+    status: OrderStationStatus
+  ) => {
+    const payload: any = { status };
+    if (status === 'READY') payload.ready_at = new Date().toISOString();
+    if (status === 'PICKED_UP')
+      payload.picked_up_at = new Date().toISOString();
 
-    const channel = supabase
-      .channel(`station-updates-${stationCode}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        fetchData
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_stations' },
-        fetchData
-      )
-      .subscribe();
+    const { error } = await supabase
+      .from('order_stations')
+      .update(payload)
+      .eq('id', osId);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, stationCode, fetchData]);
+    if (error) {
+      toast({ title: 'Error updating ticket', variant: 'destructive' });
+      return;
+    }
 
-  /* ---------------------------------- */
-  /* Update station ticket status       */
-  /* ---------------------------------- */
+    toast({ title: 'Updated', description: `Marked as ${status}` });
+    fetchData();
+  };
 
-  const handleUpdateStatus = useCallback(
-    async (
-      orderStationId: string,
-      orderId: string,
-      status: OrderStationStatus
-    ) => {
-      if (!supabase) return;
+  /* -------------------- UI -------------------- */
 
-      const originalOrders = [...orders];
-      setOrders((prev) =>
-        prev.filter((o) => o.orderStationId !== orderStationId)
-      );
-
-      const updatePayload: {
-        status: OrderStationStatus;
-        ready_at?: string;
-        picked_up_at?: string;
-      } = { status };
-
-      if (status === 'READY') updatePayload.ready_at = new Date().toISOString();
-      if (status === 'PICKED_UP')
-        updatePayload.picked_up_at = new Date().toISOString();
-
-      const { error } = await supabase
-        .from('order_stations')
-        .update(updatePayload)
-        .eq('id', orderStationId);
-
-      if (error) {
-        setOrders(originalOrders);
-        toast({
-          title: 'Error',
-          description: 'Failed to update order status.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      toast({
-        title: 'Success',
-        description: `Ticket marked as ${status}.`,
-      });
-
-      if (status === 'PICKED_UP') {
-        setTimeout(async () => {
-          const { count } = await supabase
-            .from('order_stations')
-            .select('*', { count: 'exact', head: true })
-            .eq('order_id', orderId)
-            .neq('status', 'PICKED_UP');
-
-          if (count === 0) {
-            await supabase
-              .from('orders')
-              .update({ status: 'DELIVERED' })
-              .eq('id', orderId);
-          }
-        }, 500);
-      }
-    },
-    [supabase, toast, orders]
-  );
-
-  /* ---------------------------------- */
-  /* Render states                      */
-  /* ---------------------------------- */
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="ml-4">Loading station orders...</p>
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 flex flex-col items-center justify-center min-h-screen">
-        <Alert variant="destructive" className="max-w-lg">
+      <div className="flex h-screen items-center justify-center">
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Failed to load station</AlertTitle>
+          <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-        <Button variant="outline" asChild className="mt-4">
-          <Link href="/station">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Stations
-          </Link>
-        </Button>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
-      <header className="mb-6 flex justify-between items-center">
+    <div className="p-6 min-h-screen">
+      <header className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">{station?.name}</h1>
         <Button variant="outline" asChild>
           <Link href="/station">
@@ -391,25 +285,19 @@ export default function StationPage() {
         </Button>
       </header>
 
-      <main className="flex-grow overflow-y-auto">
-        {orders.length > 0 ? (
-          <div className="flex flex-wrap gap-4">
-            {orders.map((order) => (
-              <KOTCard
-                key={order.orderStationId}
-                order={order}
-                onUpdateStatus={handleUpdateStatus}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <Package className="h-16 w-16 mb-4" />
-            <h2 className="text-2xl font-bold">All caught up!</h2>
-            <p>No active orders for this station.</p>
-          </div>
-        )}
-      </main>
+      {orders.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground">
+          <Package className="h-12 w-12 mb-4" />
+          <h2 className="text-xl font-semibold">All caught up!</h2>
+          <p>No active orders for this station.</p>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-4">
+          {orders.map((o) => (
+            <KOTCard key={o.orderStationId} order={o} onUpdate={updateStatus} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
