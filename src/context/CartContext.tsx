@@ -1,9 +1,6 @@
 "use client";
 
-import type {
-  CartItem,
-  MenuItem,
-} from "@/lib/types";
+import type { CartItem, MenuItem } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import React, {
   createContext,
@@ -17,9 +14,7 @@ import React, {
 import { useSupabase } from "@/lib/supabase/provider";
 import { useRouter } from "next/navigation";
 
-/* ================================
-   TYPES
-================================ */
+/* ---------------- TYPES ---------------- */
 
 type CartState = {
   items: CartItem[];
@@ -32,32 +27,11 @@ type CartAction =
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
   | { type: "CLEAR_CART" };
 
-type CartContextType = {
-  state: CartState;
-  dispatch: React.Dispatch<CartAction>;
-  totalItems: number;
-  totalPrice: number;
-  placeOrder: () => Promise<void>;
-  addedItemPopup: MenuItem | null;
-  setAddedItemPopup: (item: MenuItem | null) => void;
-  isCartLoading: boolean;
-  addItem: (item: MenuItem) => Promise<void>;
-  removeItem: (id: string) => Promise<void>;
-  updateQuantity: (id: string, quantity: number) => Promise<void>;
-  clearCart: () => Promise<void>;
-  updatingItemId: string | null;
-  fetchCart: (userId: string) => Promise<void>;
-};
+/* ---------------- CONTEXT ---------------- */
 
-/* ================================
-   CONTEXT
-================================ */
+const CartContext = createContext<any>(null);
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
-
-/* ================================
-   REDUCER
-================================ */
+/* ---------------- REDUCER ---------------- */
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
@@ -100,22 +74,17 @@ function cartReducer(state: CartState, action: CartAction): CartState {
   }
 }
 
-/* ================================
-   PROVIDER
-================================ */
+/* ---------------- PROVIDER ---------------- */
 
-export const CartProvider = ({ children }: { children: ReactNode }) => {
+export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [] });
-  const [addedItemPopup, setAddedItemPopup] = useState<MenuItem | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
 
   const { supabase, user, userProfile, isUserLoading } = useSupabase();
   const { toast } = useToast();
   const router = useRouter();
 
-  /* ================================
-     FETCH CART
-  ================================ */
+  /* -------- FETCH CART -------- */
 
   const fetchCart = useCallback(
     async (userId: string) => {
@@ -127,11 +96,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .eq("user_id", userId);
 
       if (error) {
-        toast({
-          title: "Error",
-          description: "Could not load your cart.",
-          variant: "destructive",
-        });
+        toast({ title: "Failed to load cart", variant: "destructive" });
         dispatch({ type: "SET_CART", payload: [] });
         return;
       }
@@ -143,18 +108,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       const uuids = cartRows.map(r => r.menu_item_uuid);
 
-      const { data: menuItems, error: menuError } = await supabase
+      const { data: menuItems, error: miError } = await supabase
         .from("menu_items")
         .select("*")
         .in("uuid", uuids);
 
-      if (menuError || !menuItems) {
-        toast({
-          title: "Error",
-          description: "Could not load menu item details.",
-          variant: "destructive",
-        });
-        dispatch({ type: "SET_CART", payload: [] });
+      if (miError || !menuItems) {
+        toast({ title: "Failed to load menu items", variant: "destructive" });
         return;
       }
 
@@ -162,8 +122,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .map(row => {
           const mi = menuItems.find(m => m.uuid === row.menu_item_uuid);
           if (!mi) return null;
+
           return {
-            ...mi,
+            id: mi.id,
+            uuid: mi.uuid, // 🔥 THIS IS CRITICAL
+            name: mi.name,
+            price: mi.price,
+            stock: mi.stock,
+            image: mi.image,
             quantity: row.quantity,
           };
         })
@@ -178,14 +144,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (!isUserLoading && user) {
       fetchCart(user.id);
     }
-    if (!isUserLoading && !user) {
-      dispatch({ type: "SET_CART", payload: [] });
-    }
-  }, [isUserLoading, user, fetchCart]);
+  }, [user, isUserLoading, fetchCart]);
 
-  /* ================================
-     TOTALS
-  ================================ */
+  /* -------- TOTALS -------- */
 
   const totalItems = state.items.reduce((s, i) => s + i.quantity, 0);
   const totalPrice = state.items.reduce(
@@ -193,47 +154,33 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     0
   );
 
-  /* ================================
-     PLACE ORDER (UUID SAFE)
-  ================================ */
+  /* -------- PLACE ORDER -------- */
 
   const placeOrder = useCallback(async () => {
-    if (isUserLoading || !user || !supabase) return;
+    if (!supabase || !user || isUserLoading) return;
 
-    if (state.items.length === 0) {
-      toast({
-        title: "Cart empty",
-        description: "Add items before placing an order.",
-        variant: "destructive",
-      });
-      return;
-    }
+    const orderItemsParam = state.items.map(item => ({
+      menu_item_uuid: item.uuid, // MUST be uuid
+      name: item.name,
+      quantity: item.quantity,
+      price: item.price,
+    }));
 
-    const customerName = userProfile?.name || user.email;
-    if (!customerName) return;
+    // 🔍 STEP 1 LOG — DO NOT SKIP
+    console.log(
+      "ORDER ITEMS PARAM (FRONTEND → RPC)",
+      JSON.stringify(orderItemsParam, null, 2)
+    );
 
     try {
-      const orderItemsParam = state.items.map(item => ({
-        menu_item_uuid: item.uuid, // ✅ UUID ONLY
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-      }));
-
       const { data, error } = await supabase.rpc("create_new_order", {
         user_id_param: user.id,
-        user_name_param: customerName,
+        user_name_param: userProfile?.name ?? user.email,
         total_amount_param: totalPrice,
         order_items_param: orderItemsParam,
       });
 
       if (error) throw error;
-      if (!data?.order_id) throw new Error("Order not created");
-
-      await supabase
-        .from("user_cart_items")
-        .delete()
-        .eq("user_id", user.id);
 
       dispatch({ type: "CLEAR_CART" });
       router.push(`/orders/${data.order_id}`);
@@ -245,80 +192,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       });
     }
   }, [
-    isUserLoading,
-    user,
     supabase,
-    state.items,
-    totalPrice,
-    toast,
+    user,
     userProfile,
+    totalPrice,
+    state.items,
+    isUserLoading,
+    toast,
     router,
   ]);
 
-  /* ================================
-     ADD / REMOVE / UPDATE
-  ================================ */
-
-  const addItem = async (item: MenuItem) => {
-    if (!user || !supabase) return;
-
-    setUpdatingItemId(item.id);
-
-    dispatch({ type: "ADD_ITEM", payload: { ...item, quantity: 1 } });
-
-    await supabase.from("user_cart_items").upsert(
-      {
-        user_id: user.id,
-        menu_item_uuid: item.uuid,
-        quantity: 1,
-      },
-      { onConflict: "user_id,menu_item_uuid" }
-    );
-
-    setAddedItemPopup(item);
-    setUpdatingItemId(null);
-  };
-
-  const removeItem = async (id: string) => {
-    if (!user || !supabase) return;
-
-    const item = state.items.find(i => i.id === id);
-    if (!item) return;
-
-    dispatch({ type: "REMOVE_ITEM", payload: { id } });
-
-    await supabase
-      .from("user_cart_items")
-      .delete()
-      .match({ user_id: user.id, menu_item_uuid: item.uuid });
-  };
-
-  const updateQuantity = async (id: string, quantity: number) => {
-    if (!user || !supabase) return;
-
-    const item = state.items.find(i => i.id === id);
-    if (!item) return;
-
-    dispatch({
-      type: "UPDATE_QUANTITY",
-      payload: { id, quantity },
-    });
-
-    await supabase
-      .from("user_cart_items")
-      .update({ quantity })
-      .match({ user_id: user.id, menu_item_uuid: item.uuid });
-  };
-
-  const clearCart = async () => {
-    if (!user || !supabase) return;
-    dispatch({ type: "CLEAR_CART" });
-    await supabase.from("user_cart_items").delete().eq("user_id", user.id);
-  };
-
-  /* ================================
-     PROVIDER
-  ================================ */
+  /* -------- CONTEXT VALUE -------- */
 
   return (
     <CartContext.Provider
@@ -328,30 +212,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         totalItems,
         totalPrice,
         placeOrder,
-        addedItemPopup,
-        setAddedItemPopup,
-        isCartLoading: isUserLoading,
-        addItem,
-        removeItem,
-        updateQuantity,
-        clearCart,
-        updatingItemId,
         fetchCart,
+        updatingItemId,
       }}
     >
       {children}
     </CartContext.Provider>
   );
-};
+}
 
-/* ================================
-   HOOK
-================================ */
+/* ---------------- HOOK ---------------- */
 
-export const useCart = () => {
-  const ctx = useContext(CartContext);
-  if (!ctx) {
-    throw new Error("useCart must be used within CartProvider");
-  }
-  return ctx;
-};
+export function useCart() {
+  return useContext(CartContext);
+}
