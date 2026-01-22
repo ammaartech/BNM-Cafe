@@ -30,12 +30,12 @@ function RootLayoutContent({
     const pathname = usePathname();
     const isAdminPage = pathname.startsWith('/admin');
     const isStaffPage = pathname.startsWith('/staff');
-    const isAuthPage = pathname === '/';
+    const isStationPage = pathname.startsWith('/station');
+    const isAuthPage = pathname === '/' || pathname === '/login';
 
     const layoutClass = () => {
-        if (isStaffPage) return 'w-full max-w-full';
+        if (isStaffPage || isStationPage || isAuthPage) return 'w-full max-w-full';
         if (isAdminPage) return 'max-w-7xl';
-        if (isAuthPage) return 'w-full';
         return 'max-w-md shadow-2xl';
     }
 

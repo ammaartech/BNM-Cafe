@@ -82,9 +82,10 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     
     const isAuthPage = pathname === '/login';
     const isAdminPage = pathname.startsWith('/admin');
+    const isStationPage = pathname.startsWith('/station');
 
     // If user is not logged in, and they are on a protected page, redirect to auth page.
-    if (!user && !isAuthPage && !isAdminPage) {
+    if (!user && !isAuthPage && !isAdminPage && !isStationPage) {
       router.replace('/login');
     }
     
