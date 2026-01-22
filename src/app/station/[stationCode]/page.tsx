@@ -110,8 +110,9 @@ export default function StationPage() {
             .from('order_stations')
             .select('*, order:orders!inner(*, order_items(*))')
             .eq('station_id', stationId)
-            .in('status', ['PENDING', 'READY'])
-            .order('order_date', { foreignTable: 'orders', ascending: true });
+            .in('status', ['PENDING', 'READY']) // Only show station tickets that haven't been picked up
+            .in('order.status', ['PENDING', 'READY']) // IMPORTANT: Only show tickets for active main orders
+            .order('order_date', { referencedTable: 'orders', ascending: true });
 
         if (orderStationsError) {
              console.error("Error fetching station orders:", orderStationsError);
