@@ -1,27 +1,38 @@
-
-
 "use client";
 
-import type { CartItem, MenuItem, Order, OrderItem, UserProfile } from "@/lib/types";
+import type {
+  CartItem,
+  MenuItem,
+} from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import React, { createContext, useContext, useReducer, ReactNode, useState, useEffect, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  ReactNode,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { useSupabase } from "@/lib/supabase/provider";
 import { useRouter } from "next/navigation";
 
+/* ================================
+   TYPES
+================================ */
 
 type CartState = {
   items: CartItem[];
 };
 
 type CartAction =
+  | { type: "SET_CART"; payload: CartItem[] }
   | { type: "ADD_ITEM"; payload: CartItem }
   | { type: "REMOVE_ITEM"; payload: { id: string } }
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
-  | { type: "SET_CART"; payload: CartItem[] }
   | { type: "CLEAR_CART" };
 
-
-const CartContext = createContext<{
+type CartContextType = {
   state: CartState;
   dispatch: React.Dispatch<CartAction>;
   totalItems: number;
@@ -36,363 +47,311 @@ const CartContext = createContext<{
   clearCart: () => Promise<void>;
   updatingItemId: string | null;
   fetchCart: (userId: string) => Promise<void>;
-}>({
-  state: { items: [] },
-  dispatch: () => null,
-  totalItems: 0,
-  totalPrice: 0,
-  placeOrder: async () => {},
-  addedItemPopup: null,
-  setAddedItemPopup: () => {},
-  isCartLoading: true,
-  addItem: async () => {},
-  removeItem: async () => {},
-  updateQuantity: async () => {},
-  clearCart: async () => {},
-  updatingItemId: null,
-  fetchCart: async () => {},
-});
+};
+
+/* ================================
+   CONTEXT
+================================ */
+
+const CartContext = createContext<CartContextType | undefined>(undefined);
+
+/* ================================
+   REDUCER
+================================ */
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "SET_CART":
-        return { ...state, items: action.payload };
+      return { items: action.payload };
+
     case "ADD_ITEM": {
-      const existingItemIndex = state.items.findIndex(
-        (item) => item.id === action.payload.id
-      );
-      if (existingItemIndex > -1) {
-        const newItems = [...state.items];
-        newItems[existingItemIndex].quantity += 1;
-        return { ...state, items: newItems };
-      } else {
-        return { ...state, items: [...state.items, action.payload] };
-      }
-    }
-    case "REMOVE_ITEM":
-      return {
-        ...state,
-        items: state.items.filter((item) => item.id !== action.payload.id),
-      };
-    case "UPDATE_QUANTITY": {
-      if (action.payload.quantity <= 0) {
+      const existing = state.items.find(i => i.id === action.payload.id);
+      if (existing) {
         return {
-          ...state,
-          items: state.items.filter((item) => item.id !== action.payload.id),
+          items: state.items.map(i =>
+            i.id === action.payload.id
+              ? { ...i, quantity: i.quantity + 1 }
+              : i
+          ),
         };
       }
-      const newItems = state.items.map((item) => 
-        item.id === action.payload.id 
-          ? { ...item, quantity: action.payload.quantity } 
-          : item
-      );
-      return { ...state, items: newItems };
+      return { items: [...state.items, action.payload] };
     }
+
+    case "REMOVE_ITEM":
+      return {
+        items: state.items.filter(i => i.id !== action.payload.id),
+      };
+
+    case "UPDATE_QUANTITY":
+      return {
+        items: state.items.map(i =>
+          i.id === action.payload.id
+            ? { ...i, quantity: action.payload.quantity }
+            : i
+        ),
+      };
+
     case "CLEAR_CART":
-        return { ...state, items: [] };
+      return { items: [] };
+
     default:
       return state;
   }
 }
 
+/* ================================
+   PROVIDER
+================================ */
+
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(cartReducer, { items: [] });
   const [addedItemPopup, setAddedItemPopup] = useState<MenuItem | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
+
   const { supabase, user, userProfile, isUserLoading } = useSupabase();
   const { toast } = useToast();
   const router = useRouter();
 
-  const fetchCart = useCallback(async (currentUserId: string) => {
-    if (!supabase) {
-      return;
-    }
-    const { data: cartData, error: cartError } = await supabase
-      .from('user_cart_items')
-      .select('menu_item_uuid, quantity')
-      .eq('user_id', currentUserId);
+  /* ================================
+     FETCH CART
+  ================================ */
 
-    if (cartError) {
-      console.error("Error fetching cart:", cartError);
-      toast({ title: "Error", description: "Could not load your cart.", variant: "destructive" });
-      dispatch({ type: "SET_CART", payload: [] });
-      return;
-    }
+  const fetchCart = useCallback(
+    async (userId: string) => {
+      if (!supabase) return;
 
-    if (!cartData || cartData.length === 0) {
+      const { data: cartRows, error } = await supabase
+        .from("user_cart_items")
+        .select("menu_item_uuid, quantity")
+        .eq("user_id", userId);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Could not load your cart.",
+          variant: "destructive",
+        });
         dispatch({ type: "SET_CART", payload: [] });
         return;
-    }
+      }
 
-    const menuItemIds = cartData.map(item => item.menu_item_uuid);
-    const { data: menuItemsData, error: menuItemsError } = await supabase
-        .from('menu_items')
-        .select('*')
-        .in('uuid', menuItemIds);
-    
-    if (menuItemsError) {
-        console.error("Error fetching menu items for cart:", menuItemsError);
-        toast({ title: "Error", description: "Could not load menu item details for your cart.", variant: "destructive" });
+      if (!cartRows || cartRows.length === 0) {
         dispatch({ type: "SET_CART", payload: [] });
         return;
-    }
+      }
 
-    const loadedCartItems: CartItem[] = cartData.map(cartItem => {
-        const menuItem = menuItemsData.find(mi => mi.uuid === cartItem.menu_item_uuid);
-        if (!menuItem) return null;
-        return {
-            ...menuItem,
-            quantity: cartItem.quantity,
-        };
-    }).filter((item): item is CartItem => item !== null);
-      
-    dispatch({ type: "SET_CART", payload: loadedCartItems });
-  }, [supabase, toast]);
+      const uuids = cartRows.map(r => r.menu_item_uuid);
 
+      const { data: menuItems, error: menuError } = await supabase
+        .from("menu_items")
+        .select("*")
+        .in("uuid", uuids);
+
+      if (menuError || !menuItems) {
+        toast({
+          title: "Error",
+          description: "Could not load menu item details.",
+          variant: "destructive",
+        });
+        dispatch({ type: "SET_CART", payload: [] });
+        return;
+      }
+
+      const items: CartItem[] = cartRows
+        .map(row => {
+          const mi = menuItems.find(m => m.uuid === row.menu_item_uuid);
+          if (!mi) return null;
+          return {
+            ...mi,
+            quantity: row.quantity,
+          };
+        })
+        .filter(Boolean) as CartItem[];
+
+      dispatch({ type: "SET_CART", payload: items });
+    },
+    [supabase, toast]
+  );
 
   useEffect(() => {
-    if(!isUserLoading && user) {
+    if (!isUserLoading && user) {
       fetchCart(user.id);
-    } else if (!isUserLoading && !user) {
+    }
+    if (!isUserLoading && !user) {
       dispatch({ type: "SET_CART", payload: [] });
     }
-  }, [user, isUserLoading, fetchCart]);
+  }, [isUserLoading, user, fetchCart]);
 
+  /* ================================
+     TOTALS
+  ================================ */
 
-  const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalItems = state.items.reduce((s, i) => s + i.quantity, 0);
   const totalPrice = state.items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (s, i) => s + i.price * i.quantity,
     0
   );
 
-  const placeOrder = useCallback(async () => {
-    if (isUserLoading) {
-        toast({ title: "Please wait", description: "Verifying user session..." });
-        return;
-    }
+  /* ================================
+     PLACE ORDER (UUID SAFE)
+  ================================ */
 
-    if (!user || user.is_anonymous) {
-        toast({ title: "Please Log In", description: "You need to create an account to place an order.", variant: "destructive" });
-        router.push('/');
-        return;
-    }
-    
-    if(state.items.length === 0) {
-        toast({ title: "Cart is empty", description: "Add items to your cart before placing an order.", variant: "destructive" });
-        return;
-    }
-    
-    const customerName = userProfile?.name || user.email;
-    if (!customerName) {
-      toast({ title: "Error", description: "Could not determine user name for the order.", variant: "destructive" });
+  const placeOrder = useCallback(async () => {
+    if (isUserLoading || !user || !supabase) return;
+
+    if (state.items.length === 0) {
+      toast({
+        title: "Cart empty",
+        description: "Add items before placing an order.",
+        variant: "destructive",
+      });
       return;
     }
+
+    const customerName = userProfile?.name || user.email;
+    if (!customerName) return;
 
     try {
-        const orderItemsParam = state.items.map(item => ({
-            id: item.id,
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price
-        }));
+      const orderItemsParam = state.items.map(item => ({
+        menu_item_uuid: item.uuid, // ✅ UUID ONLY
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      }));
 
-        console.log("ORDER ITEMS PAYLOAD", orderItemsParam);
+      const { data, error } = await supabase.rpc("create_new_order", {
+        user_id_param: user.id,
+        user_name_param: customerName,
+        total_amount_param: totalPrice,
+        order_items_param: orderItemsParam,
+      });
 
-        const { data: newOrderData, error: rpcError } = await supabase.rpc('create_new_order', {
-            user_id_param: user.id,
-            user_name_param: customerName,
-            total_amount_param: totalPrice,
-            order_items_param: orderItemsParam
-        });
-        
-        if (rpcError) throw rpcError;
-        
-        if (!newOrderData || !newOrderData.order_id) {
-            throw new Error("Order creation failed: No order data returned from function.");
-        }
+      if (error) throw error;
+      if (!data?.order_id) throw new Error("Order not created");
 
-        const orderId = newOrderData.order_id;
+      await supabase
+        .from("user_cart_items")
+        .delete()
+        .eq("user_id", user.id);
 
-        const { error: clearCartError } = await supabase.from('user_cart_items').delete().eq('user_id', user.id);
-        if (clearCartError) {
-          // This is not a critical failure, the order is placed. Log it.
-          console.error("Failed to clear user cart after order placement:", clearCartError);
-        }
-
-        dispatch({type: 'CLEAR_CART' });
-        router.push(`/orders/${orderId}`);
-
-    } catch(error: any) {
-        console.error("Error placing order:", error);
-        toast({
-            title: "Order Failed",
-            description: error.message || "There was an issue placing your order. Please try again.",
-            variant: "destructive"
-        })
+      dispatch({ type: "CLEAR_CART" });
+      router.push(`/orders/${data.order_id}`);
+    } catch (err: any) {
+      toast({
+        title: "Order Failed",
+        description: err.message,
+        variant: "destructive",
+      });
     }
-  }, [isUserLoading, user, userProfile, router, state.items, totalPrice, supabase, toast, dispatch]);
+  }, [
+    isUserLoading,
+    user,
+    supabase,
+    state.items,
+    totalPrice,
+    toast,
+    userProfile,
+    router,
+  ]);
 
+  /* ================================
+     ADD / REMOVE / UPDATE
+  ================================ */
 
-  const addItem = useCallback(async (item: MenuItem) => {
-    if (!user || !supabase) {
-      toast({ title: 'Session error', description: 'Your session could not be verified. Please refresh.', variant: 'destructive'});
-      return;
-    }
-
-    if (item.stock <= 0) {
-      toast({ title: "Out of Stock", description: `${item.name} is currently unavailable.`, variant: "destructive" });
-      return;
-    }
+  const addItem = async (item: MenuItem) => {
+    if (!user || !supabase) return;
 
     setUpdatingItemId(item.id);
-    const existingItem = state.items.find(i => i.id === item.id);
-    
-    if (existingItem) {
-      dispatch({ type: 'UPDATE_QUANTITY', payload: { id: item.id, quantity: existingItem.quantity + 1 }});
-    } else {
-      dispatch({ type: 'ADD_ITEM', payload: { ...item, quantity: 1 } });
-    }
 
-    const upsertPayload = {
-      user_id: user.id,
-      menu_item_uuid: item.uuid,
-      quantity: (existingItem?.quantity || 0) + 1
-    };
-    
-    console.log('ADD TO CART PAYLOAD', upsertPayload);
+    dispatch({ type: "ADD_ITEM", payload: { ...item, quantity: 1 } });
 
-    const { error } = await supabase
-      .from('user_cart_items')
-      .upsert(upsertPayload, { onConflict: 'user_id,menu_item_uuid' });
+    await supabase.from("user_cart_items").upsert(
+      {
+        user_id: user.id,
+        menu_item_uuid: item.uuid,
+        quantity: 1,
+      },
+      { onConflict: "user_id,menu_item_uuid" }
+    );
 
-    if (error) {
-      console.error("Error adding item to cart:", error);
-      toast({ title: 'Error', description: 'Could not add item to cart.', variant: 'destructive'});
-      if (existingItem) {
-        dispatch({ type: 'UPDATE_QUANTITY', payload: { id: item.id, quantity: existingItem.quantity }});
-      } else {
-        dispatch({ type: 'REMOVE_ITEM', payload: { id: item.id } });
-      }
-    } else {
-      setAddedItemPopup(item);
-    }
+    setAddedItemPopup(item);
     setUpdatingItemId(null);
-  }, [user, supabase, toast, state.items, dispatch]);
+  };
 
-  const removeItem = useCallback(async (id: string) => {
+  const removeItem = async (id: string) => {
     if (!user || !supabase) return;
 
-    setUpdatingItemId(id);
-    const existingItem = state.items.find(i => i.id === id);
-    if (!existingItem) {
-        setUpdatingItemId(null);
-        return;
-    }
-
-    dispatch({ type: 'REMOVE_ITEM', payload: { id } });
-
-    const { error } = await supabase
-      .from('user_cart_items')
-      .delete()
-      .match({ user_id: user.id, menu_item_uuid: existingItem.uuid });
-
-    if (error) {
-      toast({ title: 'Error', description: 'Could not remove item from cart.', variant: 'destructive' });
-      dispatch({ type: 'ADD_ITEM', payload: existingItem });
-    }
-    setUpdatingItemId(null);
-  }, [user, supabase, toast, state.items, dispatch]);
-
-  const updateQuantity = useCallback(async (id: string, quantity: number) => {
-    if (!user || !supabase) return;
-    
-    setUpdatingItemId(id);
     const item = state.items.find(i => i.id === id);
-    if (!item) {
-        setUpdatingItemId(null);
-        return;
-    };
+    if (!item) return;
 
-    const originalQuantity = item.quantity;
+    dispatch({ type: "REMOVE_ITEM", payload: { id } });
 
-    if (quantity > item.stock) {
-        toast({ title: "Stock limit reached", description: `Only ${item.stock} of ${item.name} available.`, variant: "destructive" });
-        setUpdatingItemId(null);
-        return;
-    }
-    
-    if (quantity <= 0) {
-        dispatch({ type: 'REMOVE_ITEM', payload: { id }});
-    } else {
-        dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity }});
-    }
+    await supabase
+      .from("user_cart_items")
+      .delete()
+      .match({ user_id: user.id, menu_item_uuid: item.uuid });
+  };
 
-    let error;
-    if (quantity <= 0) {
-        const { error: deleteError } = await supabase
-            .from('user_cart_items')
-            .delete()
-            .match({ user_id: user.id, menu_item_uuid: item.uuid });
-        error = deleteError;
-    } else {
-        const { error: updateError } = await supabase
-            .from('user_cart_items')
-            .update({ quantity })
-            .match({ user_id: user.id, menu_item_uuid: item.uuid });
-        error = updateError;
-    }
-
-    if (error) {
-        toast({ title: 'Error', description: 'Could not update item quantity.', variant: 'destructive' });
-        dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity: originalQuantity }});
-    }
-    setUpdatingItemId(null);
-  }, [user, supabase, toast, state.items, dispatch]);
-
-  const clearCart = useCallback(async () => {
+  const updateQuantity = async (id: string, quantity: number) => {
     if (!user || !supabase) return;
 
-    const currentItems = state.items;
-    dispatch({ type: 'CLEAR_CART' });
+    const item = state.items.find(i => i.id === id);
+    if (!item) return;
 
-    const { error } = await supabase
-      .from('user_cart_items')
-      .delete()
-      .eq('user_id', user.id);
+    dispatch({
+      type: "UPDATE_QUANTITY",
+      payload: { id, quantity },
+    });
 
-    if (error) {
-      toast({ title: 'Error', description: 'Could not clear your cart.', variant: 'destructive' });
-      dispatch({ type: 'SET_CART', payload: currentItems });
-    }
-  }, [user, supabase, toast, state.items, dispatch]);
+    await supabase
+      .from("user_cart_items")
+      .update({ quantity })
+      .match({ user_id: user.id, menu_item_uuid: item.uuid });
+  };
 
+  const clearCart = async () => {
+    if (!user || !supabase) return;
+    dispatch({ type: "CLEAR_CART" });
+    await supabase.from("user_cart_items").delete().eq("user_id", user.id);
+  };
+
+  /* ================================
+     PROVIDER
+  ================================ */
 
   return (
-    <CartContext.Provider value={{ 
-        state, 
-        dispatch, 
-        totalItems, 
-        totalPrice, 
-        placeOrder, 
-        addedItemPopup, 
-        setAddedItemPopup, 
+    <CartContext.Provider
+      value={{
+        state,
+        dispatch,
+        totalItems,
+        totalPrice,
+        placeOrder,
+        addedItemPopup,
+        setAddedItemPopup,
         isCartLoading: isUserLoading,
         addItem,
         removeItem,
         updateQuantity,
         clearCart,
         updatingItemId,
-        fetchCart
-    }}>
+        fetchCart,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
 };
 
+/* ================================
+   HOOK
+================================ */
+
 export const useCart = () => {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error("useCart must be used within a CartProvider");
+  const ctx = useContext(CartContext);
+  if (!ctx) {
+    throw new Error("useCart must be used within CartProvider");
   }
-  return context;
+  return ctx;
 };
