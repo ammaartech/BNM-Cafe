@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, LogIn, HardHat, Loader2, LogOut } from 'lucide-react';
 import { useSupabase } from '@/lib/supabase/provider';
-
+import type { Station } from '@/lib/types';
+import Link from 'next/link';
 
 function StationLoginPage() {
     const { supabase } = useSupabase();
@@ -73,16 +74,41 @@ function StationLoginPage() {
     );
 }
 
-
 export default function StationHomePage() {
   const router = useRouter();
   const { user, userProfile, isUserLoading, supabase } = useSupabase();
+  const [stations, setStations] = useState<Station[]>([]);
+  const [isFetchingStations, setIsFetchingStations] = useState(true);
 
   const handleLogout = async () => {
     if (supabase) {
         await supabase.auth.signOut();
     }
   }
+
+  useEffect(() => {
+    async function fetchStations() {
+        if (!supabase) return;
+        setIsFetchingStations(true);
+        const { data, error } = await supabase
+            .from('stations')
+            .select('*')
+            .eq('active', true);
+        
+        if (error) {
+            console.error("Error fetching stations", error);
+            setStations([]);
+        } else {
+            setStations(data as Station[]);
+        }
+        setIsFetchingStations(false);
+    }
+    
+    if (user && !user.is_anonymous && userProfile?.role === 'admin') {
+      fetchStations();
+    }
+  }, [user, userProfile, supabase]);
+
 
   if (isUserLoading) {
     return (
@@ -121,6 +147,15 @@ export default function StationHomePage() {
     );
   }
 
+  if (isFetchingStations) {
+     return (
+        <div className="flex items-center justify-center min-h-screen bg-background p-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-4">Loading stations...</p>
+        </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
       <div className="text-center mb-8">
@@ -128,32 +163,20 @@ export default function StationHomePage() {
         <p className="text-muted-foreground mt-2">Choose which station you are operating.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
-        <Card 
-            className="text-center hover:bg-muted/50 transition-colors cursor-pointer"
-            onClick={() => router.push('/station/station-1')}
-        >
-          <CardHeader>
-            <HardHat className="mx-auto h-12 w-12 text-primary mb-4" />
-            <CardTitle className="text-3xl">Station 1</CardTitle>
-            <CardDescription>Hot Kitchen & Main Courses</CardDescription>
-          </CardHeader>
-          <CardContent>
-             <Button className="w-full">Go to Station 1</Button>
-          </CardContent>
-        </Card>
-        <Card 
-            className="text-center hover:bg-muted/50 transition-colors cursor-pointer"
-            onClick={() => router.push('/station/station-2')}
-        >
-          <CardHeader>
-            <HardHat className="mx-auto h-12 w-12 text-primary mb-4" />
-            <CardTitle className="text-3xl">Station 2</CardTitle>
-            <CardDescription>Chats & Refreshments</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button className="w-full">Go to Station 2</Button>
-          </CardContent>
-        </Card>
+        {stations.map(station => (
+            <Link key={station.id} href={`/station/${station.code}`}>
+                <Card className="text-center hover:bg-muted/50 transition-colors cursor-pointer h-full">
+                    <CardHeader>
+                        <HardHat className="mx-auto h-12 w-12 text-primary mb-4" />
+                        <CardTitle className="text-3xl">{station.name}</CardTitle>
+                        {station.description && <CardDescription>{station.description}</CardDescription>}
+                    </CardHeader>
+                    <CardContent>
+                        <Button className="w-full">Go to {station.name}</Button>
+                    </CardContent>
+                </Card>
+            </Link>
+        ))}
       </div>
        <div className="absolute bottom-4 right-4">
         <Button variant="outline" onClick={handleLogout}>Logout</Button>

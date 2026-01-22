@@ -11,6 +11,7 @@ export interface MenuItem {
   image: string;
   category: "south-indian" | "north-indian" | "refreshments" | "chats";
   stock: number;
+  station_id?: string;
 }
 
 export interface Category {
@@ -27,9 +28,12 @@ export interface OrderItem {
     name: string;
     quantity: number;
     price: number;
+    menu_item_id?: string;
 }
 
 export type OrderStatus = "PENDING" | "COOKING" | "READY" | "PICKED_UP" | "DELIVERED" | "CANCELLED";
+export type OrderStationStatus = 'PENDING' | 'READY' | 'PICKED_UP';
+
 
 export interface Order {
   id:string;
@@ -57,4 +61,22 @@ export interface UserProfile {
     name: string;
     email: string;
     role: 'admin' | 'customer';
+}
+
+export interface Station {
+  id: string;
+  code: string;
+  name:string;
+  active: boolean;
+  description?: string;
+}
+
+export interface StationOrder {
+  orderStationId: string;
+  orderId: string;
+  displayOrderId: string;
+  userName: string;
+  orderDate: string;
+  status: OrderStationStatus;
+  items: OrderItem[];
 }
