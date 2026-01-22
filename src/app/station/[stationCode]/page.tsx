@@ -29,7 +29,7 @@ function KOTCard({ order, onUpdateStatus }: { order: StationOrder; onUpdateStatu
         <Card className="flex flex-col shadow-lg bg-card rounded-lg w-[300px]">
             <CardHeader className="p-4 bg-muted/50 rounded-t-lg">
                 <div className="flex justify-between items-baseline">
-                    <CardTitle className="text-2xl font-bold">#{order.displayOrderId}</CardTitle>
+                    <CardTitle className="text-2xl font-bold">#{(order.displayOrderId || '...').toUpperCase()}</CardTitle>
                      <p className="text-xs text-muted-foreground font-mono">
                         {formatDistanceToNow(new Date(order.orderDate), { addSuffix: true })}
                     </p>
