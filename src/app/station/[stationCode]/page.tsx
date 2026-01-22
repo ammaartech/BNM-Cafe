@@ -86,66 +86,90 @@ export default function StationPage() {
     setError(null);
 
     try {
+        // 1. Get the station ID from the URL code
         const { data: stationData, error: stationError } = await supabase
             .from('stations')
-            .select('*')
+            .select('id, name')
             .eq('code', stationCode)
             .single();
 
         if (stationError || !stationData) {
             throw new Error(stationError?.message || `Station with code "${stationCode}" not found.`);
         }
-        setStation(stationData);
+        setStation(stationData as Station);
         const stationId = stationData.id;
 
-        const { data: menuItemsForStation, error: menuItemsError } = await supabase
+        // 2. Get all menu item UUIDs for this station once for client-side filtering
+        const { data: stationMenuItems, error: menuItemsError } = await supabase
             .from('menu_items')
             .select('uuid')
             .eq('station_id', stationId);
-        
+
         if (menuItemsError) throw menuItemsError;
-        const stationMenuItemUuids = new Set(menuItemsForStation.map(item => item.uuid));
+        const stationMenuItemUuids = new Set(stationMenuItems.map(item => item.uuid));
 
-        const { data: rawOrderStations, error: orderStationsError } = await supabase
-            .from('order_stations')
-            .select('*, order:orders!inner(*, order_items(*))')
-            .eq('station_id', stationId)
-            .in('status', ['PENDING', 'READY']) // Only show station tickets that haven't been picked up
-            .in('order.status', ['PENDING', 'READY']) // IMPORTANT: Only show tickets for active main orders
-            .order('order_date', { referencedTable: 'orders', ascending: true });
+        // 3. Fetch all LIVE orders that have a ticket for this station
+        const { data: rawOrders, error: ordersError } = await supabase
+            .from('orders')
+            .select(`
+                id,
+                display_order_id,
+                user_name,
+                order_date,
+                order_stations!inner (
+                    id,
+                    status
+                ),
+                order_items (
+                    id,
+                    name,
+                    quantity,
+                    price,
+                    menu_item_uuid
+                )
+            `)
+            .in('status', ['PENDING', 'READY']) // Crucial: Only get live orders, like Admin KOT
+            .eq('order_stations.station_id', stationId) // Join only on station tickets for this station
+            .neq('order_stations.status', 'PICKED_UP') // And that are not yet picked up
+            .order('order_date', { ascending: true }); // Ascending to show oldest first
 
-        if (orderStationsError) {
-             console.error("Error fetching station orders:", orderStationsError);
-             throw orderStationsError;
+        if (ordersError) {
+             console.error("Error fetching station orders:", ordersError);
+             throw ordersError;
         }
 
-        const processedOrders: StationOrder[] = rawOrderStations
-            .map(os => {
-                if (!os.order || !os.order.order_items) return null;
+        // 4. Process the raw order data to create the final list of station tickets
+        const processedOrders: StationOrder[] = rawOrders
+            .map(order => {
+                // Query guarantees order_stations has exactly one item for this station
+                const stationTicket = order.order_stations[0];
+                
+                // Filter the main order's full item list to get only items for this station
+                const stationItems: OrderItem[] = order.order_items
+                    .filter(item => stationMenuItemUuids.has(item.menu_item_uuid!))
+                    .map((item: any) => ({
+                        id: item.menu_item_uuid,
+                        uuid: item.id,
+                        name: item.name,
+                        quantity: item.quantity,
+                        price: item.price,
+                        menu_item_id: item.menu_item_uuid
+                    }));
+                
+                // If, after filtering, there are no items for this station, something is wrong. Skip.
+                if (stationItems.length === 0) {
+                    return null;
+                }
 
-                const stationItems = os.order.order_items.filter(item => 
-                    stationMenuItemUuids.has(item.menu_item_uuid!)
-                );
-
-                if (stationItems.length === 0) return null;
-
-                const mappedItems: OrderItem[] = stationItems.map((item: any) => ({
-                    id: item.menu_item_uuid,
-                    uuid: item.id,
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: item.price,
-                    menu_item_id: item.menu_item_uuid
-                }));
-
+                // Construct the final StationOrder object
                 return {
-                    orderStationId: os.id,
-                    orderId: os.order.id,
-                    displayOrderId: os.order.display_order_id,
-                    userName: os.order.user_name,
-                    orderDate: os.order.order_date,
-                    status: os.status as OrderStationStatus,
-                    items: mappedItems,
+                    orderStationId: stationTicket.id,
+                    orderId: order.id,
+                    displayOrderId: order.display_order_id,
+                    userName: order.user_name,
+                    orderDate: order.order_date,
+                    status: stationTicket.status as OrderStationStatus,
+                    items: stationItems,
                 };
             })
             .filter((o): o is StationOrder => o !== null);
@@ -165,11 +189,38 @@ export default function StationPage() {
       fetchData();
     }
   }, [isUserLoading, fetchData]);
+  
+  useEffect(() => {
+    if (!supabase) return;
+
+    const channel = supabase.channel(`station-updates-${stationCode}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, 
+      (payload) => {
+          console.log('Realtime change received on orders table for station!', payload);
+          fetchData();
+      })
+       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_stations' }, 
+      (payload) => {
+          console.log('Realtime change received on order_stations table for station!', payload);
+          fetchData();
+      })
+      .subscribe((status, err) => {
+          if (err) {
+              console.error(`Realtime subscription error for station ${stationCode}`, err);
+          }
+      });
+    
+    return () => {
+        supabase.removeChannel(channel);
+    };
+  }, [supabase, stationCode, fetchData]);
+
 
   const handleUpdateStatus = useCallback(async (orderStationId: string, orderId: string, status: OrderStationStatus) => {
     if (!supabase) return;
 
     const originalOrders = [...orders];
+    // Optimistic update: remove the ticket from the list
     setOrders(prev => prev.filter(o => o.orderStationId !== orderStationId));
 
     const updatePayload: { status: OrderStationStatus; ready_at?: string; picked_up_at?: string } = { status };
@@ -183,36 +234,44 @@ export default function StationPage() {
     
     if (updateError) {
         toast({ title: 'Error', description: 'Failed to update order status.', variant: 'destructive' });
+        // Rollback on error
         setOrders(originalOrders);
         return;
     }
 
     toast({ title: 'Success', description: `Ticket marked as ${status}.` });
 
+    // Check if the main order is now fully complete (all station tickets are picked up)
     if (status === 'PICKED_UP') {
-        const { count, error: countError } = await supabase
-            .from('order_stations')
-            .select('*', { count: 'exact', head: true })
-            .eq('order_id', orderId)
-            .neq('status', 'PICKED_UP');
-        
-        if (countError) {
-            console.error("Error checking for order completion:", countError);
-            return;
-        }
-
-        if (count === 0) {
-            const { error: orderUpdateError } = await supabase
-                .from('orders')
-                .update({ status: 'DELIVERED' })
-                .eq('id', orderId);
-
-            if (orderUpdateError) {
-                console.error("Error marking main order as delivered:", orderUpdateError);
-            } else {
-                toast({ title: 'Order Completed!', description: `Order #${originalOrders.find(o=>o.orderId === orderId)?.displayOrderId} is now fully delivered.`});
+        // We delay this check slightly to allow for DB replication if needed
+        setTimeout(async () => {
+            const { count, error: countError } = await supabase
+                .from('order_stations')
+                .select('*', { count: 'exact', head: true })
+                .eq('order_id', orderId)
+                .neq('status', 'PICKED_UP');
+            
+            if (countError) {
+                console.error("Error checking for order completion:", countError);
+                return;
             }
-        }
+
+            // If no other station tickets are left, mark the main order as DELIVERED
+            if (count === 0) {
+                const { data: updatedOrder, error: orderUpdateError } = await supabase
+                    .from('orders')
+                    .update({ status: 'DELIVERED' })
+                    .eq('id', orderId)
+                    .select('display_order_id')
+                    .single();
+
+                if (orderUpdateError) {
+                    console.error("Error marking main order as delivered:", orderUpdateError);
+                } else {
+                    toast({ title: 'Order Completed!', description: `Order #${updatedOrder?.display_order_id} is now fully delivered.`});
+                }
+            }
+        }, 500);
     }
   }, [supabase, toast, orders]);
 
