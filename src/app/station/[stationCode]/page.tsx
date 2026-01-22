@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useSupabase } from '@/lib/supabase/provider';
@@ -28,8 +28,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 
-/* -------------------- STATUS UI -------------------- */
-
+/* ---------------------------------- */
+/* Status Display Map                 */
+/* ---------------------------------- */
 const statusMap: Record<
   OrderStationStatus,
   { label: string; className: string; icon: React.ReactNode }
@@ -51,8 +52,9 @@ const statusMap: Record<
   },
 };
 
-/* -------------------- TYPES -------------------- */
-
+/* ---------------------------------- */
+/* Types                              */
+/* ---------------------------------- */
 type StationOrder = {
   orderStationId: string;
   orderId: string;
@@ -68,14 +70,15 @@ type StationOrder = {
   }[];
 };
 
-/* -------------------- CARD -------------------- */
-
+/* ---------------------------------- */
+/* KOT Card                           */
+/* ---------------------------------- */
 function KOTCard({
   order,
   onUpdate,
 }: {
   order: StationOrder;
-  onUpdate: (osId: string, orderId: string, status: OrderStationStatus) => void;
+  onUpdate: (osId: string, status: OrderStationStatus) => void;
 }) {
   const meta = statusMap[order.status];
 
@@ -118,9 +121,7 @@ function KOTCard({
         {order.status === 'PENDING' && (
           <Button
             className="bg-green-600 hover:bg-green-700"
-            onClick={() =>
-              onUpdate(order.orderStationId, order.orderId, 'READY')
-            }
+            onClick={() => onUpdate(order.orderStationId, 'READY')}
           >
             Mark as Ready
           </Button>
@@ -128,9 +129,7 @@ function KOTCard({
 
         {order.status === 'READY' && (
           <Button
-            onClick={() =>
-              onUpdate(order.orderStationId, order.orderId, 'PICKED_UP')
-            }
+            onClick={() => onUpdate(order.orderStationId, 'PICKED_UP')}
           >
             Mark as Picked Up
           </Button>
@@ -140,10 +139,11 @@ function KOTCard({
   );
 }
 
-/* -------------------- PAGE -------------------- */
-
+/* ---------------------------------- */
+/* Station Page                       */
+/* ---------------------------------- */
 export default function StationPage() {
-  const { stationCode } = useParams();
+  const { stationCode } = useParams<{ stationCode: string }>();
   const { supabase, isUserLoading } = useSupabase();
   const { toast } = useToast();
 
@@ -152,18 +152,20 @@ export default function StationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  /* -------------------- FETCH -------------------- */
-
+  /* ---------------------------------- */
+  /* Fetch Data                         */
+  /* ---------------------------------- */
   const fetchData = useCallback(async () => {
-    if (!supabase) return;
+    if (!supabase || !stationCode) return;
+
     setLoading(true);
     setError(null);
 
     try {
-      /* 1. Station */
+      /* 1. Get Station */
       const { data: stationData, error: stationError } = await supabase
         .from('stations')
-        .select('id, name')
+        .select('id, name, code, active')
         .eq('code', stationCode)
         .single();
 
@@ -172,49 +174,53 @@ export default function StationPage() {
       }
 
       setStation(stationData);
-      const stationId = stationData.id;
 
-      /* 2. LIVE ORDERS (EXACTLY LIKE ADMIN) */
+      /* 2. Fetch LIVE station tickets */
       const { data, error } = await supabase
-        .from('orders')
+        .from('order_stations')
         .select(
           `
           id,
-          display_order_id,
-          user_name,
-          order_date,
-          order_stations!inner (
+          status,
+          created_at,
+          orders (
             id,
-            status
-          ),
-          order_items (
-            id,
-            name,
-            quantity,
-            price
+            display_order_id,
+            user_name,
+            order_date,
+            order_items (
+              id,
+              name,
+              quantity,
+              price
+            )
           )
         `
         )
+        .eq('station_id', stationData.id)
         .in('status', ['PENDING', 'READY'])
-        .eq('order_stations.station_id', stationId)
-        .neq('order_stations.status', 'PICKED_UP')
-        .order('order_date', { ascending: true });
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      const mapped: StationOrder[] = data.map((o: any) => ({
-        orderStationId: o.order_stations[0].id,
-        orderId: o.id,
-        displayOrderId: o.display_order_id,
-        userName: o.user_name,
-        orderDate: o.order_date,
-        status: o.order_stations[0].status,
-        items: o.order_items,
-      }));
+      const mapped: StationOrder[] = data
+        .map((os: any) => {
+          if (!os.orders) return null;
+
+          return {
+            orderStationId: os.id,
+            orderId: os.orders.id,
+            displayOrderId: os.orders.display_order_id,
+            userName: os.orders.user_name,
+            orderDate: os.orders.order_date,
+            status: os.status,
+            items: os.orders.order_items,
+          };
+        })
+        .filter((o): o is StationOrder => o !== null);
 
       setOrders(mapped);
     } catch (e: any) {
-      console.error(e);
       setError(e.message);
     } finally {
       setLoading(false);
@@ -225,21 +231,16 @@ export default function StationPage() {
     if (!isUserLoading) fetchData();
   }, [isUserLoading, fetchData]);
 
-  /* -------------------- ACTIONS -------------------- */
-
+  /* ---------------------------------- */
+  /* Update Status                     */
+  /* ---------------------------------- */
   const updateStatus = async (
     osId: string,
-    orderId: string,
     status: OrderStationStatus
   ) => {
-    const payload: any = { status };
-    if (status === 'READY') payload.ready_at = new Date().toISOString();
-    if (status === 'PICKED_UP')
-      payload.picked_up_at = new Date().toISOString();
-
     const { error } = await supabase
       .from('order_stations')
-      .update(payload)
+      .update({ status })
       .eq('id', osId);
 
     if (error) {
@@ -251,8 +252,9 @@ export default function StationPage() {
     fetchData();
   };
 
-  /* -------------------- UI -------------------- */
-
+  /* ---------------------------------- */
+  /* Render States                      */
+  /* ---------------------------------- */
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -294,7 +296,11 @@ export default function StationPage() {
       ) : (
         <div className="flex flex-wrap gap-4">
           {orders.map((o) => (
-            <KOTCard key={o.orderStationId} order={o} onUpdate={updateStatus} />
+            <KOTCard
+              key={o.orderStationId}
+              order={o}
+              onUpdate={updateStatus}
+            />
           ))}
         </div>
       )}
