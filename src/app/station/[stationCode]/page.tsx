@@ -86,7 +86,6 @@ export default function StationPage() {
     setError(null);
 
     try {
-        // 1. Fetch station details by code
         const { data: stationData, error: stationError } = await supabase
             .from('stations')
             .select('*')
@@ -99,19 +98,17 @@ export default function StationPage() {
         setStation(stationData);
         const stationId = stationData.id;
 
-        // 2. Fetch all menu_items for this station
         const { data: menuItemsForStation, error: menuItemsError } = await supabase
             .from('menu_items')
-            .select('id')
+            .select('uuid')
             .eq('station_id', stationId);
         
         if (menuItemsError) throw menuItemsError;
-        const stationMenuItemIds = new Set(menuItemsForStation.map(item => item.id));
+        const stationMenuItemUuids = new Set(menuItemsForStation.map(item => item.uuid));
 
-        // 3. Fetch all active order_stations for this station, with their related order and all order_items
         const { data: rawOrderStations, error: orderStationsError } = await supabase
             .from('order_stations')
-            .select('*, order:orders(*, order_items(*))')
+            .select('*, order:orders!inner(*, order_items(*))')
             .eq('station_id', stationId)
             .in('status', ['PENDING', 'READY'])
             .order('order_date', { foreignTable: 'orders', ascending: true });
@@ -121,16 +118,24 @@ export default function StationPage() {
              throw orderStationsError;
         }
 
-        // 4. Process the data client-side to filter items for this station
         const processedOrders: StationOrder[] = rawOrderStations
             .map(os => {
-                if (!os.order) return null; // Skip if order data is missing
+                if (!os.order || !os.order.order_items) return null;
 
                 const stationItems = os.order.order_items.filter(item => 
-                    stationMenuItemIds.has(item.menu_item_id!)
+                    stationMenuItemUuids.has(item.menu_item_uuid!)
                 );
 
-                if (stationItems.length === 0) return null; // This station has no items in this order
+                if (stationItems.length === 0) return null;
+
+                const mappedItems: OrderItem[] = stationItems.map((item: any) => ({
+                    id: item.menu_item_uuid,
+                    uuid: item.id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                    menu_item_id: item.menu_item_uuid
+                }));
 
                 return {
                     orderStationId: os.id,
@@ -139,7 +144,7 @@ export default function StationPage() {
                     userName: os.order.user_name,
                     orderDate: os.order.order_date,
                     status: os.status as OrderStationStatus,
-                    items: stationItems,
+                    items: mappedItems,
                 };
             })
             .filter((o): o is StationOrder => o !== null);
@@ -164,7 +169,6 @@ export default function StationPage() {
     if (!supabase) return;
 
     const originalOrders = [...orders];
-    // Optimistic update
     setOrders(prev => prev.filter(o => o.orderStationId !== orderStationId));
 
     const updatePayload: { status: OrderStationStatus; ready_at?: string; picked_up_at?: string } = { status };
@@ -178,14 +182,13 @@ export default function StationPage() {
     
     if (updateError) {
         toast({ title: 'Error', description: 'Failed to update order status.', variant: 'destructive' });
-        setOrders(originalOrders); // Rollback
+        setOrders(originalOrders);
         return;
     }
 
     toast({ title: 'Success', description: `Ticket marked as ${status}.` });
 
     if (status === 'PICKED_UP') {
-        // Check if all other stations for this order are also picked up
         const { count, error: countError } = await supabase
             .from('order_stations')
             .select('*', { count: 'exact', head: true })
@@ -198,7 +201,6 @@ export default function StationPage() {
         }
 
         if (count === 0) {
-            // All stations for this order are done, so update the main order status
             const { error: orderUpdateError } = await supabase
                 .from('orders')
                 .update({ status: 'DELIVERED' })
