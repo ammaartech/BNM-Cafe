@@ -1,15 +1,24 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import type { Order, OrderItem, OrderStatus } from "@/lib/types";
+import { useState, useEffect, useCallback, useRef } from "react";
+import type { Order, OrderItem } from "@/lib/types";
+import { useSupabase } from "@/lib/supabase/provider";
+import { useToast } from "@/hooks/use-toast";
+import { useOrderStatus } from "@/context/OrderStatusContext";
+import type { RealtimeChannel } from "@supabase/supabase-js";
+
 import {
   Card,
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
+
 import {
   AlertCircle,
   ShoppingBag,
@@ -22,60 +31,49 @@ import {
   XCircle,
   Package,
 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useSupabase } from "@/lib/supabase/provider";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import type { RealtimeChannel } from "@supabase/supabase-js";
-import { useOrderStatus } from "@/context/OrderStatusContext";
 
-/* ---------------- STATUS MAP ---------------- */
+/* ---------------- TYPES ---------------- */
 
-const statusDisplayMap: {
-  [key in OrderStatus]?: {
-    label: string;
-    icon: React.ReactNode;
-    className: string;
-  };
-} = {
-  PENDING: {
-    label: "Pending",
-    icon: <Clock className="h-5 w-5" />,
-    className: "bg-blue-500 text-white",
-  },
-  READY: {
-    label: "Ready for Pickup",
-    icon: <CookingPot className="h-5 w-5" />,
-    className: "bg-yellow-500 text-white",
-  },
-  DELIVERED: {
-    label: "Delivered",
-    icon: <CheckCircle2 className="h-5 w-5" />,
-    className: "bg-green-600 text-white",
-  },
-  CANCELLED: {
-    label: "Cancelled",
-    icon: <XCircle className="h-5 w-5" />,
-    className: "bg-destructive text-destructive-foreground",
-  },
+type OrderStatus = "PENDING" | "READY" | "DELIVERED" | "CANCELLED";
+
+type OrderStation = {
+  id: string;
+  order_id: string;
+  station_id: string;
+  status: "PENDING" | "READY";
 };
 
-/* ---------------- SKELETON ---------------- */
+/* ---------------- STATUS DISPLAY ---------------- */
 
-function TicketSkeleton() {
-  return (
-    <Card className="max-w-md mx-auto shadow-lg w-full">
-      <CardContent className="p-6 space-y-4">
-        <Skeleton className="h-6 w-40" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-10 w-full" />
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ---------------- FORMATTER ---------------- */
+const statusDisplayMap: {
+    PENDING: { label: string; icon: React.ReactNode; className: string };
+    READY: { label: string; icon: React.ReactNode; className: string };
+    DELIVERED: { label: string; icon: React.ReactNode; className: string };
+    CANCELLED: { label: string; icon: React.ReactNode; className: string };
+  } = {
+    PENDING: {
+      label: "Pending",
+      icon: <Clock className="h-5 w-5" />,
+      className: "bg-blue-500 text-white",
+    },
+    READY: {
+      label: "Ready for Pickup",
+      icon: <CookingPot className="h-5 w-5" />,
+      className: "bg-yellow-500 text-white",
+    },
+    DELIVERED: {
+      label: "Delivered",
+      icon: <CheckCircle2 className="h-5 w-5" />,
+      className: "bg-green-600 text-white",
+    },
+    CANCELLED: {
+      label: "Cancelled",
+      icon: <XCircle className="h-5 w-5" />,
+      className: "bg-destructive text-destructive-foreground",
+    },
+  };
+  
+/* ---------------- HELPERS ---------------- */
 
 function formatOrder(data: any): Order {
   return {
@@ -94,11 +92,11 @@ function formatOrder(data: any): Order {
         name: item.name,
         quantity: item.quantity,
         price: item.price,
-      })) || [],
+      })) ?? [],
   };
 }
 
-/* ================= PAGE ================= */
+/* ---------------- PAGE ---------------- */
 
 export default function OrderTicketPage() {
   const params = useParams();
@@ -110,11 +108,12 @@ export default function OrderTicketPage() {
   const { fetchOrdersStatus } = useOrderStatus();
 
   const [order, setOrder] = useState<Order | null>(null);
+  const [stationStatuses, setStationStatuses] = useState<OrderStation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<any>(null);
   const [isManualFetching, setIsManualFetching] = useState(false);
 
-  const previousStatusRef = useRef<Order["status"] | null>(null);
+  const prevDerivedStatusRef = useRef<OrderStatus | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   /* ---------------- AUDIO ---------------- */
@@ -141,45 +140,50 @@ export default function OrderTicketPage() {
       setError(error);
       setOrder(null);
     } else if (data) {
-      const formatted = formatOrder(data);
-      setOrder(formatted);
-      previousStatusRef.current = formatted.status; // 🔥 CRITICAL FIX
+      setOrder(formatOrder(data));
       setError(null);
     }
 
     setIsLoading(false);
   }, [orderId, user, supabase]);
 
-  /* ---------------- REALTIME HANDLER ---------------- */
+  /* ---------------- FETCH STATIONS ---------------- */
 
-  const handleOrderUpdate = useCallback((payload: any) => {
-    console.log("[Realtime] Update received:", payload.new);
+  const fetchStationStatuses = useCallback(async () => {
+    if (!orderId || !supabase) return;
 
-    setOrder((current) => {
-      if (!current || !payload.new) return current;
+    const { data } = await supabase
+      .from("order_stations")
+      .select("*")
+      .eq("order_id", orderId);
 
-      // Prevent loop on pickup_notified_at update
-      if (
-        payload.old?.pickup_notified_at &&
-        payload.new?.pickup_notified_at
-      ) {
-        return current;
-      }
+    if (data) setStationStatuses(data as OrderStation[]);
+  }, [orderId, supabase]);
 
-      return {
-        ...current,
-        ...payload.new,
-      };
-    });
-  }, []);
+  /* ---------------- DERIVED STATUS ---------------- */
 
-  /* ---------------- STATUS SIDE EFFECTS ---------------- */
+  const derivedStatus: OrderStatus = (() => {
+    if (!order) return "PENDING";
+    if (order.status === "CANCELLED") return "CANCELLED";
+    if (order.status === "DELIVERED") return "DELIVERED";
+
+    if (
+      stationStatuses.length > 0 &&
+      stationStatuses.every((s) => s.status === "READY")
+    ) {
+      return "READY";
+    }
+
+    return "PENDING";
+  })();
+
+  /* ---------------- SIDE EFFECTS ---------------- */
 
   useEffect(() => {
     if (!order || !user || !supabase) return;
 
-    const prev = previousStatusRef.current;
-    const next = order.status;
+    const prev = prevDerivedStatusRef.current;
+    const next = derivedStatus;
 
     if (prev !== "READY" && next === "READY") {
       audioRef.current?.play().catch(() => {});
@@ -197,80 +201,80 @@ export default function OrderTicketPage() {
         .then(() => fetchOrdersStatus(user.id));
     }
 
-    if (prev && prev !== next) {
-      if (next === "DELIVERED") {
-        toast({ title: "✅ Order Delivered!", duration: 5000 });
-        fetchOrdersStatus(user.id);
-      }
-      if (next === "CANCELLED") {
-        toast({
-          title: "❌ Order Cancelled",
-          variant: "destructive",
-          duration: 5000,
-        });
-        fetchOrdersStatus(user.id);
-      }
-    }
+    prevDerivedStatusRef.current = next;
+  }, [derivedStatus, order, supabase, toast, user, fetchOrdersStatus]);
 
-    previousStatusRef.current = next;
-  }, [order, supabase, toast, user, fetchOrdersStatus]);
-
-  /* ---------------- REALTIME SUBSCRIPTION ---------------- */
+  /* ---------------- REALTIME ---------------- */
 
   useEffect(() => {
     if (!user || !orderId || !supabase) return;
 
-    let channel: RealtimeChannel | null = null;
-
-    const subscribe = () => {
-      if (channel) return;
-
-      channel = supabase
-        .channel(`order-${orderId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "orders",
-            filter: `id=eq.${orderId}`,
-          },
-          handleOrderUpdate
-        )
-        .subscribe((status) => {
-          if (status === "SUBSCRIBED") {
-            console.log("[Realtime] Subscribed");
-          }
-        });
-    };
-
-    const unsubscribe = () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-        channel = null;
-      }
-    };
+    let orderChannel: RealtimeChannel | null = null;
+    let stationChannel: RealtimeChannel | null = null;
 
     fetchOrder();
-    subscribe();
+    fetchStationStatuses();
 
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") {
-        fetchOrder();
-        subscribe();
-      } else {
-        unsubscribe();
-      }
-    });
+    orderChannel = supabase
+      .channel(`order-${orderId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          setOrder((prev) =>
+            prev && payload.new ? { ...prev, ...payload.new } : prev
+          );
+        }
+      )
+      .subscribe();
 
-    return () => unsubscribe();
-  }, [orderId, supabase, user, handleOrderUpdate, fetchOrder]);
+    stationChannel = supabase
+      .channel(`order-stations-${orderId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "order_stations",
+          filter: `order_id=eq.${orderId}`,
+        },
+        (payload) => {
+          const updated = payload.new as OrderStation;
+
+          setStationStatuses((prev) => {
+            const idx = prev.findIndex((s) => s.id === updated.id);
+            if (idx === -1) return [...prev, updated];
+            const copy = [...prev];
+            copy[idx] = updated;
+            return copy;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (orderChannel) supabase.removeChannel(orderChannel);
+      if (stationChannel) supabase.removeChannel(stationChannel);
+    };
+  }, [orderId, supabase, user, fetchOrder, fetchStationStatuses]);
 
   /* ---------------- UI ---------------- */
 
-  if (isLoading) return <TicketSkeleton />;
+  if (isLoading) {
+    return (
+      <Card className="max-w-md mx-auto p-6">
+        <Skeleton className="h-6 w-40 mb-4" />
+        <Skeleton className="h-16 w-full" />
+      </Card>
+    );
+  }
 
-  if (error)
+  if (error) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
@@ -278,17 +282,17 @@ export default function OrderTicketPage() {
         <AlertDescription>{error.message}</AlertDescription>
       </Alert>
     );
+  }
 
-  if (!order)
+  if (!order) {
     return (
       <Alert variant="destructive">
         <AlertTitle>Order not found</AlertTitle>
       </Alert>
     );
+  }
 
-  const statusUI =
-    statusDisplayMap[order.status] ??
-    { label: order.status, icon: <Package />, className: "" };
+  const statusUI = statusDisplayMap[derivedStatus];
 
   return (
     <>
@@ -303,9 +307,7 @@ export default function OrderTicketPage() {
         <CardContent className="p-0">
           <div className="text-center p-8">
             <p className="text-sm text-muted-foreground">Order Number</p>
-            <h2 className="text-6xl font-bold">
-              {order.display_order_id}
-            </h2>
+            <h2 className="text-6xl font-bold">{order.display_order_id}</h2>
           </div>
 
           <div
@@ -322,7 +324,7 @@ export default function OrderTicketPage() {
             <h3 className="flex items-center gap-2 font-semibold">
               <ShoppingBag className="h-5 w-5" /> Items
             </h3>
-            {order.items.map((item) => (
+            {order.items.map((item: OrderItem) => (
               <div key={item.uuid} className="flex justify-between">
                 <span>
                   {item.quantity} × {item.name}
@@ -331,6 +333,8 @@ export default function OrderTicketPage() {
               </div>
             ))}
           </div>
+
+          <Separator />
         </CardContent>
 
         <CardFooter>
@@ -340,6 +344,7 @@ export default function OrderTicketPage() {
             onClick={async () => {
               setIsManualFetching(true);
               await fetchOrder();
+              await fetchStationStatuses();
               setIsManualFetching(false);
             }}
             disabled={isManualFetching}
