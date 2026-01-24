@@ -281,6 +281,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
+      // Manually clear the cart from the database after a successful order.
+      const { error: deleteError } = await supabase
+        .from('user_cart_items')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        // Log the error but don't block the user flow since the order was successful.
+        console.error('Failed to clear cart from database:', deleteError);
+      }
+
       dispatch({ type: "CLEAR_CART" });
       router.push(`/orders/${data.order_id}`);
     } catch (err: any) {
