@@ -162,46 +162,47 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!itemToRemove) return;
     
     setUpdatingItemId(itemId);
-
-    const { error } = await supabase
-        .from('user_cart_items')
-        .delete()
-        .match({ user_id: user.id, menu_item_uuid: itemToRemove.uuid });
-    
-    if (error) {
-        toast({ title: "Failed to remove item", variant: "destructive" });
-    } else {
-        dispatch({ type: "REMOVE_ITEM", payload: { id: itemId } });
+    try {
+      const { error } = await supabase
+          .from('user_cart_items')
+          .delete()
+          .match({ user_id: user.id, menu_item_uuid: itemToRemove.uuid });
+      
+      if (error) throw error;
+      
+      dispatch({ type: "REMOVE_ITEM", payload: { id: itemId } });
+    } catch (err: any) {
+      toast({ title: "Failed to remove item", description: err.message, variant: "destructive" });
+    } finally {
+      setUpdatingItemId(null);
     }
-
-    setUpdatingItemId(null);
   }, [supabase, user, state.items, toast]);
 
 
   const updateQuantity = useCallback(async (itemId: string, quantity: number) => {
     if (!user || !supabase) return;
 
+    if (quantity <= 0) {
+        await removeItem(itemId);
+        return;
+    }
+
     const itemToUpdate = state.items.find(i => i.id === itemId);
     if (!itemToUpdate) return;
 
     setUpdatingItemId(itemId);
-
-    if (quantity <= 0) {
-        await removeItem(itemId);
-    } else {
+    try {
         const { error } = await supabase
             .from('user_cart_items')
             .update({ quantity })
             .match({ user_id: user.id, menu_item_uuid: itemToUpdate.uuid });
         
-        if (error) {
-            toast({ title: "Failed to update cart", variant: "destructive" });
-        } else {
-            dispatch({ type: "UPDATE_QUANTITY", payload: { id: itemId, quantity } });
-        }
-    }
-    
-    if (quantity > 0) {
+        if (error) throw error;
+        
+        dispatch({ type: "UPDATE_QUANTITY", payload: { id: itemId, quantity } });
+    } catch (err: any) {
+        toast({ title: "Failed to update cart", description: err.message, variant: "destructive" });
+    } finally {
         setUpdatingItemId(null);
     }
   }, [supabase, user, state.items, toast, removeItem]);
@@ -216,29 +217,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       
       setUpdatingItemId(item.id);
+      try {
+        const existingItem = state.items.find(i => i.id === item.id);
 
-      const existingItem = state.items.find(i => i.id === item.id);
+        if (existingItem) {
+            await updateQuantity(item.id, existingItem.quantity + quantity);
+        } else {
+            const { error } = await supabase
+                .from('user_cart_items')
+                .insert({
+                    user_id: user.id,
+                    menu_item_uuid: item.uuid,
+                    quantity: quantity,
+                });
 
-      if (existingItem) {
-          await updateQuantity(item.id, existingItem.quantity + quantity);
-      } else {
-          const { error } = await supabase
-              .from('user_cart_items')
-              .insert({
-                  user_id: user.id,
-                  menu_item_uuid: item.uuid,
-                  quantity: quantity,
-              });
+            if (error) throw error;
 
-          if (error) {
-              toast({ title: "Failed to add item", variant: "destructive" });
-          } else {
-              const newCartItem: CartItem = { ...item, quantity: quantity };
-              dispatch({ type: "ADD_ITEM", payload: newCartItem });
-              setAddedItemPopup(item);
-          }
+            const newCartItem: CartItem = { ...item, quantity: quantity };
+            dispatch({ type: "ADD_ITEM", payload: newCartItem });
+            setAddedItemPopup(item);
+        }
+      } catch (err: any) {
+          toast({ title: "Failed to add item", description: err.message, variant: "destructive" });
+      } finally {
+          setUpdatingItemId(null);
       }
-      setUpdatingItemId(null);
   }, [supabase, user, state.items, toast, updateQuantity, router]);
 
 
@@ -327,5 +330,3 @@ export function CartProvider({ children }: { children: ReactNode }) {
 export function useCart() {
   return useContext(CartContext);
 }
-
-    
