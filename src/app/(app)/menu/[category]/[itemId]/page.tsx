@@ -91,9 +91,8 @@ export default function MenuItemDetailPage() {
   const isFavorited = favoriteIds.includes(item.id);
 
   const handleAddToCart = () => {
-    for(let i = 0; i < quantity; i++) {
-        addItem(item);
-    }
+    if (!item) return;
+    addItem(item, quantity);
   };
   
   const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
@@ -170,3 +169,5 @@ export default function MenuItemDetailPage() {
     </div>
   );
 }
+
+    
