@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
@@ -69,33 +70,33 @@ const overallStatusDisplayMap: Record<
 > = {
   PENDING: {
     label: "Pending",
-    icon: <Clock className="h-5 w-5" />,
-    className: "bg-blue-500/10 text-blue-700 border-blue-500/20",
+    icon: <Clock className="h-4 w-4" />,
+    className: "bg-blue-500 text-primary-foreground border-transparent",
   },
   READY: {
-    label: "Partially Ready",
-    icon: <CookingPot className="h-5 w-5" />,
-    className: "bg-yellow-400/10 text-yellow-700 border-yellow-400/20",
+    label: "Ready for Pickup",
+    icon: <CookingPot className="h-4 w-4" />,
+    className: "bg-yellow-500 text-primary-foreground border-transparent",
   },
   DELIVERED: {
     label: "Delivered",
-    icon: <CheckCircle2 className="h-5 w-5" />,
-    className: "bg-green-500/10 text-green-700 border-green-500/20",
+    icon: <CheckCircle2 className="h-4 w-4" />,
+    className: "bg-green-600 text-primary-foreground border-transparent",
   },
   CANCELLED: {
     label: "Cancelled",
-    icon: <XCircle className="h-5 w-5" />,
-    className: "bg-destructive/10 text-destructive border-destructive/20",
+    icon: <XCircle className="h-4 w-4" />,
+    className: "bg-destructive text-destructive-foreground border-transparent",
   },
   COOKING: {
     label: "Cooking",
-    icon: <CookingPot className="h-5 w-5" />,
-    className: "bg-blue-500/10 text-blue-700 border-blue-500/20",
+    icon: <CookingPot className="h-4 w-4" />,
+    className: "bg-blue-500 text-primary-foreground border-transparent",
   },
   PICKED_UP: {
     label: "Picked Up",
-    icon: <ShoppingBag className="h-5 w-5" />,
-    className: "bg-green-500/10 text-green-700 border-green-500/20",
+    icon: <ShoppingBag className="h-4 w-4" />,
+    className: "bg-green-600 text-primary-foreground border-transparent",
   },
 };
 
@@ -106,17 +107,17 @@ const stationStatusDisplayMap: Record<
   PENDING: {
     label: "Pending",
     icon: <Clock className="h-4 w-4" />,
-    className: "bg-blue-500/10 text-blue-700 border-blue-500/20",
+    className: "bg-blue-500 text-primary-foreground border-transparent",
   },
   READY: {
     label: "Ready for Pickup",
     icon: <CookingPot className="h-4 w-4" />,
-    className: "bg-yellow-400/10 text-yellow-700 border-yellow-400/20",
+    className: "bg-yellow-500 text-primary-foreground border-transparent",
   },
   PICKED_UP: {
     label: "Picked Up",
     icon: <CheckCircle2 className="h-4 w-4" />,
-    className: "bg-green-500/10 text-green-700 border-green-500/20",
+    className: "bg-green-600 text-primary-foreground border-transparent",
   },
 };
 
@@ -204,8 +205,8 @@ export default function OrderTicketPage() {
 
   /* ---------------- REALTIME ---------------- */
 
-  useEffect(() => {
-    if (!user || !orderId || !supabase) return;
+ useEffect(() => {
+    if (!orderId || !user || !supabase) return;
 
     fetchOrder();
     fetchStationStatuses();
@@ -213,18 +214,17 @@ export default function OrderTicketPage() {
     const stationChannel: RealtimeChannel = supabase
       .channel(`order-stations-${orderId}`)
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "*",
-          schema: "public",
-          table: "order_stations",
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'order_stations',
           filter: `order_id=eq.${orderId}`,
         },
         (payload: RealtimePostgresChangesPayload<OrderStation>) => {
           const updated = payload.new;
-          if (!updated || typeof updated !== "object" || !("id" in updated))
-            return;
-
+          if (!updated || typeof updated !== 'object' || !('id' in updated)) return;
+          
           setStationStatuses((prev) => {
             const idx = prev.findIndex((s) => s.id === updated.id);
             if (idx === -1) return [...prev, updated];
@@ -235,11 +235,43 @@ export default function OrderTicketPage() {
         }
       )
       .subscribe();
+      
+    const orderChannel: RealtimeChannel = supabase
+      .channel(`order-status-realtime-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload: RealtimePostgresChangesPayload<BaseOrder>) => {
+          if (payload.new) {
+            setOrder((prevOrder) => {
+              if (!prevOrder) return null;
+              // Safely merge new data without overwriting items array
+              return { ...prevOrder, ...payload.new };
+            });
+             if (
+                payload.old.status !== 'READY' &&
+                payload.new.status === 'READY'
+              ) {
+                toast({ title: 'Your order is ready for pickup!' });
+                audioRef.current?.play().catch(console.error);
+                fetchOrdersStatus(user.id);
+            }
+          }
+        }
+      )
+      .subscribe();
 
     return () => {
       supabase.removeChannel(stationChannel);
+      supabase.removeChannel(orderChannel);
     };
-  }, [orderId, supabase, user, fetchOrder, fetchStationStatuses]);
+  }, [orderId, supabase, user, fetchOrder, fetchStationStatuses, toast, fetchOrdersStatus]);
+
 
   /* ---------------- GROUP ITEMS ---------------- */
 
@@ -263,9 +295,19 @@ export default function OrderTicketPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4">
-        <Skeleton className="h-6 w-40 mb-4" />
-        <Skeleton className="h-48 w-full" />
+      <div className="p-4 space-y-4">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-10" />
+          <Skeleton className="h-6 w-32" />
+        </div>
+        <Card className="max-w-md mx-auto shadow-lg w-full">
+            <CardHeader><Skeleton className="h-8 w-full" /></CardHeader>
+            <CardContent className="space-y-4">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+            </CardContent>
+            <CardFooter><Skeleton className="h-12 w-full" /></CardFooter>
+        </Card>
       </div>
     );
   }
@@ -289,8 +331,10 @@ export default function OrderTicketPage() {
     );
   }
 
+  const overallStatusInfo = overallStatusDisplayMap[order.status];
+
   return (
-    <div className="p-4">
+    <div className="p-4 flex flex-col">
       <div className="flex items-center gap-4 mb-4">
         <Button
           variant="ghost"
@@ -302,82 +346,75 @@ export default function OrderTicketPage() {
         <h1 className="text-2xl font-bold">Your Order</h1>
       </div>
 
-      <Card className="max-w-md mx-auto shadow-lg">
+      <Card className="max-w-md mx-auto shadow-lg rounded-2xl w-full">
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle className="text-xl">
               Order #{order.display_order_id}
             </CardTitle>
-            <Badge
-              variant="outline"
-              className={cn(
-                "text-base",
-                overallStatusDisplayMap[order.status]?.className
-              )}
-            >
-              {overallStatusDisplayMap[order.status]?.icon}
-              <span className="ml-2">
-                {overallStatusDisplayMap[order.status]?.label}
-              </span>
-            </Badge>
+            {overallStatusInfo && (
+                <Badge
+                variant="outline"
+                className={cn(
+                    "text-sm font-semibold",
+                    overallStatusInfo.className
+                )}
+                >
+                {overallStatusInfo.icon}
+                <span className="ml-2">{overallStatusInfo.label}</span>
+                </Badge>
+            )}
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="pt-2 space-y-4">
           <Separator />
           {Array.from(itemsByStation.entries()).map(
             ([stationId, { stationName, items }]) => {
               const stationStatus =
                 stationStatuses.find((s) => s.station_id === stationId)
-                  ?.status ?? "PENDING";
+                  ?.status ?? 'PENDING';
               const statusInfo = stationStatusDisplayMap[stationStatus];
 
-              return (
-                <div key={stationId}>
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-semibold text-lg">{stationName}</h3>
-                    <Badge
-                      variant="outline"
-                      className={cn("font-semibold", statusInfo.className)}
-                    >
-                      {statusInfo.icon}
-                      <span className="ml-2">{statusInfo.label}</span>
-                    </Badge>
-                  </div>
+              const stationTotal = items.reduce(
+                (acc, item) => acc + item.price * item.quantity,
+                0
+              );
 
-                  <ul className="space-y-1 text-muted-foreground">
-                    {items.map((item: OrderItem) => (
-                      <li
-                        key={item.uuid}
-                        className="flex justify-between"
-                      >
-                        <span>
-                          {item.quantity} × {item.name}
-                        </span>
-                        <span>
-                          ₹{(item.price * item.quantity).toFixed(2)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              return (
+                 <div key={stationId} className="flex justify-between items-start pt-2">
+                    <div className="grid gap-1">
+                      <h3 className="font-semibold text-md">{stationName}</h3>
+                      <ul className="space-y-1 text-sm text-muted-foreground">
+                        {items.map((item: OrderItem) => (
+                          <li key={item.uuid}>{item.quantity} × {item.name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="text-right grid gap-2 items-center">
+                        {statusInfo &&
+                            <Badge variant="outline" className={cn('font-semibold justify-self-end w-fit', statusInfo.className)}>
+                            {statusInfo.icon}
+                            <span className="ml-1.5 text-xs">{statusInfo.label}</span>
+                            </Badge>
+                        }
+                        <p className="font-semibold text-muted-foreground text-sm">₹{stationTotal.toFixed(2)}</p>
+                    </div>
+                  </div>
               );
             }
           )}
         </CardContent>
 
-        <CardFooter className="pt-4">
-          <Separator />
-          <div className="w-full flex justify-between font-bold text-lg mt-2">
+        <CardFooter className="flex-col items-start gap-2 mt-auto pt-4">
+          <Separator className="w-full" />
+          <div className="w-full flex justify-between font-bold text-xl mt-2">
             <span>Total</span>
             <span>₹{order.totalAmount.toFixed(2)}</span>
           </div>
-          <div className="w-full text-xs text-muted-foreground text-center mt-2">
-            Ordered on{" "}
-            {format(
-              new Date(order.orderDate),
-              "MMM dd, yyyy 'at' hh:mm a"
-            )}
+          <div className="w-full text-center text-xs text-muted-foreground pt-2">
+            Ordered on{' '}
+            {format(new Date(order.orderDate), "MMM dd, yyyy 'at' hh:mm a")}
           </div>
         </CardFooter>
       </Card>
