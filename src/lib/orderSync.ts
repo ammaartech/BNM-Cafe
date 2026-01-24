@@ -4,10 +4,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * Synchronizes overall order status based on station statuses.
  *
  * Rules:
- * - If ANY station is PENDING → order = PENDING
- * - If ALL stations are READY → order = READY
- * - If ALL stations are PICKED_UP → order = DELIVERED
  * - CANCELLED orders are never modified
+ * - DELIVERED orders are final and never downgraded
+ * - If ALL stations are PICKED_UP → DELIVERED
+ * - Else if ALL stations are READY → READY
+ * - Else → PENDING
  */
 export async function syncOrderStatus(
   supabase: SupabaseClient,
@@ -22,8 +23,10 @@ export async function syncOrderStatus(
 
   if (orderError || !order) return;
 
-  // Never touch cancelled orders
-  if (order.status === "CANCELLED") return;
+  // 🔒 Never touch cancelled or delivered orders
+  if (order.status === "CANCELLED" || order.status === "DELIVERED") {
+    return;
+  }
 
   // 2️⃣ Fetch station statuses
   const { data: stations, error: stationError } = await supabase
@@ -35,7 +38,7 @@ export async function syncOrderStatus(
 
   const statuses = stations.map((s) => s.status);
 
-  let nextStatus: string | null = null;
+  let nextStatus: "PENDING" | "READY" | "DELIVERED";
 
   // 3️⃣ Decide final order status
   if (statuses.every((s) => s === "PICKED_UP")) {
@@ -46,8 +49,8 @@ export async function syncOrderStatus(
     nextStatus = "PENDING";
   }
 
-  // 4️⃣ Update only if status actually changed
-  if (nextStatus !== order.status) {
+  // 4️⃣ Update ONLY if changed
+  if (order.status !== nextStatus) {
     await supabase
       .from("orders")
       .update({ status: nextStatus })
