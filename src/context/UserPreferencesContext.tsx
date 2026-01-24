@@ -31,7 +31,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     setIsLoading(true);
     const { data, error } = await supabase
       .from('user_favorites')
-      .select('menu_item_id')
+      .select('menu_item_uuid')
       .eq('user_id', currentUserId);
 
     if (error) {
@@ -39,7 +39,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
       toast({ title: 'Error', description: 'Could not load your favorites.', variant: 'destructive'});
       setFavoriteIds([]);
     } else {
-      setFavoriteIds(data?.map(fav => fav.menu_item_id) || []);
+      setFavoriteIds(data?.map(fav => fav.menu_item_uuid) || []);
     }
     setIsLoading(false);
   }, [supabase, toast]);
@@ -89,12 +89,12 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
       const { error: deleteError } = await supabase
         .from('user_favorites')
         .delete()
-        .match({ user_id: user.id, menu_item_id: menuItemUuid });
+        .match({ user_id: user.id, menu_item_uuid: menuItemUuid });
         error = deleteError;
     } else {
       const { error: insertError } = await supabase
         .from('user_favorites')
-        .insert({ user_id: user.id, menu_item_id: menuItemUuid });
+        .insert({ user_id: user.id, menu_item_uuid: menuItemUuid });
         error = insertError;
     }
 
