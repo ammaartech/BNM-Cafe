@@ -1,7 +1,8 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSupabase } from '@/lib/supabase/provider';
 import type { Station, OrderStationStatus, StationOrder } from '@/lib/types';
@@ -133,7 +134,8 @@ function KOTCard({
 /* ---------------------------------- */
 export default function StationPage() {
   const { stationCode } = useParams<{ stationCode: string }>();
-  const { supabase, isUserLoading } = useSupabase();
+  const { supabase, user, userProfile, isUserLoading } = useSupabase();
+  const router = useRouter();
   const { toast } = useToast();
 
   const [station, setStation] = useState<Station | null>(null);
@@ -275,8 +277,45 @@ export default function StationPage() {
     await syncOrderStatus(supabase, orderId);
 
     toast({ title: 'Updated', description: `Marked as ${status}` });
-    // Realtime listener will handle the refresh, no need for manual fetchData()
   };
+  
+  // --- AUTH GUARD ---
+  if (isUserLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <p className="ml-4">Authenticating...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    router.replace('/station');
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+
+  if (user.is_anonymous || userProfile?.role !== 'admin') {
+    return (
+      <div className="flex h-screen items-center justify-center p-4">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>
+            You do not have permission to access this station dashboard.
+          </AlertDescription>
+          <Button variant="outline" asChild className="mt-4">
+            <Link href="/station">Back to Station Selection</Link>
+          </Button>
+        </Alert>
+      </div>
+    );
+  }
+  // --- END OF AUTH GUARD ---
+
 
   if (loading && !station) {
     return (
