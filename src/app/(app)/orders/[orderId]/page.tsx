@@ -1,13 +1,27 @@
-
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
 import type { Order, OrderItem, OrderStatus } from "@/lib/types";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, ShoppingBag, ArrowLeft, RefreshCw, Loader2, CheckCircle2, Clock, CookingPot, XCircle, Package } from "lucide-react";
+import {
+  AlertCircle,
+  ShoppingBag,
+  ArrowLeft,
+  RefreshCw,
+  Loader2,
+  CheckCircle2,
+  Clock,
+  CookingPot,
+  XCircle,
+  Package,
+} from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
@@ -16,95 +30,81 @@ import { useToast } from "@/hooks/use-toast";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useOrderStatus } from "@/context/OrderStatusContext";
 
-const statusDisplayMap: { [key in OrderStatus]?: { label: string; icon: React.ReactNode; className: string } } = {
-    PENDING: { label: 'Pending', icon: <Clock className="h-5 w-5" />, className: 'bg-blue-500 text-white' },
-    READY: { label: 'Ready for Pickup', icon: <CookingPot className="h-5 w-5" />, className: 'bg-yellow-500 text-white' },
-    DELIVERED: { label: 'Delivered', icon: <CheckCircle2 className="h-5 w-5" />, className: 'bg-green-600 text-white' },
-    CANCELLED: { label: 'Cancelled', icon: <XCircle className="h-5 w-5" />, className: 'bg-destructive text-destructive-foreground' },
+/* ---------------- STATUS MAP ---------------- */
+
+const statusDisplayMap: {
+  [key in OrderStatus]?: {
+    label: string;
+    icon: React.ReactNode;
+    className: string;
+  };
+} = {
+  PENDING: {
+    label: "Pending",
+    icon: <Clock className="h-5 w-5" />,
+    className: "bg-blue-500 text-white",
+  },
+  READY: {
+    label: "Ready for Pickup",
+    icon: <CookingPot className="h-5 w-5" />,
+    className: "bg-yellow-500 text-white",
+  },
+  DELIVERED: {
+    label: "Delivered",
+    icon: <CheckCircle2 className="h-5 w-5" />,
+    className: "bg-green-600 text-white",
+  },
+  CANCELLED: {
+    label: "Cancelled",
+    icon: <XCircle className="h-5 w-5" />,
+    className: "bg-destructive text-destructive-foreground",
+  },
 };
 
+/* ---------------- SKELETON ---------------- */
+
 function TicketSkeleton() {
-    return (
-        <>
-        <div className="flex items-center gap-4 mb-6">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <Skeleton className="h-6 w-32" />
-        </div>
-        <Card className="max-w-md mx-auto shadow-lg w-full">
-            <CardContent className="p-0">
-                <div className="text-center p-8 bg-muted/30 rounded-t-lg">
-                    <Skeleton className="h-5 w-24 mx-auto mb-2" />
-                    <Skeleton className="h-16 w-48 mx-auto" />
-                    <Skeleton className="h-5 w-32 mx-auto mt-2" />
-                    <Skeleton className="h-4 w-40 mx-auto mt-1" />
-                </div>
-                
-                <div className="p-4">
-                    <Skeleton className="h-12 w-full" />
-                </div>
-
-                <div className="p-6 space-y-4">
-                     <Skeleton className="h-5 w-24 mb-4" />
-                     <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <div className="space-y-2">
-                                <Skeleton className="h-5 w-40" /> 
-                                <Skeleton className="h-4 w-20" /> 
-                            </div>
-                            <Skeleton className="h-5 w-16" />
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <div className="space-y-2">
-                                <Skeleton className="h-5 w-32" /> 
-                                <Skeleton className="h-4 w-16" /> 
-                            </div>
-                            <Skeleton className="h-5 w-16" />
-                        </div>
-                     </div>
-                </div>
-
-                <Separator />
-                 <div className="p-6">
-                    <div className="w-full space-y-3">
-                         <div className="flex justify-between"><Skeleton className="h-4 w-20" /> <Skeleton className="h-4 w-16" /></div>
-                         <div className="flex justify-between"><Skeleton className="h-4 w-24" /> <Skeleton className="h-4 w-12" /></div>
-                         <div className="flex justify-between mt-3 pt-3 border-t"><Skeleton className="h-6 w-16" /> <Skeleton className="h-6 w-20" /></div>
-                    </div>
-                 </div>
-            </CardContent>
-            <CardFooter className="p-3 bg-muted/30 rounded-b-lg border-t">
-                <Skeleton className="h-8 w-full" />
-            </CardFooter>
-        </Card>
-        </>
-    );
+  return (
+    <Card className="max-w-md mx-auto shadow-lg w-full">
+      <CardContent className="p-6 space-y-4">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </CardContent>
+    </Card>
+  );
 }
+
+/* ---------------- FORMATTER ---------------- */
 
 function formatOrder(data: any): Order {
-    return {
-        id: data.id,
-        display_order_id: data.display_order_id,
-        userId: data.user_id,
-        userName: data.user_name,
-        orderDate: data.order_date,
-        totalAmount: data.total_amount,
-        status: data.status,
-        items: data.order_items?.map((item: any) => ({
-            id: item.menu_item_id,
-            uuid: item.id,
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-        })) || [],
-        pickup_notified_at: data.pickup_notified_at,
-    };
+  return {
+    id: data.id,
+    display_order_id: data.display_order_id,
+    userId: data.user_id,
+    userName: data.user_name,
+    orderDate: data.order_date,
+    totalAmount: data.total_amount,
+    status: data.status,
+    pickup_notified_at: data.pickup_notified_at,
+    items:
+      data.order_items?.map((item: any) => ({
+        id: item.menu_item_id,
+        uuid: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      })) || [],
+  };
 }
 
+/* ================= PAGE ================= */
 
 export default function OrderTicketPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.orderId as string;
+
   const { user, supabase } = useSupabase();
   const { toast } = useToast();
   const { fetchOrdersStatus } = useOrderStatus();
@@ -113,291 +113,246 @@ export default function OrderTicketPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<any>(null);
   const [isManualFetching, setIsManualFetching] = useState(false);
-  const previousStatusRef = useRef<Order['status'] | null>(null);
+
+  const previousStatusRef = useRef<Order["status"] | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  /* ---------------- AUDIO ---------------- */
+
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-        audioRef.current = new Audio('/notification-sound-effects-copyright-free_g2XT3kky.mp3');
-    }
+    audioRef.current = new Audio(
+      "/notification-sound-effects-copyright-free_g2XT3kky.mp3"
+    );
   }, []);
+
+  /* ---------------- FETCH ORDER ---------------- */
 
   const fetchOrder = useCallback(async () => {
     if (!orderId || !user || !supabase) return;
-    
+
     const { data, error } = await supabase
-        .from('orders')
-        .select('*, order_items(*)')
-        .eq('id', orderId)
-        .eq('user_id', user.id)
-        .single();
+      .from("orders")
+      .select("*, order_items(*)")
+      .eq("id", orderId)
+      .eq("user_id", user.id)
+      .single();
 
     if (error) {
-        setError(error);
-        setOrder(null);
+      setError(error);
+      setOrder(null);
     } else if (data) {
-        setOrder(formatOrder(data));
-        setError(null);
+      const formatted = formatOrder(data);
+      setOrder(formatted);
+      previousStatusRef.current = formatted.status; // 🔥 CRITICAL FIX
+      setError(null);
     }
+
     setIsLoading(false);
   }, [orderId, user, supabase]);
 
+  /* ---------------- REALTIME HANDLER ---------------- */
 
   const handleOrderUpdate = useCallback((payload: any) => {
-    console.log('Realtime update received:', payload.new);
-    const newRecord = payload.new;
-    setOrder(currentOrder => {
-        if (!currentOrder || !newRecord) {
-            return currentOrder;
-        }
-        // Safely merge the realtime update into the existing state
-        // to preserve the 'items' array, which isn't in the payload.
-        return {
-            ...currentOrder,
-            ...newRecord,
-        };
+    console.log("[Realtime] Update received:", payload.new);
+
+    setOrder((current) => {
+      if (!current || !payload.new) return current;
+
+      // Prevent loop on pickup_notified_at update
+      if (
+        payload.old?.pickup_notified_at &&
+        payload.new?.pickup_notified_at
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        ...payload.new,
+      };
     });
   }, []);
 
-  const handleManualRefreshClick = async () => {
-      setIsManualFetching(true);
-      await fetchOrder();
-      setIsManualFetching(false);
-  }
+  /* ---------------- STATUS SIDE EFFECTS ---------------- */
 
   useEffect(() => {
-    if (!order || !supabase || !user) {
-        if (order) previousStatusRef.current = order.status;
-        return;
-    }
+    if (!order || !user || !supabase) return;
 
-    const newStatus = order.status;
-    const prevStatus = previousStatusRef.current;
+    const prev = previousStatusRef.current;
+    const next = order.status;
 
-    if (prevStatus && prevStatus !== 'READY' && newStatus === 'READY') {
-      audioRef.current?.play().catch(error => {
-          console.warn("Audio playback failed. User may need to interact with the page first.", error);
+    if (prev !== "READY" && next === "READY") {
+      audioRef.current?.play().catch(() => {});
+      toast({
+        title: "👍 Your Order is Ready!",
+        description: `Order #${order.display_order_id} can be picked up now.`,
+        duration: 5000,
+        className: "bg-yellow-500 text-white border-yellow-500",
       });
+
+      supabase
+        .from("orders")
+        .update({ pickup_notified_at: new Date().toISOString() })
+        .eq("id", order.id)
+        .then(() => fetchOrdersStatus(user.id));
     }
 
-    if (order.status === 'READY' && !order.pickup_notified_at) {
+    if (prev && prev !== next) {
+      if (next === "DELIVERED") {
+        toast({ title: "✅ Order Delivered!", duration: 5000 });
+        fetchOrdersStatus(user.id);
+      }
+      if (next === "CANCELLED") {
         toast({
-            title: "👍 Your Order is Ready!",
-            description: `Order #${order.display_order_id || '...'} can be picked up now.`,
-            duration: 5000,
-            className: "bg-yellow-500 text-white border-yellow-500",
+          title: "❌ Order Cancelled",
+          variant: "destructive",
+          duration: 5000,
         });
-        
-        const markAsNotified = async () => {
-             const { error } = await supabase
-                .from('orders')
-                .update({ pickup_notified_at: new Date().toISOString() })
-                .eq('id', order.id);
-            
-            if (!error) {
-                fetchOrdersStatus(user.id);
-            }
-        };
-        markAsNotified();
-
-        setOrder(currentOrder => currentOrder ? { ...currentOrder, pickup_notified_at: new Date().toISOString() } : null);
+        fetchOrdersStatus(user.id);
+      }
     }
-    
-    if (prevStatus && order.status !== prevStatus) {
-        if (newStatus === 'DELIVERED') {
-            toast({
-                title: "✅ Order Delivered!",
-                description: `Enjoy your meal!`,
-                duration: 5000,
-            });
-            fetchOrdersStatus(user.id);
-          } else if (newStatus === 'CANCELLED') {
-             toast({
-                title: "❌ Order Cancelled",
-                description: `Your order has been cancelled.`,
-                variant: "destructive",
-                duration: 5000,
-            });
-            fetchOrdersStatus(user.id);
-          }
-    }
-    
-    previousStatusRef.current = order.status;
 
+    previousStatusRef.current = next;
   }, [order, supabase, toast, user, fetchOrdersStatus]);
 
+  /* ---------------- REALTIME SUBSCRIPTION ---------------- */
 
   useEffect(() => {
-    if (!user || !orderId || !supabase) {
-      return;
-    }
+    if (!user || !orderId || !supabase) return;
 
     let channel: RealtimeChannel | null = null;
 
-    const setupSubscription = () => {
+    const subscribe = () => {
       if (channel) return;
+
       channel = supabase
-        .channel(`order-ticket-${orderId}`)
+        .channel(`order-${orderId}`)
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'orders',
+            event: "UPDATE",
+            schema: "public",
+            table: "orders",
             filter: `id=eq.${orderId}`,
           },
           handleOrderUpdate
         )
-        .subscribe((status, err) => {
-          if (status === 'SUBSCRIBED') {
-            console.log(`[Realtime] Subscribed to order ticket updates for ${orderId}!`);
-          }
-          if (err) {
-            console.error('[Realtime] Subscription error:', err);
-            toast({
-              title: 'Connection Issue',
-              description: 'Could not get real-time order updates.',
-              variant: 'destructive',
-            });
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            console.log("[Realtime] Subscribed");
           }
         });
     };
 
-    const teardownSubscription = () => {
+    const unsubscribe = () => {
       if (channel) {
         supabase.removeChannel(channel);
         channel = null;
       }
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchOrder();
-        setupSubscription();
-      } else {
-        teardownSubscription();
-      }
-    };
-
     fetchOrder();
-    setupSubscription();
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    subscribe();
 
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      teardownSubscription();
-    };
-  }, [orderId, supabase, user, toast, handleOrderUpdate, fetchOrder]);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        fetchOrder();
+        subscribe();
+      } else {
+        unsubscribe();
+      }
+    });
 
+    return () => unsubscribe();
+  }, [orderId, supabase, user, handleOrderUpdate, fetchOrder]);
 
-  if (isLoading) {
-    return <TicketSkeleton />;
-  }
+  /* ---------------- UI ---------------- */
 
-  if (error) {
+  if (isLoading) return <TicketSkeleton />;
+
+  if (error)
     return (
-        <Alert variant="destructive" className="max-w-2xl mx-auto">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error.message || "Failed to fetch order details."}</AlertDescription>
-        </Alert>
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{error.message}</AlertDescription>
+      </Alert>
     );
-  }
-  
-  if (!order) {
-     return (
-        <Alert variant="destructive" className="max-w-2xl mx-auto">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Order Not Found</AlertTitle>
-            <AlertDescription>The requested order could not be found.</AlertDescription>
-        </Alert>
+
+  if (!order)
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Order not found</AlertTitle>
+      </Alert>
     );
-  }
 
-  const subtotal = order.totalAmount > 0 ? order.totalAmount / 1.05 : 0;
-  const gst = order.totalAmount > 0 ? order.totalAmount - subtotal : 0;
-  const total = order.totalAmount;
-  const statusDisplay = statusDisplayMap[order.status] || { label: order.status, icon: <Package className="h-5 w-5" />, className: 'bg-muted text-muted-foreground' };
-
+  const statusUI =
+    statusDisplayMap[order.status] ??
+    { label: order.status, icon: <Package />, className: "" };
 
   return (
     <>
-        <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/menu')}>
-                <ArrowLeft />
-            </Button>
-            <h1 className="text-2xl font-bold">Your Order</h1>
-        </div>
-        <Card className="max-w-md mx-auto shadow-2xl rounded-2xl w-full">
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" size="icon" onClick={() => router.push("/menu")}>
+          <ArrowLeft />
+        </Button>
+        <h1 className="text-2xl font-bold">Your Order</h1>
+      </div>
+
+      <Card className="max-w-md mx-auto shadow-2xl rounded-2xl">
         <CardContent className="p-0">
-            <div className="text-center p-8 bg-muted/30 rounded-t-2xl">
-                <p className="text-sm text-muted-foreground">Order Number</p>
-                <h2 className="text-6xl font-bold tracking-tighter text-primary">
-                    {order.display_order_id || '---'}
-                </h2>
-                <p className="text-muted-foreground mt-2">{order.userName}</p>
-                <p className="text-xs text-muted-foreground">
-                    {new Date(order.orderDate).toLocaleString('en-US', {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                    })}
-                </p>
-            </div>
+          <div className="text-center p-8">
+            <p className="text-sm text-muted-foreground">Order Number</p>
+            <h2 className="text-6xl font-bold">
+              {order.display_order_id}
+            </h2>
+          </div>
 
-            <div className={cn("flex items-center justify-center gap-3 p-4 text-lg font-bold", statusDisplay.className)}>
-                {statusDisplay.icon}
-                <span>{statusDisplay.label}</span>
-            </div>
+          <div
+            className={cn(
+              "flex items-center justify-center gap-3 p-4 text-lg font-bold",
+              statusUI.className
+            )}
+          >
+            {statusUI.icon}
+            <span>{statusUI.label}</span>
+          </div>
 
-            <div className="p-6 space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2 text-muted-foreground"><ShoppingBag className="h-5 w-5"/>Items</h3>
-                <ul className="space-y-3">
-                    {order.items.map((item: OrderItem, index: number) => (
-                        <li key={item.uuid || index} className="flex justify-between items-baseline text-base">
-                            <div>
-                                <p className="font-medium">{item.name}</p>
-                                <p className="text-sm text-muted-foreground">
-                                    {item.quantity} &times; ₹{item.price.toFixed(2)}
-                                </p>
-                            </div>
-                            <p className="font-semibold text-foreground">₹{(item.quantity * item.price).toFixed(2)}</p>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            
-            <Separator />
-
-            <div className="p-6">
-                <div className="space-y-2 text-base">
-                    <div className="flex justify-between">
-                        <span className="text-muted-foreground">Subtotal</span>
-                        <span className="font-medium">₹{subtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-muted-foreground">GST (5%)</span>
-                        <span className="font-medium">₹{gst.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-xl border-t pt-3 mt-3">
-                        <span>Total</span>
-                        <span className="text-primary">₹{total.toFixed(2)}</span>
-                    </div>
-                </div>
-            </div>
+          <div className="p-6 space-y-3">
+            <h3 className="flex items-center gap-2 font-semibold">
+              <ShoppingBag className="h-5 w-5" /> Items
+            </h3>
+            {order.items.map((item) => (
+              <div key={item.uuid} className="flex justify-between">
+                <span>
+                  {item.quantity} × {item.name}
+                </span>
+                <span>₹{(item.quantity * item.price).toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
         </CardContent>
-        <CardFooter className="p-3 bg-muted/30 rounded-b-2xl border-t">
-            <Button variant="ghost" size="sm" onClick={handleManualRefreshClick} disabled={isManualFetching} className="w-full text-muted-foreground">
-                {isManualFetching ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                    <RefreshCw className="h-4 w-4" />
-                )}
-                <span className="ml-2">Check for updates</span>
-            </Button>
+
+        <CardFooter>
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={async () => {
+              setIsManualFetching(true);
+              await fetchOrder();
+              setIsManualFetching(false);
+            }}
+            disabled={isManualFetching}
+          >
+            {isManualFetching ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            <span className="ml-2">Check for updates</span>
+          </Button>
         </CardFooter>
-        </Card>
+      </Card>
     </>
   );
 }
-
-    
