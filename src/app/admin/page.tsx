@@ -210,7 +210,7 @@ function AdminDashboard({ supabase }: { supabase: any }) {
       return;
     }
 
-    await syncOrderStatus(orderId, supabase);
+    await syncOrderStatus(supabase, orderId);
 
     toast({ title: "Updated", description: `Order marked ${status}` });
   };

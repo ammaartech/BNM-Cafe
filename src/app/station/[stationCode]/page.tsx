@@ -248,7 +248,7 @@ export default function StationPage() {
     }
 
     // ✅ FIXED ARGUMENT ORDER
-    await syncOrderStatus(orderId, supabase);
+    await syncOrderStatus(supabase, orderId);
 
     toast({ title: 'Updated', description: `Marked as ${status}` });
     fetchData();
