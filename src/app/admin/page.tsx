@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Order, OrderStatus } from "@/lib/types";
@@ -38,28 +37,26 @@ import type {
   RealtimeChannel,
 } from "@supabase/supabase-js";
 
-/* ---------------- HELPER FUNCTION ---------------- */
+/* ---------------- SAFE DATE ---------------- */
+
 function safeFormatDistanceToNow(dateString?: string | null): string {
-  if (!dateString) {
-    return "—";
-  }
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) {
-    return "—";
-  }
-  return formatDistanceToNow(date, { addSuffix: true });
+  if (!dateString) return "—";
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return "—";
+  return formatDistanceToNow(d, { addSuffix: true });
 }
 
 /* ---------------- STATUS DISPLAY ---------------- */
 
-const statusDisplayMap: {
-  [key in OrderStatus]?: { label: string; icon: React.ReactNode };
-} = {
+const statusDisplayMap: Partial<
+  Record<OrderStatus, { label: string; icon: React.ReactNode }>
+> = {
   PENDING: { label: "Pending", icon: <Clock className="h-4 w-4" /> },
   READY: { label: "Ready", icon: <CookingPot className="h-4 w-4" /> },
   DELIVERED: { label: "Delivered", icon: <CheckCircle2 className="h-4 w-4" /> },
   CANCELLED: { label: "Cancelled", icon: <XCircle className="h-4 w-4" /> },
 };
+
 
 /* ---------------- KOT CARD ---------------- */
 
@@ -70,11 +67,14 @@ function KOTCard({
   order: Order;
   onUpdateStatus: (id: string, status: OrderStatus) => void;
 }) {
-  const statusDisplay =
+    const statusDisplay =
     statusDisplayMap[order.status] ?? {
       label: order.status,
       icon: <Package className="h-4 w-4" />,
     };
+  
+
+  const items = order.items ?? [];
 
   return (
     <Card className="flex flex-col shadow-lg">
@@ -91,13 +91,19 @@ function KOTCard({
       </CardHeader>
 
       <CardContent>
-        <ul className="space-y-1">
-          {order.items.map((item) => (
-            <li key={item.uuid}>
-              {item.quantity} × {item.name}
-            </li>
-          ))}
-        </ul>
+        {items.length > 0 ? (
+          <ul className="space-y-1">
+            {items.map((item) => (
+              <li key={item.uuid}>
+                {item.quantity} × {item.name}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">
+            No items found
+          </p>
+        )}
       </CardContent>
 
       <CardFooter className="flex flex-col gap-2">
@@ -149,14 +155,6 @@ function AdminDashboard({ supabase }: { supabase: any }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const prevOrderStatuses = useRef<Map<string, OrderStatus>>(new Map());
-
-  useEffect(() => {
-    audioRef.current = new Audio(
-      "/notification-sound-effects-copyright-free_g2XT3kky.mp3"
-    );
-  }, []);
 
   const fetchOrders = useCallback(async () => {
     const { data, error } = await supabase
@@ -165,19 +163,14 @@ function AdminDashboard({ supabase }: { supabase: any }) {
       .order("order_date", { ascending: false });
 
     if (!error && data) {
-      const newOrderStatuses = new Map<string, OrderStatus>();
-      data.forEach((order: Order) => {
-        newOrderStatuses.set(order.id, order.status);
-
-        const prevStatus = prevOrderStatuses.current.get(order.id);
-        if (prevStatus && prevStatus !== "READY" && order.status === "READY") {
-          audioRef.current?.play().catch(() => {});
-        }
-      });
-
-      setOrders(data);
-      prevOrderStatuses.current = newOrderStatuses;
+      // 🔑 normalize items so map is always safe
+      const normalized = data.map((o: any) => ({
+        ...o,
+        items: o.order_items ?? [],
+      }));
+      setOrders(normalized);
     }
+
     setIsLoading(false);
   }, [supabase]);
 
@@ -207,7 +200,11 @@ function AdminDashboard({ supabase }: { supabase: any }) {
       .eq("id", orderId);
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -222,7 +219,11 @@ function AdminDashboard({ supabase }: { supabase: any }) {
   );
 
   if (isLoading) {
-    return <Loader2 className="animate-spin" />;
+    return (
+      <div className="flex justify-center">
+        <Loader2 className="animate-spin" />
+      </div>
+    );
   }
 
   return (
