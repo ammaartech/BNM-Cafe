@@ -144,19 +144,17 @@ export default function OrderTicketPage() {
 
 
   const handleOrderUpdate = useCallback((payload: any) => {
-    console.log('[Realtime] Payload received:', payload);
+    console.log('Realtime update received:', payload.new);
     const newRecord = payload.new;
     setOrder(currentOrder => {
         if (!currentOrder || !newRecord) {
-            console.log('[Realtime] Skipping update: no current order or payload.');
             return currentOrder;
         }
-        console.log('[Realtime] Updating order state...');
+        // Safely merge the realtime update into the existing state
+        // to preserve the 'items' array, which isn't in the payload.
         return {
             ...currentOrder,
-            status: newRecord.status,
-            pickup_notified_at: newRecord.pickup_notified_at,
-            display_order_id: newRecord.display_order_id,
+            ...newRecord,
         };
     });
   }, []);
