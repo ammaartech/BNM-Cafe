@@ -99,7 +99,12 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     }
 
     if (error) {
-        toast({ title: 'Error', description: `Could not ${isCurrentlyFavorited ? 'remove from' : 'add to'} favorites.`, variant: 'destructive'});
+        const action = isCurrentlyFavorited ? 'remove from' : 'add to';
+        toast({ 
+            title: 'Error', 
+            description: `Could not ${action} favorites. Details: ${error.message}`, 
+            variant: 'destructive'
+        });
         // Revert UI on failure
         setFavoriteIds(prev => 
             isCurrentlyFavorited 
