@@ -23,7 +23,7 @@ import {
   Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/lib/supabase/provider";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
-
 import { syncOrderStatus } from "@/lib/orderSync";
 import type {
   RealtimePostgresChangesPayload,
@@ -43,9 +42,13 @@ import type {
 
 function safeFormatDistanceToNow(dateString?: string | null): string {
   if (!dateString) return "—";
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return "—";
-  return formatDistanceToNow(d, { addSuffix: true });
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return "—";
+    return formatDistanceToNow(d, { addSuffix: true });
+  } catch (e) {
+    return "—";
+  }
 }
 
 /* ---------------- STATUS DISPLAY ---------------- */
@@ -212,8 +215,9 @@ function AdminDashboard({ supabase }: { supabase: any }) {
       return;
     }
 
-    // This is less critical on admin but good practice
-    await syncOrderStatus(supabase, orderId);
+    if (status === 'READY') {
+        await syncOrderStatus(supabase, orderId);
+    }
 
     toast({ title: "Updated", description: `Order marked ${status}` });
   };
@@ -359,8 +363,8 @@ export default function AdminPage() {
   }
   
   if (!user || user.is_anonymous) {
-    return (
-       <div className="p-6 min-h-screen">
+      return (
+        <div className="p-6 min-h-screen">
           <header className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           </header>
@@ -375,6 +379,7 @@ export default function AdminPage() {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
         <Alert variant="destructive" className="max-w-md">
+            <AlertCircle className="h-4 w-4" />
             <AlertTitle>Access denied</AlertTitle>
             <AlertDescription>
               You do not have permission to access the admin dashboard.
