@@ -28,6 +28,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 
+import { syncOrderStatus } from '@/lib/orderSync';
+
 /* ---------------------------------- */
 /* Status Display Map                 */
 /* ---------------------------------- */
@@ -78,7 +80,7 @@ function KOTCard({
   onUpdate,
 }: {
   order: StationOrder;
-  onUpdate: (osId: string, status: OrderStationStatus) => void;
+  onUpdate: (osId: string, status: OrderStationStatus, orderId: string) => void;
 }) {
   const meta = statusMap[order.status];
 
@@ -121,7 +123,9 @@ function KOTCard({
         {order.status === 'PENDING' && (
           <Button
             className="bg-green-600 hover:bg-green-700"
-            onClick={() => onUpdate(order.orderStationId, 'READY')}
+            onClick={() =>
+              onUpdate(order.orderStationId, 'READY', order.orderId)
+            }
           >
             Mark as Ready
           </Button>
@@ -129,7 +133,9 @@ function KOTCard({
 
         {order.status === 'READY' && (
           <Button
-            onClick={() => onUpdate(order.orderStationId, 'PICKED_UP')}
+            onClick={() =>
+              onUpdate(order.orderStationId, 'PICKED_UP', order.orderId)
+            }
           >
             Mark as Picked Up
           </Button>
@@ -152,9 +158,6 @@ export default function StationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  /* ---------------------------------- */
-  /* Fetch Data                         */
-  /* ---------------------------------- */
   const fetchData = useCallback(async () => {
     if (!supabase || !stationCode) return;
 
@@ -162,7 +165,6 @@ export default function StationPage() {
     setError(null);
 
     try {
-      /* 1. Get Station */
       const { data: stationData, error: stationError } = await supabase
         .from('stations')
         .select('id, name, code, active')
@@ -175,7 +177,6 @@ export default function StationPage() {
 
       setStation(stationData);
 
-      /* 2. Fetch LIVE station tickets */
       const { data, error } = await supabase
         .from('order_stations')
         .select(
@@ -231,12 +232,10 @@ export default function StationPage() {
     if (!isUserLoading) fetchData();
   }, [isUserLoading, fetchData]);
 
-  /* ---------------------------------- */
-  /* Update Status                     */
-  /* ---------------------------------- */
   const updateStatus = async (
     osId: string,
-    status: OrderStationStatus
+    status: OrderStationStatus,
+    orderId: string
   ) => {
     const { error } = await supabase
       .from('order_stations')
@@ -248,13 +247,13 @@ export default function StationPage() {
       return;
     }
 
+    // ✅ FIXED ARGUMENT ORDER
+    await syncOrderStatus(orderId, supabase);
+
     toast({ title: 'Updated', description: `Marked as ${status}` });
     fetchData();
   };
 
-  /* ---------------------------------- */
-  /* Render States                      */
-  /* ---------------------------------- */
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
