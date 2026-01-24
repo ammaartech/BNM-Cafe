@@ -88,7 +88,7 @@ export default function MenuItemDetailPage() {
     notFound();
   }
 
-  const isFavorited = favoriteIds.includes(item.id);
+  const isFavorited = favoriteIds.includes(item.uuid);
 
   const handleAddToCart = () => {
     if (!item) return;
@@ -109,7 +109,7 @@ export default function MenuItemDetailPage() {
             size="icon" 
             variant="ghost" 
             className="h-10 w-10 rounded-full bg-card/60 hover:bg-card/80 text-white"
-            onClick={() => toggleFavorite(item.id)}
+            onClick={() => toggleFavorite(item.uuid)}
           >
             <Heart className={cn(
               "h-6 w-6 transition-all duration-200 ease-in-out",

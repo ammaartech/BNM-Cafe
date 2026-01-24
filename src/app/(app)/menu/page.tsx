@@ -29,7 +29,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
   const { addItem, updateQuantity, state, updatingItemId } = useCart();
   const { user } = useSupabase();
   const { favoriteIds, toggleFavorite } = useUserPreferences();
-  const isFavorited = favoriteIds.includes(item.id);
+  const isFavorited = favoriteIds.includes(item.uuid);
 
   const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
 
@@ -41,7 +41,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
     e.preventDefault(); 
     e.stopPropagation();
     if (user) {
-      toggleFavorite(item.id);
+      toggleFavorite(item.uuid);
     }
   }
 
@@ -155,7 +155,7 @@ function MenuPageContent() {
   const displayedItems = menuItems.filter(item => {
     const matchesFilter = 
         activeFilter === 'all'
-        || (activeFilter === 'favorites' && favoriteIds.includes(item.id))
+        || (activeFilter === 'favorites' && favoriteIds.includes(item.uuid))
         || (activeFilter === item.category);
 
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());

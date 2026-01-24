@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 
 interface UserPreferencesContextType {
   favoriteIds: string[];
-  toggleFavorite: (menuItemId: string) => void;
+  toggleFavorite: (menuItemUuid: string) => void;
   isLoading: boolean;
   fetchFavorites: (userId: string) => Promise<void>;
 }
@@ -54,7 +54,7 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     }
   }, [isUserLoading, user, fetchFavorites]);
 
-  const toggleFavorite = useCallback(async (menuItemId: string) => {
+  const toggleFavorite = useCallback(async (menuItemUuid: string) => {
     if (!user || !supabase) {
       toast({
         title: 'Please log in',
@@ -75,13 +75,13 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
         return;
     }
 
-    const isCurrentlyFavorited = favoriteIds.includes(menuItemId);
+    const isCurrentlyFavorited = favoriteIds.includes(menuItemUuid);
     
     // Optimistic UI update
     setFavoriteIds(prev => 
         isCurrentlyFavorited 
-            ? prev.filter(id => id !== menuItemId) 
-            : [...prev, menuItemId]
+            ? prev.filter(id => id !== menuItemUuid) 
+            : [...prev, menuItemUuid]
     );
     
     let error;
@@ -89,12 +89,12 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
       const { error: deleteError } = await supabase
         .from('user_favorites')
         .delete()
-        .match({ user_id: user.id, menu_item_id: menuItemId });
+        .match({ user_id: user.id, menu_item_id: menuItemUuid });
         error = deleteError;
     } else {
       const { error: insertError } = await supabase
         .from('user_favorites')
-        .insert({ user_id: user.id, menu_item_id: menuItemId });
+        .insert({ user_id: user.id, menu_item_id: menuItemUuid });
         error = insertError;
     }
 
@@ -103,8 +103,8 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
         // Revert UI on failure
         setFavoriteIds(prev => 
             isCurrentlyFavorited 
-                ? [...prev, menuItemId]
-                : prev.filter(id => id !== menuItemId)
+                ? [...prev, menuItemUuid]
+                : prev.filter(id => id !== menuItemUuid)
         );
     }
   }, [user, supabase, toast, router, favoriteIds]);
