@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Order, OrderStatus } from "@/lib/types";
@@ -37,6 +38,18 @@ import type {
   RealtimeChannel,
 } from "@supabase/supabase-js";
 
+/* ---------------- HELPER FUNCTION ---------------- */
+function safeFormatDistanceToNow(dateString?: string | null): string {
+  if (!dateString) {
+    return "—";
+  }
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return "—";
+  }
+  return formatDistanceToNow(date, { addSuffix: true });
+}
+
 /* ---------------- STATUS DISPLAY ---------------- */
 
 const statusDisplayMap: {
@@ -71,7 +84,7 @@ function KOTCard({
             #{order.display_order_id}
           </CardTitle>
           <span className="text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(order.orderDate), { addSuffix: true })}
+            {safeFormatDistanceToNow(order.orderDate)}
           </span>
         </div>
         <p className="text-sm">{order.userName}</p>
@@ -136,6 +149,14 @@ function AdminDashboard({ supabase }: { supabase: any }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const prevOrderStatuses = useRef<Map<string, OrderStatus>>(new Map());
+
+  useEffect(() => {
+    audioRef.current = new Audio(
+      "/notification-sound-effects-copyright-free_g2XT3kky.mp3"
+    );
+  }, []);
 
   const fetchOrders = useCallback(async () => {
     const { data, error } = await supabase
@@ -143,7 +164,20 @@ function AdminDashboard({ supabase }: { supabase: any }) {
       .select("*, order_items(*)")
       .order("order_date", { ascending: false });
 
-    if (!error && data) setOrders(data);
+    if (!error && data) {
+      const newOrderStatuses = new Map<string, OrderStatus>();
+      data.forEach((order: Order) => {
+        newOrderStatuses.set(order.id, order.status);
+
+        const prevStatus = prevOrderStatuses.current.get(order.id);
+        if (prevStatus && prevStatus !== "READY" && order.status === "READY") {
+          audioRef.current?.play().catch(() => {});
+        }
+      });
+
+      setOrders(data);
+      prevOrderStatuses.current = newOrderStatuses;
+    }
     setIsLoading(false);
   }, [supabase]);
 
@@ -177,7 +211,6 @@ function AdminDashboard({ supabase }: { supabase: any }) {
       return;
     }
 
-    /* ✅ CORRECT ARGUMENT ORDER */
     await syncOrderStatus(orderId, supabase);
 
     toast({ title: "Updated", description: `Order marked ${status}` });
