@@ -1,20 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { OrderStatus } from "./types";
 
 /**
  * Synchronizes overall order status based on station statuses.
- *
- * Rules:
- * - CANCELLED orders are never modified
- * - DELIVERED orders are final and never downgraded
- * - If ALL stations are PICKED_UP → DELIVERED
- * - Else if ALL stations are READY → READY
- * - Else → PENDING
  */
 export async function syncOrderStatus(
   supabase: SupabaseClient,
   orderId: string
 ): Promise<void> {
-  // 1️⃣ Fetch current order status
+  // 1️⃣ Fetch current order
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select("status")
@@ -23,12 +17,12 @@ export async function syncOrderStatus(
 
   if (orderError || !order) return;
 
-  // 🔒 Never touch cancelled or delivered orders
+  // 🔒 Never modify an order that's already finished or cancelled
   if (order.status === "CANCELLED" || order.status === "DELIVERED") {
     return;
   }
 
-  // 2️⃣ Fetch station statuses
+  // 2️⃣ Fetch all station tickets for this order
   const { data: stations, error: stationError } = await supabase
     .from("order_stations")
     .select("status")
@@ -38,18 +32,19 @@ export async function syncOrderStatus(
 
   const statuses = stations.map((s) => s.status);
 
-  let nextStatus: "PENDING" | "READY" | "DELIVERED";
+  let nextStatus: OrderStatus;
 
-  // 3️⃣ Decide final order status
+  // 3️⃣ Decide final order status based on improved logic
   if (statuses.every((s) => s === "PICKED_UP")) {
     nextStatus = "DELIVERED";
-  } else if (statuses.every((s) => s === "READY")) {
-    nextStatus = "READY";
-  } else {
+  } else if (statuses.some((s) => s === "PENDING")) {
     nextStatus = "PENDING";
+  } else {
+    // This covers "all READY" and "mix of READY and PICKED_UP" cases
+    nextStatus = "READY";
   }
 
-  // 4️⃣ Update ONLY if changed
+  // 4️⃣ Update the main order ONLY if the status needs to change
   if (order.status !== nextStatus) {
     await supabase
       .from("orders")

@@ -108,9 +108,9 @@ function KOTCard({
         )}
       </CardContent>
 
-      <CardFooter className="flex flex-col gap-2">
+      <CardFooter className="flex flex-col gap-2 mt-auto pt-4">
         <Badge
-          className={cn("w-full justify-center", {
+          className={cn("w-full justify-center py-1.5", {
             "bg-blue-500 text-white": order.status === "PENDING",
             "bg-yellow-500 text-white": order.status === "READY",
             "bg-green-600 text-white": order.status === "DELIVERED",
@@ -121,16 +121,18 @@ function KOTCard({
         </Badge>
 
         {order.status === "PENDING" && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full">
             <Button
               variant="destructive"
               className="w-full"
+              size="sm"
               onClick={() => onUpdateStatus(order.id, "CANCELLED")}
             >
               Cancel
             </Button>
             <Button
               className="w-full bg-green-600 hover:bg-green-700"
+              size="sm"
               onClick={() => onUpdateStatus(order.id, "READY")}
             >
               Mark Ready
@@ -141,6 +143,7 @@ function KOTCard({
         {order.status === "READY" && (
           <Button
             className="w-full"
+            size="sm"
             onClick={() => onUpdateStatus(order.id, "DELIVERED")}
           >
             Mark Delivered
@@ -165,7 +168,6 @@ function AdminDashboard({ supabase }: { supabase: any }) {
       .order("order_date", { ascending: false });
 
     if (!error && data) {
-      // 🔑 normalize items so map is always safe
       const normalized = data.map((o: any) => ({
         ...o,
         items: o.order_items ?? [],
@@ -210,6 +212,7 @@ function AdminDashboard({ supabase }: { supabase: any }) {
       return;
     }
 
+    // This is less critical on admin but good practice
     await syncOrderStatus(supabase, orderId);
 
     toast({ title: "Updated", description: `Order marked ${status}` });
@@ -219,25 +222,57 @@ function AdminDashboard({ supabase }: { supabase: any }) {
     () => orders.filter((o) => o.status === "PENDING" || o.status === "READY"),
     [orders]
   );
+  const deliveredOrders = useMemo(
+    () => orders.filter((o) => o.status === "DELIVERED" || o.status === "CANCELLED"),
+    [orders]
+  );
+
+  const OrderGrid = ({ ordersToShow }: { ordersToShow: Order[] }) => (
+    <>
+      {ordersToShow.length > 0 ? (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+          {ordersToShow.map((order) => (
+            <KOTCard
+              key={order.id}
+              order={order}
+              onUpdateStatus={handleUpdateStatus}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center text-muted-foreground py-16">
+          <Package className="mx-auto h-12 w-12" />
+          <p className="mt-4">No orders in this category.</p>
+        </div>
+      )}
+    </>
+  );
 
   if (isLoading) {
     return (
-      <div className="flex justify-center">
-        <Loader2 className="animate-spin" />
+      <div className="flex justify-center p-8">
+        <Loader2 className="animate-spin h-8 w-8" />
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-      {liveOrders.map((order) => (
-        <KOTCard
-          key={order.id}
-          order={order}
-          onUpdateStatus={handleUpdateStatus}
-        />
-      ))}
-    </div>
+    <Tabs defaultValue="live">
+      <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsTrigger value="live">Live KOT</TabsTrigger>
+        <TabsTrigger value="delivered">Completed</TabsTrigger>
+        <TabsTrigger value="all">All Orders</TabsTrigger>
+      </TabsList>
+      <TabsContent value="live">
+        <OrderGrid ordersToShow={liveOrders} />
+      </TabsContent>
+      <TabsContent value="delivered">
+        <OrderGrid ordersToShow={deliveredOrders} />
+      </TabsContent>
+      <TabsContent value="all">
+        <OrderGrid ordersToShow={orders} />
+      </TabsContent>
+    </Tabs>
   );
 }
 
@@ -266,7 +301,7 @@ function AdminLoginPage() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
             <Card className="w-full max-w-sm">
                 <CardHeader>
                     <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
@@ -312,12 +347,26 @@ export default function AdminPage() {
   const { user, userProfile, isUserLoading, supabase } = useSupabase();
   const router = useRouter();
 
+  const handleLogout = async () => {
+    if (supabase) {
+        await supabase.auth.signOut();
+    }
+    router.push('/');
+  }
+
   if (isUserLoading) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="animate-spin h-8 w-8" /></div>;
   }
   
   if (!user || user.is_anonymous) {
-    return <AdminLoginPage />;
+    return (
+       <div className="p-6 min-h-screen">
+          <header className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          </header>
+          <AdminLoginPage />
+       </div>
+    );
   }
   
   const isAdmin = userProfile?.role === "admin";
@@ -337,11 +386,16 @@ export default function AdminPage() {
 
   return (
     <div className="p-6 min-h-screen">
-      <header className="flex justify-between mb-6">
+      <header className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Button onClick={() => router.push("/admin/analytics")}>
-          View Analytics
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button onClick={() => router.push("/admin/analytics")} variant="outline">
+                View Analytics
+            </Button>
+            <Button onClick={handleLogout} variant="secondary">
+                <LogOut className="mr-2 h-4 w-4" /> Logout
+            </Button>
+        </div>
       </header>
 
       <AdminDashboard supabase={supabase} />
