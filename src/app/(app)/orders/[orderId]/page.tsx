@@ -75,7 +75,7 @@ const overallStatusDisplayMap: Record<
   },
   READY: {
     label: "Ready for Pickup",
-    icon: <CookingPot className="h-4 w-4" />,
+    icon: <Package className="h-4 w-4" />,
     className: "bg-yellow-500 text-primary-foreground border-transparent",
   },
   DELIVERED: {
@@ -167,6 +167,7 @@ export default function OrderTicketPage() {
     } else if (data) {
       setOrder({
         ...data,
+        id: data.id, // ensure id is present
         userId: data.user_id,
         userName: data.user_name,
         orderDate: data.order_date,
@@ -247,13 +248,14 @@ export default function OrderTicketPage() {
           filter: `id=eq.${orderId}`,
         },
         (payload: RealtimePostgresChangesPayload<BaseOrder>) => {
-          if (payload.new) {
+          if (payload.new && payload.old) {
             setOrder((prevOrder) => {
               if (!prevOrder) return null;
               // Safely merge new data without overwriting items array
               return { ...prevOrder, ...payload.new };
             });
              if (
+                ('status' in payload.old && 'status' in payload.new) &&
                 payload.old.status !== 'READY' &&
                 payload.new.status === 'READY'
               ) {
@@ -278,7 +280,7 @@ export default function OrderTicketPage() {
   const itemsByStation = useMemo(() => {
     if (!order?.items) return new Map();
 
-    return order.items.reduce((acc, item) => {
+    return order.items.reduce((acc: Map<string, { stationName: string; items: OrderItem[] }>, item: OrderItem) => {
       const stationId = item.station?.id ?? "unknown";
       const stationName = item.station?.name ?? "Miscellaneous";
 
@@ -324,17 +326,20 @@ export default function OrderTicketPage() {
 
   if (!order) {
     return (
-      <Alert>
-        <Package className="h-4 w-4" />
-        <AlertTitle>Order Not Found</AlertTitle>
-      </Alert>
+      <div className="flex flex-col h-full items-center justify-center">
+        <Alert className="max-w-sm">
+            <Package className="h-4 w-4" />
+            <AlertTitle>Order Not Found</AlertTitle>
+            <AlertDescription>We couldn't find the details for this order.</AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
   const overallStatusInfo = overallStatusDisplayMap[order.status];
 
   return (
-    <div className="p-4 flex flex-col">
+    <div className="p-4 flex flex-col h-full">
       <div className="flex items-center gap-4 mb-4">
         <Button
           variant="ghost"
@@ -346,7 +351,7 @@ export default function OrderTicketPage() {
         <h1 className="text-2xl font-bold">Your Order</h1>
       </div>
 
-      <Card className="max-w-md mx-auto shadow-lg rounded-2xl w-full">
+      <Card className="max-w-md mx-auto shadow-lg rounded-2xl w-full flex-grow flex flex-col">
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle className="text-xl">
@@ -367,7 +372,7 @@ export default function OrderTicketPage() {
           </div>
         </CardHeader>
 
-        <CardContent className="pt-2 space-y-4">
+        <CardContent className="pt-2 space-y-4 flex-grow">
           <Separator />
           {Array.from(itemsByStation.entries()).map(
             ([stationId, { stationName, items }]) => {
