@@ -7,6 +7,7 @@ import type {
   Order as BaseOrder,
   OrderItem as BaseOrderItem,
   OrderStatus,
+  OrderStationStatus,
 } from "@/lib/types";
 import { useSupabase } from "@/lib/supabase/provider";
 import { useToast } from "@/hooks/use-toast";
@@ -38,7 +39,6 @@ import {
 
 // Local types to handle the nested data for this page
 type OrderStation = { id: string; order_id: string; station_id: string; status: OrderStationStatus; };
-type OrderStationStatus = "PENDING" | "READY" | "PICKED_UP";
 
 interface OrderItem extends BaseOrderItem {
   station: { id: string; name: string; } | null;
@@ -220,10 +220,10 @@ export default function OrderTicketPage() {
       .channel(`order-stations-${orderId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "order_stations", filter: `order_id=eq.${orderId}` }, 
       (payload: RealtimePostgresChangesPayload<OrderStation>) => {
-          const updated = payload.new;
+          const updated = payload.new as OrderStation;
           setStationStatuses((prev) => {
               const idx = prev.findIndex((s) => s.id === updated.id);
-              if (idx === -1) return [...prev, updated]; // Should not happen for updates, but safe
+              if (idx === -1) return [...prev, updated]; 
               const copy = [...prev];
               copy[idx] = updated;
               return copy;
@@ -244,7 +244,7 @@ export default function OrderTicketPage() {
   if (error) return <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>;
   if (!order) return <Alert variant="destructive"><AlertTitle>Order not found</AlertTitle></Alert>;
 
-  const terminalStatusUI = overallStatusDisplayMap[order.status];
+  const terminalStatusUI = order.status === 'CANCELLED' ? overallStatusDisplayMap[order.status] : null;
   const subTotal = order.totalAmount / 1.05;
   const taxAmount = order.totalAmount - subTotal;
 
@@ -266,14 +266,19 @@ export default function OrderTicketPage() {
             <p className="text-sm text-muted-foreground">{format(new Date(order.orderDate), "MMM dd, yyyy 'at' h:mm a")}</p>
           </div>
 
-          {terminalStatusUI && (
+          {order.status === 'DELIVERED' && (
+            <div className="flex items-center justify-center gap-3 p-4 text-lg font-bold bg-green-600 text-primary-foreground">
+                <CheckCircle2 className="h-5 w-5" />
+                <span>Delivered</span>
+            </div>
+          )}
+
+          {terminalStatusUI ? (
             <div className={cn("flex items-center justify-center gap-3 p-4 text-lg font-bold", terminalStatusUI.className)}>
               {terminalStatusUI.icon}
               <span>{terminalStatusUI.label}</span>
             </div>
-          )}
-          
-          {!terminalStatusUI && (
+          ) : (
             <div className="p-6 space-y-4">
                 <h3 className="flex items-center gap-2 font-semibold text-base">
                     <ShoppingBag className="h-5 w-5" /> Item Status
