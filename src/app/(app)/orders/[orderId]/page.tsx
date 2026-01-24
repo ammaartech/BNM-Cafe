@@ -52,11 +52,6 @@ interface DetailedOrder extends Omit<BaseOrder, "items"> {
 const overallStatusDisplayMap: {
   [key in OrderStatus]?: { label: string; icon: React.ReactNode; className: string };
 } = {
-  DELIVERED: {
-    label: "Delivered",
-    icon: <CheckCircle2 className="h-5 w-5" />,
-    className: "bg-green-600 text-white",
-  },
   CANCELLED: {
     label: "Cancelled",
     icon: <XCircle className="h-5 w-5" />,
