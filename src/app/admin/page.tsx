@@ -72,12 +72,12 @@ function KOTCard({
   order: Order;
   onUpdateStatus: (id: string, status: OrderStatus) => void;
 }) {
-    const statusDisplay =
+  const statusDisplay =
     statusDisplayMap[order.status] ?? {
       label: order.status,
       icon: <Package className="h-4 w-4" />,
     };
-  
+
 
   const items = order.items ?? [];
 
@@ -216,7 +216,7 @@ function AdminDashboard({ supabase }: { supabase: any }) {
     }
 
     if (status === 'READY') {
-        await syncOrderStatus(supabase, orderId);
+      await syncOrderStatus(supabase, orderId);
     }
 
     toast({ title: "Updated", description: `Order marked ${status}` });
@@ -283,69 +283,9 @@ function AdminDashboard({ supabase }: { supabase: any }) {
 
 /* ---------------- ADMIN LOGIN PAGE ---------------- */
 
-function AdminLoginPage() {
-    const { supabase } = useSupabase();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError(null);
-        setIsLoading(true);
-        if (!supabase) return;
-
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-        if (error) {
-            setError(error.message);
-        }
-        setIsLoading(false);
-    };
-
-    return (
-        <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
-            <Card className="w-full max-w-sm">
-                <CardHeader>
-                    <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
-                    <CardDescription className="text-center">Enter credentials to access the KOT dashboard.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleLogin} className="space-y-4">
-                        <Input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                        <Input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                        {error && (
-                             <Alert variant="destructive">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>Login Failed</AlertTitle>
-                                <AlertDescription>{error}</AlertDescription>
-                            </Alert>
-                        )}
-                        <Button type="submit" className="w-full" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <LogIn className="mr-2 h-4 w-4" />}
-                            {isLoading ? 'Signing In...' : 'Sign In'}
-                        </Button>
-                    </form>
-                </CardContent>
-            </Card>
-        </div>
-    );
-}
 
 /* ---------------- PAGE ---------------- */
+import { AdminLogin } from "@/components/admin/AdminLogin";
 
 export default function AdminPage() {
   const { user, userProfile, isUserLoading, supabase } = useSupabase();
@@ -353,7 +293,7 @@ export default function AdminPage() {
 
   const handleLogout = async () => {
     if (supabase) {
-        await supabase.auth.signOut();
+      await supabase.auth.signOut();
     }
     router.push('/');
   }
@@ -361,29 +301,29 @@ export default function AdminPage() {
   if (isUserLoading) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="animate-spin h-8 w-8" /></div>;
   }
-  
+
   if (!user || user.is_anonymous) {
-      return (
-        <div className="p-6 min-h-screen">
-          <header className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          </header>
-          <AdminLoginPage />
-       </div>
+    return (
+      <div className="p-6 min-h-screen">
+        <header className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        </header>
+        <AdminLogin />
+      </div>
     );
   }
-  
+
   const isAdmin = userProfile?.role === "admin";
-  
+
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
         <Alert variant="destructive" className="max-w-md">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Access denied</AlertTitle>
-            <AlertDescription>
-              You do not have permission to access the admin dashboard.
-            </AlertDescription>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Access denied</AlertTitle>
+          <AlertDescription>
+            You do not have permission to access the admin dashboard.
+          </AlertDescription>
         </Alert>
       </div>
     );
@@ -394,12 +334,12 @@ export default function AdminPage() {
       <header className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <div className="flex items-center gap-2">
-            <Button onClick={() => router.push("/admin/analytics")} variant="outline">
-                View Analytics
-            </Button>
-            <Button onClick={handleLogout} variant="secondary">
-                <LogOut className="mr-2 h-4 w-4" /> Logout
-            </Button>
+          <Button onClick={() => router.push("/admin/analytics")} variant="outline">
+            View Analytics
+          </Button>
+          <Button onClick={handleLogout} variant="secondary">
+            <LogOut className="mr-2 h-4 w-4" /> Logout
+          </Button>
         </div>
       </header>
 
@@ -407,3 +347,4 @@ export default function AdminPage() {
     </div>
   );
 }
+

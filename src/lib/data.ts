@@ -39,6 +39,7 @@ export const menuItems: MenuItem[] = [
   // North Indian
   {
     id: "ni-01",
+    uuid: "seed-ni-01",
     name: "Chapati Platter",
     description: "Soft chapatis served with dal, subzi, and rice.",
     price: 80,
@@ -48,6 +49,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: "ni-02",
+    uuid: "seed-ni-02",
     name: "Chole Bhature",
     description: "Spicy chickpea curry with fluffy fried bread.",
     price: 70,
@@ -57,6 +59,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: "ni-03",
+    uuid: "seed-ni-03",
     name: "Aloo Paratha",
     description: "Whole wheat flatbread stuffed with spiced potatoes.",
     price: 50,
@@ -66,6 +69,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: "ni-04",
+    uuid: "seed-ni-04",
     name: "Pulao",
     description: "Aromatic basmati rice cooked with mixed vegetables.",
     price: 60,
@@ -76,6 +80,7 @@ export const menuItems: MenuItem[] = [
   // South Indian
   {
     id: "si-01",
+    uuid: "seed-si-01",
     name: "Masala Dosa",
     description: "Crispy rice crepe filled with spiced potatoes.",
     price: 40,
@@ -85,6 +90,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: "si-02",
+    uuid: "seed-si-02",
     name: "Set Dosa",
     description: "A set of three soft and spongy dosas.",
     price: 50,
@@ -94,6 +100,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: "si-03",
+    uuid: "seed-si-03",
     name: "Plain Dosa",
     description: "A simple, crispy rice and lentil crepe.",
     price: 30,
@@ -103,6 +110,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: "si-04",
+    uuid: "seed-si-04",
     name: "Bisi Bele Bath",
     description: "Spicy rice and lentil dish with vegetables.",
     price: 60,
@@ -113,6 +121,7 @@ export const menuItems: MenuItem[] = [
   // Refreshments
   {
     id: "rf-01",
+    uuid: "seed-rf-01",
     name: "Chai",
     description: "Aromatic spiced tea with milk.",
     price: 15,
@@ -122,6 +131,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: "rf-02",
+    uuid: "seed-rf-02",
     name: "Coffee",
     description: "Authentic South Indian style filter coffee.",
     price: 20,
@@ -132,6 +142,7 @@ export const menuItems: MenuItem[] = [
   // Chats
   {
     id: "ch-01",
+    uuid: "seed-ch-01",
     name: "Dahi Puri",
     description: "Crispy shells filled with yogurt, potatoes, and chutneys.",
     price: 40,
@@ -141,6 +152,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: "ch-02",
+    uuid: "seed-ch-02",
     name: "Pani Puri",
     description: "Hollow crisps filled with tangy water and potatoes.",
     price: 30,
@@ -150,6 +162,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: "ch-03",
+    uuid: "seed-ch-03",
     name: "Masala Puri",
     description: "Crushed puris in a spicy green pea curry.",
     price: 35,
@@ -159,6 +172,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: "ch-04",
+    uuid: "seed-ch-04",
     name: "Bhel Puri",
     description: "Puffed rice mixed with vegetables and tamarind sauce.",
     price: 35,
@@ -171,36 +185,39 @@ export const menuItems: MenuItem[] = [
 export const orders: Order[] = [
   {
     id: "ORD-001",
-    date: "2023-10-26",
-    total: 12.75,
-    status: "Delivered",
+    userName: "Test User",
+    orderDate: "2023-10-26",
+    totalAmount: 12.75,
+    status: "DELIVERED",
     items: [
-      { name: "Butter Chicken", quantity: 1, price: 8.5 },
-      { name: "Samosa Chaat", quantity: 1, price: 4.25 },
+      { id: "1", uuid: "1", name: "Butter Chicken", quantity: 1, price: 8.5 },
+      { id: "2", uuid: "2", name: "Samosa Chaat", quantity: 1, price: 4.25 },
     ],
   },
   {
     id: "ORD-002",
-    date: "2023-10-24",
-    total: 5.75,
-    status: "Delivered",
+    userName: "Test User",
+    orderDate: "2023-10-24",
+    totalAmount: 5.75,
+    status: "DELIVERED",
     items: [
-      { name: "Idli Platter", quantity: 1, price: 2.75 },
-      { name: "Pani Puri", quantity: 1, price: 3.0 },
+      { id: "3", uuid: "3", name: "Idli Platter", quantity: 1, price: 2.75 },
+      { id: "4", uuid: "4", name: "Pani Puri", quantity: 1, price: 3.0 },
     ],
   },
   {
     id: "ORD-003",
-    date: "2023-10-22",
-    total: 8.5,
-    status: "Cancelled",
-    items: [{ name: "Chole Bhature", quantity: 1, price: 6.5 }, { name: "Iced Tea", quantity: 1, price: 2.0 }],
+    userName: "Test User",
+    orderDate: "2023-10-22",
+    totalAmount: 8.5,
+    status: "CANCELLED",
+    items: [{ id: "5", uuid: "5", name: "Chole Bhature", quantity: 1, price: 6.5 }, { id: "6", uuid: "6", name: "Iced Tea", quantity: 1, price: 2.0 }],
   },
 ];
 
 export function generateMenuItemsCSV() {
   const headers = ['id', 'name', 'description', 'price', 'image', 'category', 'stock'];
-  const rows = menuItems.map(item => 
+  const rows = menuItems.map(item =>
     [
       item.id,
       `"${item.name.replace(/"/g, '""')}"`,

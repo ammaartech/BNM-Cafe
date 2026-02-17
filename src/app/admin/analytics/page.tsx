@@ -9,25 +9,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
 import type { Order, OrderItem } from "@/lib/types";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
-  LineChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  Line,
-  Bar,
-  BarChart as RechartsBarChart,
-  ResponsiveContainer,
+    LineChart,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip,
+    Legend,
+    Line,
+    Bar,
+    BarChart as RechartsBarChart,
+    ResponsiveContainer,
 } from "recharts";
 import { format, subDays, startOfDay } from 'date-fns';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
@@ -69,7 +69,7 @@ function AnalyticsSkeleton() {
                         <Skeleton className="h-[350px] w-full" />
                     </CardContent>
                 </Card>
-                 <Card className="lg:col-span-3">
+                <Card className="lg:col-span-3">
                     <CardHeader>
                         <Skeleton className="h-6 w-48" />
                     </CardHeader>
@@ -78,34 +78,34 @@ function AnalyticsSkeleton() {
                     </CardContent>
                 </Card>
             </div>
-             <Card>
+            <Card>
                 <CardHeader>
                     <Skeleton className="h-6 w-32" />
                 </CardHeader>
                 <CardContent>
-                     <Skeleton className="h-[300px] w-full" />
+                    <Skeleton className="h-[300px] w-full" />
                 </CardContent>
-             </Card>
+            </Card>
         </div>
     )
 }
 
 const salesChartConfig = {
-  revenue: {
-    label: "Revenue (₹)",
-    color: "hsl(var(--primary))",
-  },
-  sales: {
-    label: "Sales",
-    color: "hsl(var(--accent))",
-  },
+    revenue: {
+        label: "Revenue (₹)",
+        color: "hsl(var(--primary))",
+    },
+    sales: {
+        label: "Sales",
+        color: "hsl(var(--accent))",
+    },
 } satisfies ChartConfig;
 
 const topProductsChartConfig = {
-  unitsSold: {
-    label: "Units Sold",
-    color: "hsl(var(--primary))",
-  },
+    unitsSold: {
+        label: "Units Sold",
+        color: "hsl(var(--primary))",
+    },
 } satisfies ChartConfig;
 
 
@@ -117,14 +117,14 @@ function AdminAnalyticsPage() {
 
     useEffect(() => {
         const fetchData = async () => {
-            if(!supabase) return;
+            if (!supabase) return;
             setIsLoading(true);
-            
+
             const { data: ordersData, error: ordersError } = await supabase
                 .from("orders")
                 .select("*, order_items(*)")
                 .eq('status', 'Delivered');
-            
+
             if (ordersError) {
                 setError("Failed to fetch order data.");
                 console.error(ordersError);
@@ -151,7 +151,7 @@ function AdminAnalyticsPage() {
                     sales: dayOrders.length
                 };
             });
-            
+
             // 3. Aggregate Top Products
             const productSales = new Map<string, { name: string; unitsSold: number; revenue: number; id: string }>();
             ordersData.forEach(order => {
@@ -186,19 +186,19 @@ function AdminAnalyticsPage() {
                 totalOrders,
                 totalCustomers,
                 salesOverTime: salesByDay,
-                topProducts
+                topProducts: topProducts.map(p => ({ ...p, uuid: p.id })) // Ensure compatibility with OrderItem
             });
             setIsLoading(false);
         };
         fetchData();
     }, [supabase]);
-    
+
     const downloadCSV = () => {
         if (!data?.topProducts) return;
-        
+
         const headers = ["Product ID", "Product Name", "Units Sold", "Total Revenue (INR)"];
         const rows = data.topProducts.map(p => [p.id, `"${p.name.replace(/"/g, '""')}"`, p.unitsSold, (p.revenue || 0).toFixed(2)]);
-        
+
         let csvContent = headers.join(",") + "\r\n";
         rows.forEach(rowArray => {
             let row = rowArray.join(",");
@@ -234,7 +234,7 @@ function AdminAnalyticsPage() {
 
     return (
         <div className="space-y-6">
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -271,7 +271,7 @@ function AdminAnalyticsPage() {
                         <div className="text-2xl font-bold">₹{(data.totalRevenue / data.totalOrders || 0).toFixed(2)}</div>
                     </CardContent>
                 </Card>
-             </div>
+            </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="lg:col-span-4">
@@ -312,8 +312,8 @@ function AdminAnalyticsPage() {
                     </CardContent>
                 </Card>
             </div>
-             
-             <Card>
+
+            <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Top Products by Sales</CardTitle>
                     <Button onClick={downloadCSV} variant="outline" size="sm">
@@ -392,14 +392,14 @@ function AdminLoginPage() {
                             required
                         />
                         {error && (
-                             <Alert variant="destructive">
+                            <Alert variant="destructive">
                                 <AlertCircle className="h-4 w-4" />
                                 <AlertTitle>Login Failed</AlertTitle>
                                 <AlertDescription>{error}</AlertDescription>
                             </Alert>
                         )}
                         <Button type="submit" className="w-full" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <LogIn className="mr-2 h-4 w-4" />}
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
                             {isLoading ? 'Signing In...' : 'Sign In'}
                         </Button>
                     </form>
@@ -428,33 +428,33 @@ export default function AnalyticsPageContainer() {
             </div>
         );
     }
-    
+
     const isUserAdmin = user && !user.is_anonymous && userProfile?.role === 'admin';
-    
+
     if (!isUserAdmin) {
         const isUserLoggedInButNotAdmin = user && !user.is_anonymous && userProfile?.role !== 'admin';
         return (
             <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
                 <div className="flex-grow flex items-center justify-center">
                     {isUserLoggedInButNotAdmin ? (
-                       <Card className="w-full max-w-sm">
-                           <CardHeader>
-                               <CardTitle className="text-2xl text-center">Access Denied</CardTitle>
-                           </CardHeader>
-                           <CardContent className="text-center">
-                               <Alert variant="destructive" className="mb-4">
-                                   <AlertCircle className="h-4 w-4" />
-                                   <AlertTitle>Permission Error</AlertTitle>
-                                   <AlertDescription>You do not have permission to access the analytics dashboard.</AlertDescription>
-                               </Alert>
-                               <Button variant="outline" onClick={handleLogout} className="w-full">
-                                   <LogOut className="mr-2 h-4 w-4" /> Logout
-                               </Button>
-                           </CardContent>
-                       </Card>
-                   ) : (
-                       <AdminLoginPage />
-                   )}
+                        <Card className="w-full max-w-sm">
+                            <CardHeader>
+                                <CardTitle className="text-2xl text-center">Access Denied</CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-center">
+                                <Alert variant="destructive" className="mb-4">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertTitle>Permission Error</AlertTitle>
+                                    <AlertDescription>You do not have permission to access the analytics dashboard.</AlertDescription>
+                                </Alert>
+                                <Button variant="outline" onClick={handleLogout} className="w-full">
+                                    <LogOut className="mr-2 h-4 w-4" /> Logout
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <AdminLoginPage />
+                    )}
                 </div>
             </div>
         );

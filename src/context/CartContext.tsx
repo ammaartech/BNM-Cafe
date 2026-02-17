@@ -15,6 +15,7 @@ import React, {
 import { useSupabase } from "@/lib/supabase/provider";
 import { useRouter } from "next/navigation";
 
+
 /* ---------------- TYPES ---------------- */
 
 type CartState = {
@@ -28,9 +29,24 @@ type CartAction =
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
   | { type: "CLEAR_CART" };
 
+interface CartContextType {
+  state: CartState;
+  dispatch: React.Dispatch<CartAction>;
+  totalItems: number;
+  totalPrice: number;
+  placeOrder: () => Promise<void>;
+  fetchCart: (userId: string) => Promise<void>;
+  updatingItemId: string | null;
+  addItem: (item: MenuItem, quantity?: number) => Promise<void>;
+  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
+  removeItem: (itemId: string) => Promise<void>;
+  addedItemPopup: MenuItem | null;
+  setAddedItemPopup: React.Dispatch<React.SetStateAction<MenuItem | null>>;
+}
+
 /* ---------------- CONTEXT ---------------- */
 
-const CartContext = createContext<any>(null);
+const CartContext = createContext<CartContextType | null>(null);
 
 /* ---------------- REDUCER ---------------- */
 
@@ -151,8 +167,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'CLEAR_CART' });
     }
   }, [user, isUserLoading, fetchCart]);
-  
-  
+
+
   /* -------- CART ACTIONS -------- */
 
   const removeItem = useCallback(async (itemId: string) => {
@@ -160,16 +176,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const itemToRemove = state.items.find(i => i.id === itemId);
     if (!itemToRemove) return;
-    
+
     setUpdatingItemId(itemId);
     try {
       const { error } = await supabase
-          .from('user_cart_items')
-          .delete()
-          .match({ user_id: user.id, menu_item_uuid: itemToRemove.uuid });
-      
+        .from('user_cart_items')
+        .delete()
+        .match({ user_id: user.id, menu_item_uuid: itemToRemove.uuid });
+
       if (error) throw error;
-      
+
       dispatch({ type: "REMOVE_ITEM", payload: { id: itemId } });
     } catch (err: any) {
       toast({ title: "Failed to remove item", description: err.message, variant: "destructive" });
@@ -183,8 +199,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!user || !supabase) return;
 
     if (quantity <= 0) {
-        await removeItem(itemId);
-        return;
+      await removeItem(itemId);
+      return;
     }
 
     const itemToUpdate = state.items.find(i => i.id === itemId);
@@ -192,56 +208,56 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     setUpdatingItemId(itemId);
     try {
-        const { error } = await supabase
-            .from('user_cart_items')
-            .update({ quantity })
-            .match({ user_id: user.id, menu_item_uuid: itemToUpdate.uuid });
-        
-        if (error) throw error;
-        
-        dispatch({ type: "UPDATE_QUANTITY", payload: { id: itemId, quantity } });
+      const { error } = await supabase
+        .from('user_cart_items')
+        .update({ quantity })
+        .match({ user_id: user.id, menu_item_uuid: itemToUpdate.uuid });
+
+      if (error) throw error;
+
+      dispatch({ type: "UPDATE_QUANTITY", payload: { id: itemId, quantity } });
     } catch (err: any) {
-        toast({ title: "Failed to update cart", description: err.message, variant: "destructive" });
+      toast({ title: "Failed to update cart", description: err.message, variant: "destructive" });
     } finally {
-        setUpdatingItemId(null);
+      setUpdatingItemId(null);
     }
   }, [supabase, user, state.items, toast, removeItem]);
 
   const addItem = useCallback(async (item: MenuItem, quantity: number = 1) => {
-      if (!user || !supabase) return;
+    if (!user || !supabase) return;
 
-      if (user.is_anonymous) {
-        toast({ title: 'Please log in', description: 'Create an account to add items to your cart.', variant: 'destructive' });
-        router.push('/login');
-        return;
+    if (user.is_anonymous) {
+      toast({ title: 'Please log in', description: 'Create an account to add items to your cart.', variant: 'destructive' });
+      router.push('/login');
+      return;
+    }
+
+    setUpdatingItemId(item.id);
+    try {
+      const existingItem = state.items.find(i => i.id === item.id);
+
+      if (existingItem) {
+        await updateQuantity(item.id, existingItem.quantity + quantity);
+      } else {
+        const { error } = await supabase
+          .from('user_cart_items')
+          .insert({
+            user_id: user.id,
+            menu_item_uuid: item.uuid,
+            quantity: quantity,
+          });
+
+        if (error) throw error;
+
+        const newCartItem: CartItem = { ...item, quantity: quantity };
+        dispatch({ type: "ADD_ITEM", payload: newCartItem });
+        setAddedItemPopup(item);
       }
-      
-      setUpdatingItemId(item.id);
-      try {
-        const existingItem = state.items.find(i => i.id === item.id);
-
-        if (existingItem) {
-            await updateQuantity(item.id, existingItem.quantity + quantity);
-        } else {
-            const { error } = await supabase
-                .from('user_cart_items')
-                .insert({
-                    user_id: user.id,
-                    menu_item_uuid: item.uuid,
-                    quantity: quantity,
-                });
-
-            if (error) throw error;
-
-            const newCartItem: CartItem = { ...item, quantity: quantity };
-            dispatch({ type: "ADD_ITEM", payload: newCartItem });
-            setAddedItemPopup(item);
-        }
-      } catch (err: any) {
-          toast({ title: "Failed to add item", description: err.message, variant: "destructive" });
-      } finally {
-          setUpdatingItemId(null);
-      }
+    } catch (err: any) {
+      toast({ title: "Failed to add item", description: err.message, variant: "destructive" });
+    } finally {
+      setUpdatingItemId(null);
+    }
   }, [supabase, user, state.items, toast, updateQuantity, router]);
 
 
@@ -339,5 +355,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 /* ---------------- HOOK ---------------- */
 
 export function useCart() {
-  return useContext(CartContext);
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error("useCart must be used within a CartProvider");
+  }
+  return context;
 }
