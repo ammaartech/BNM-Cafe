@@ -111,9 +111,35 @@ export function UserPaymentDialog({
         }
     }, [open]);
 
-    const handleOpenUpiApp = () => {
+    const handleOpenGenericUpi = () => {
         if (upiIntent) {
             window.location.href = upiIntent;
+        }
+    };
+
+    const handleOpenGPay = () => {
+        if (upiIntent) {
+            // Replace generic upi:// with GPay's scheme or just use upi:// but sometimes it's ambiguous
+            // Google Pay sometimes handles tez:// or gpay:// well. However, on Android upi:// allows selection.
+            // On iOS, gpay://upi/pay?... is more direct if the app is installed.
+            const gpayLink = upiIntent.replace('upi://', 'gpay://upi/');
+            window.location.href = gpayLink;
+
+            // Fallback in case gpay doesn't work, though we can't really "catch" it easily
+            setTimeout(() => {
+                window.location.href = upiIntent; // Try generic if specific fails
+            }, 500);
+        }
+    };
+
+    const handleOpenPhonePe = () => {
+        if (upiIntent) {
+            const phonepeLink = upiIntent.replace('upi://', 'phonepe://');
+            window.location.href = phonepeLink;
+
+            setTimeout(() => {
+                window.location.href = upiIntent;
+            }, 500);
         }
     };
 
@@ -160,24 +186,33 @@ export function UserPaymentDialog({
                                         <span className="text-4xl font-bold">₹{totalPrice.toFixed(2)}</span>
                                     </div>
 
-                                    <div className="w-full flex flex-col gap-3 mt-2">
-                                        {/* Mobile deep link - usually visible only on mobile, but keeping simple here */}
+                                    <div className="w-full grid grid-cols-2 gap-3 mt-2 sm:flex sm:flex-col sm:px-8">
                                         <Button
-                                            size="lg"
-                                            className="w-full h-14 text-lg hidden sm:flex"
-                                            onClick={handleOpenUpiApp}
+                                            variant="outline"
+                                            className="h-12 w-full text-sm font-semibold sm:hidden"
+                                            onClick={handleOpenGPay}
                                         >
-                                            Open UPI App (Mobile)
+                                            <Image src="/google-pay.png" alt="GPay" width={20} height={20} className="mr-2" style={{ objectFit: 'contain' }} />
+                                            Google Pay
                                         </Button>
                                         <Button
-                                            size="lg"
-                                            className="w-full h-14 text-lg sm:hidden flex"
-                                            onClick={handleOpenUpiApp}
+                                            variant="outline"
+                                            className="h-12 w-full text-sm font-semibold sm:hidden"
+                                            onClick={handleOpenPhonePe}
                                         >
-                                            Open Google Pay / PhonePe
+                                            <Image src="/phonepe.png" alt="PhonePe" width={20} height={20} className="mr-2" style={{ objectFit: 'contain' }} />
+                                            PhonePe
                                         </Button>
 
-                                        <p className="text-sm text-muted-foreground mt-2 animate-pulse flex items-center justify-center gap-2">
+                                        <Button
+                                            size="lg"
+                                            className="w-full h-12 mt-2"
+                                            onClick={handleOpenGenericUpi}
+                                        >
+                                            Open Other UPI App
+                                        </Button>
+
+                                        <p className="text-sm text-muted-foreground mt-4 animate-pulse flex items-center justify-center gap-2 col-span-2">
                                             <Loader2 className="w-4 h-4 animate-spin" />
                                             Waiting for payment confirmation...
                                         </p>
