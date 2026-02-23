@@ -35,6 +35,8 @@ interface CartContextType {
   totalItems: number;
   totalPrice: number;
   placeOrder: () => Promise<void>;
+  placePendingOrder: () => Promise<any>;
+  clearBackendCart: () => Promise<void>;
   fetchCart: (userId: string) => Promise<void>;
   updatingItemId: string | null;
   addItem: (item: MenuItem, quantity?: number) => Promise<void>;
@@ -269,23 +271,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     0
   );
 
-  /* -------- PLACE ORDER -------- */
-
-  const placeOrder = useCallback(async () => {
-    if (!supabase || !user || isUserLoading) return;
+  const placePendingOrder = useCallback(async () => {
+    if (!supabase || !user || isUserLoading) return null;
 
     const orderItemsParam = state.items.map(item => ({
-      menu_item_uuid: item.uuid, // MUST be uuid
+      menu_item_uuid: item.uuid,
       name: item.name,
       quantity: item.quantity,
       price: item.price,
     }));
-
-    // 🔍 STEP 1 LOG — DO NOT SKIP
-    console.log(
-      "ORDER ITEMS PARAM (FRONTEND → RPC)",
-      JSON.stringify(orderItemsParam, null, 2)
-    );
 
     try {
       const { data, error } = await supabase.rpc("create_new_order", {
@@ -296,26 +290,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
-
-      // Manually clear the cart from the database after a successful order.
-      const { error: deleteError } = await supabase
-        .from('user_cart_items')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (deleteError) {
-        // Log the error but don't block the user flow since the order was successful.
-        console.error('Failed to clear cart from database:', deleteError);
-      }
-
-      dispatch({ type: "CLEAR_CART" });
-      router.push(`/orders/${data.order_id}`);
+      return data;
     } catch (err: any) {
       toast({
         title: "Order Failed",
         description: err.message,
         variant: "destructive",
       });
+      return null;
     }
   }, [
     supabase,
@@ -325,8 +307,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
     state.items,
     isUserLoading,
     toast,
-    router,
   ]);
+
+
+  const clearBackendCart = useCallback(async () => {
+    if (!supabase || !user) return;
+
+    const { error: deleteError } = await supabase
+      .from('user_cart_items')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (deleteError) {
+      console.error('Failed to clear cart from database:', deleteError);
+    }
+    dispatch({ type: "CLEAR_CART" });
+  }, [supabase, user]);
+
+  const placeOrder = useCallback(async () => {
+    const data = await placePendingOrder();
+    if (data && data.order_id) {
+      await clearBackendCart();
+      router.push(`/orders/${data.order_id}`);
+    }
+  }, [placePendingOrder, clearBackendCart, router]);
 
   /* -------- CONTEXT VALUE -------- */
 
@@ -338,6 +342,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         totalItems,
         totalPrice,
         placeOrder,
+        placePendingOrder,
+        clearBackendCart,
         fetchCart,
         updatingItemId,
         addItem,
