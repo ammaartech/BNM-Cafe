@@ -32,7 +32,7 @@ interface CashierContextType {
     updateQuantity: (itemId: string, quantity: number) => void;
     setCustomerName: (name: string) => void;
     clearBill: () => void;
-    placeOrder: () => Promise<void>;
+    placePendingOrder: () => Promise<any>;
     totalPrice: number;
     totalItems: number;
     isPlacingOrder: boolean;
@@ -119,15 +119,15 @@ export function CashierProvider({ children }: { children: ReactNode }) {
     const totalPrice = state.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const totalItems = state.items.reduce((acc, item) => acc + item.quantity, 0);
 
-    const placeOrder = useCallback(async () => {
+    const placePendingOrder = useCallback(async () => {
         if (!supabase || !user) {
             toast({ title: "Error", description: "You must be logged in.", variant: "destructive" });
-            return;
+            return null;
         }
 
         if (state.items.length === 0) {
             toast({ title: "Empty Bill", description: "Add items before placing an order.", variant: "destructive" });
-            return;
+            return null;
         }
 
         setIsPlacingOrder(true);
@@ -152,15 +152,17 @@ export function CashierProvider({ children }: { children: ReactNode }) {
 
             if (error) throw error;
 
-            toast({ title: "Order Placed", description: `Order #${data.display_order_id} created successfully.` });
-            clearBill();
+            // Expected data from create_new_order usually contains id, display_order_id, etc.
+            // Let's assume the RPC returns { id: string, display_order_id: string }
+            return data;
         } catch (err: any) {
             console.error("Place Order Error:", err);
             toast({ title: "Order Failed", description: err.message, variant: "destructive" });
+            return null;
         } finally {
             setIsPlacingOrder(false);
         }
-    }, [supabase, user, state.items, state.customerName, totalPrice, toast, clearBill]);
+    }, [supabase, user, state.items, state.customerName, totalPrice, toast]);
 
     const contextValue = React.useMemo(() => ({
         state,
@@ -169,7 +171,7 @@ export function CashierProvider({ children }: { children: ReactNode }) {
         updateQuantity,
         setCustomerName,
         clearBill,
-        placeOrder,
+        placePendingOrder,
         totalPrice,
         totalItems,
         isPlacingOrder,
@@ -180,7 +182,7 @@ export function CashierProvider({ children }: { children: ReactNode }) {
         updateQuantity,
         setCustomerName,
         clearBill,
-        placeOrder,
+        placePendingOrder,
         totalPrice,
         totalItems,
         isPlacingOrder

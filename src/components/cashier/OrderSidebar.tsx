@@ -1,19 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import { useCashier } from "@/context/CashierContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Trash2, Plus, Minus, Printer, CreditCard, Loader2 } from "lucide-react";
+import { PaymentDialog } from "./PaymentDialog";
 
 export function OrderSidebar() {
+    const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+    const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+
     const {
         state,
         updateQuantity,
         removeFromBill,
         setCustomerName,
-        placeOrder,
+        placePendingOrder,
         clearBill,
         totalPrice,
         totalItems,
@@ -22,6 +27,21 @@ export function OrderSidebar() {
 
     const handlePrint = () => {
         window.print();
+    };
+
+    const handlePlaceOrderClick = async () => {
+        const orderData = await placePendingOrder();
+        if (orderData && orderData.id) {
+            setPendingOrderId(orderData.id);
+            setIsPaymentDialogOpen(true);
+        }
+    };
+
+    const handlePaymentConfirmed = async () => {
+        // Automatically close dialog and clear bill
+        setIsPaymentDialogOpen(false);
+        clearBill();
+        setPendingOrderId(null);
     };
 
     return (
@@ -110,13 +130,20 @@ export function OrderSidebar() {
 
                 <Button
                     className="w-full h-12 text-lg"
-                    onClick={placeOrder}
+                    onClick={handlePlaceOrderClick}
                     disabled={state.items.length === 0 || isPlacingOrder}
                 >
                     {isPlacingOrder ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
-                    Place Order
+                    Place Order & Pay
                 </Button>
             </div>
+
+            <PaymentDialog
+                orderId={pendingOrderId}
+                open={isPaymentDialogOpen}
+                onOpenChange={setIsPaymentDialogOpen}
+                onPaymentConfirmed={handlePaymentConfirmed}
+            />
         </div>
     );
 }
