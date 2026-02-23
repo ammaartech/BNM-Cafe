@@ -59,7 +59,6 @@ export function PaymentDialog({ orderId, open, onOpenChange, onPaymentConfirmed 
                     name: UPI_NAME,
                     amount: parseFloat(totalPrice.toFixed(2)),
                     transactionNote: orderNote,
-                    transactionRef: orderId || undefined,
                 })
                 .setOptions({
                     width: 256,

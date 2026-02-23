@@ -44,7 +44,6 @@ export function UserPaymentDialog({
                     name: UPI_NAME,
                     amount: parseFloat(totalPrice.toFixed(2)),
                     transactionNote: "BNM Cafe Order",
-                    transactionRef: orderId || undefined,
                 })
                 .setOptions({
                     width: 256,
