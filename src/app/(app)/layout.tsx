@@ -1,20 +1,15 @@
 
 "use client";
 import { useCart, CartProvider } from "@/context/CartContext";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription
-} from "@/components/ui/dialog";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, ShoppingBag } from "lucide-react";
 import { Suspense, useEffect, useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserPreferences, UserPreferencesProvider } from "@/context/UserPreferencesContext";
 import BottomNavBar from "./BottomNavBar";
 import { useSupabase } from "@/lib/supabase/provider";
 import { OrderStatusProvider, useOrderStatus } from "@/context/OrderStatusContext";
+import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
 
 function CartSuccessDialog() {
     const { addedItemPopup, setAddedItemPopup } = useCart();
@@ -23,29 +18,59 @@ function CartSuccessDialog() {
         if (addedItemPopup) {
             const timer = setTimeout(() => {
                 setAddedItemPopup(null);
-            }, 1200);
+            }, 2500); // 2.5 seconds to read
             return () => clearTimeout(timer);
         }
     }, [addedItemPopup, setAddedItemPopup]);
 
     return (
-        <Dialog open={!!addedItemPopup} onOpenChange={(isOpen) => !isOpen && setAddedItemPopup(null)}>
-            <DialogContent className="max-w-xs rounded-2xl p-0">
-                 <DialogHeader className="flex flex-col items-center justify-center text-center p-8">
-                    <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-                    <DialogTitle className="text-xl font-semibold">Added to Cart</DialogTitle>
-                    {addedItemPopup && (
-                        <DialogDescription className="text-muted-foreground">{addedItemPopup.name}</DialogDescription>
-                    )}
-                </DialogHeader>
-            </DialogContent>
-        </Dialog>
-    )
+        <div className="fixed top-4 left-0 right-0 z-[100] flex justify-center pointer-events-none px-4">
+            <AnimatePresence>
+                {addedItemPopup && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                        transition={{
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 25
+                        }}
+                        className="bg-card border shadow-lg rounded-2xl p-3 flex items-center gap-3 w-full max-w-sm pointer-events-auto"
+                    >
+                        <div className="h-12 w-12 rounded-xl overflow-hidden bg-muted flex-shrink-0 relative">
+                            {addedItemPopup.image ? (
+                                <Image
+                                    src={addedItemPopup.image}
+                                    alt={addedItemPopup.name}
+                                    fill
+                                    className="object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
+                                    <ShoppingBag className="h-6 w-6" />
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex-grow min-w-0">
+                            <p className="text-sm font-semibold flex items-center gap-1.5 truncate">
+                                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                Added to Cart
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                                {addedItemPopup.name}
+                            </p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
 }
 
 function NavSkeleton() {
     return (
-         <div className="sticky bottom-0 z-50 bg-card border-t mt-auto">
+        <div className="sticky bottom-0 z-50 bg-card border-t mt-auto">
             <div className="flex justify-around items-center h-16">
                 {[...Array(4)].map((_, i) => (
                     <div key={i} className="flex flex-col items-center gap-1">
@@ -64,7 +89,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const { fetchCart } = useCart();
     const { fetchFavorites } = useUserPreferences();
     const { fetchOrdersStatus } = useOrderStatus();
-    
+
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible' && user) {
@@ -96,17 +121,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function AppLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
-  return (
-    <CartProvider>
-      <UserPreferencesProvider>
-        <OrderStatusProvider>
-            <AppLayoutContent>{children}</AppLayoutContent>
-        </OrderStatusProvider>
-      </UserPreferencesProvider>
-    </CartProvider>
-  );
+    return (
+        <CartProvider>
+            <UserPreferencesProvider>
+                <OrderStatusProvider>
+                    <AppLayoutContent>{children}</AppLayoutContent>
+                </OrderStatusProvider>
+            </UserPreferencesProvider>
+        </CartProvider>
+    );
 }
