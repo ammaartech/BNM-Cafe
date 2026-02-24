@@ -143,10 +143,10 @@ export default function StationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (showLoading = true) => {
     if (!supabase || !stationCode) return;
 
-    setLoading(true);
+    if (showLoading) setLoading(true);
     setError(null);
 
     try {
@@ -215,12 +215,12 @@ export default function StationPage() {
     } catch (e: any) {
       setError(e.message);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [supabase, stationCode]);
 
   useEffect(() => {
-    if (!isUserLoading) fetchData();
+    if (!isUserLoading) fetchData(true);
   }, [isUserLoading, fetchData]);
 
   // REALTIME LISTENER
@@ -237,7 +237,7 @@ export default function StationPage() {
           filter: `station_id=eq.${station.id}`
         },
         (_payload) => {
-          fetchData();
+          fetchData(false);
         }
       )
       .on(
@@ -248,7 +248,7 @@ export default function StationPage() {
           table: 'orders',
         },
         (_payload) => {
-          fetchData();
+          fetchData(false);
         }
       )
       .on(
@@ -260,7 +260,7 @@ export default function StationPage() {
           filter: `payment_status=eq.PAID`
         },
         (_payload) => {
-          fetchData();
+          fetchData(false);
         }
       )
       .subscribe();
@@ -277,17 +277,37 @@ export default function StationPage() {
     orderId: string
   ) => {
     if (!supabase) return;
+
+    // --- Optimistic Update ---
+    // Save original state in case of error
+    const previousOrders = [...orders];
+
+    // Update local state instantly so UI responds linearly
+    setOrders(prevOrders =>
+      prevOrders.map(order =>
+        order.orderStationId === osId ? { ...order, status } : order
+      )
+    );
+
+    // Filter out if picked up, as we don't show picked up orders on the station dashboard
+    if (status === 'PICKED_UP') {
+      setOrders(prevOrders => prevOrders.filter(order => order.orderStationId !== osId));
+    }
+
     const { error } = await supabase
       .from('order_stations')
       .update({ status })
       .eq('id', osId);
 
     if (error) {
+      // Revert optimistic update
+      setOrders(previousOrders);
       toast({ title: 'Error updating ticket', variant: 'destructive' });
       return;
     }
 
-    await syncOrderStatus(supabase, orderId);
+    // Still sync order status overall, doing so silently
+    syncOrderStatus(supabase, orderId).catch(err => console.error("Sync error:", err));
 
     toast({ title: 'Updated', description: `Marked as ${status}` });
   };
