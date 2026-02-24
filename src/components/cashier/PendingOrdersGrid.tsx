@@ -71,7 +71,7 @@ export function PendingOrdersGrid() {
         };
     }, [supabase, fetchPendingOrders]);
 
-    const handleApprove = async (orderId: string, displayId: string) => {
+    const handleApprove = async (orderId: string, displayId: string, paymentMethod: "CASH" | "UPI") => {
         if (!supabase) return;
 
         setApprovingIds(prev => {
@@ -83,7 +83,7 @@ export function PendingOrdersGrid() {
         try {
             const { error } = await supabase
                 .from("orders")
-                .update({ payment_status: "PAID" })
+                .update({ payment_status: "PAID", payment_method: paymentMethod })
                 .eq("id", orderId);
 
             if (error) throw error;
@@ -144,17 +144,26 @@ export function PendingOrdersGrid() {
                             <span className="font-bold text-lg">₹{order.total_amount.toFixed(2)}</span>
                         </div>
 
-                        <Button
-                            className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold h-10 mt-1"
-                            onClick={() => handleApprove(order.id, order.display_order_id)}
-                            disabled={approvingIds.has(order.id)}
-                        >
-                            {approvingIds.has(order.id) ? (
-                                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processing...</>
-                            ) : (
-                                "Payment Collected"
-                            )}
-                        </Button>
+                        {approvingIds.has(order.id) ? (
+                            <Button disabled className="w-full h-10 mt-1">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
+                            </Button>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-2 mt-1">
+                                <Button
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-10"
+                                    onClick={() => handleApprove(order.id, order.display_order_id, "CASH")}
+                                >
+                                    Cash
+                                </Button>
+                                <Button
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-10"
+                                    onClick={() => handleApprove(order.id, order.display_order_id, "UPI")}
+                                >
+                                    UPI
+                                </Button>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             ))}

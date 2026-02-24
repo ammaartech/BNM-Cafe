@@ -298,9 +298,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (paymentStatus && data?.order_id) {
+        const updatePayload: any = { payment_status: paymentStatus };
+        if (paymentStatus === 'PAID') {
+          updatePayload.payment_method = 'RAZORPAY';
+        }
+
         const { error: updateError } = await supabase
           .from('orders')
-          .update({ payment_status: paymentStatus })
+          .update(updatePayload)
           .eq('id', data.order_id);
 
         if (updateError) {

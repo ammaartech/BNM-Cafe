@@ -32,7 +32,7 @@ interface CashierContextType {
     updateQuantity: (itemId: string, quantity: number) => void;
     setCustomerName: (name: string) => void;
     clearBill: () => void;
-    placeOrder: () => Promise<void>;
+    placeOrder: (paymentMethod: "CASH" | "UPI") => Promise<void>;
     totalPrice: number;
     totalItems: number;
     isPlacingOrder: boolean;
@@ -119,7 +119,7 @@ export function CashierProvider({ children }: { children: ReactNode }) {
     const totalPrice = state.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const totalItems = state.items.reduce((acc, item) => acc + item.quantity, 0);
 
-    const placeOrder = useCallback(async () => {
+    const placeOrder = useCallback(async (paymentMethod: "CASH" | "UPI") => {
         if (!supabase || !user) {
             toast({ title: "Error", description: "You must be logged in.", variant: "destructive" });
             return;
@@ -153,14 +153,18 @@ export function CashierProvider({ children }: { children: ReactNode }) {
             if (error) throw error;
 
             // Immediately mark as PAID since the cashier collected the payment
+            // AND mark the selected method (CASH vs UPI)
             if (data?.order_id) {
                 const { error: updateError } = await supabase
                     .from('orders')
-                    .update({ payment_status: 'PAID' })
+                    .update({
+                        payment_status: 'PAID',
+                        payment_method: paymentMethod
+                    })
                     .eq('id', data.order_id);
 
                 if (updateError) {
-                    console.error('Failed to update payment status:', updateError);
+                    console.error('Failed to update payment status/method:', updateError);
                 }
             }
 

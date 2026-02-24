@@ -39,6 +39,7 @@ interface RawOrder {
     total_amount: number;
     status: string;
     payment_status: string;
+    payment_method: string | null;
     user_id: string;
     user_name: string;
     order_items: (OrderItem & { menu_items?: { station_id: string } })[];
@@ -245,11 +246,16 @@ function AdminAnalyticsPage() {
         });
 
         // Payment Distribution
-        const onlineCount = filteredOrders.filter(o => o.payment_status === 'PAID').length;
-        const counterCount = filteredOrders.filter(o => o.payment_status === 'PENDING').length;
+        const razorpayCount = filteredOrders.filter(o => o.payment_method?.toUpperCase() === 'RAZORPAY').length;
+        const upiCount = filteredOrders.filter(o => o.payment_method?.toUpperCase() === 'UPI').length;
+        const cashCount = filteredOrders.filter(o => o.payment_method?.toUpperCase() === 'CASH').length;
+        const unknownCount = filteredOrders.filter(o => !['RAZORPAY', 'UPI', 'CASH'].includes(o.payment_method?.toUpperCase() || '')).length;
+
         const paymentDist = [
-            { name: 'Online (Razorpay)', value: onlineCount },
-            { name: 'Pay at Counter', value: counterCount }
+            { name: 'Razorpay', value: razorpayCount },
+            { name: 'UPI (Counter)', value: upiCount },
+            { name: 'Cash', value: cashCount },
+            { name: 'Unknown/Legacy', value: unknownCount }
         ].filter(d => d.value > 0);
 
         return {

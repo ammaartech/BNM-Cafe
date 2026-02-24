@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, Plus, Minus, Printer, CreditCard, Loader2 } from "lucide-react";
+import { Trash2, Plus, Minus, Printer, CreditCard, Loader2, Banknote, SmartphoneNfc } from "lucide-react";
+import { useState } from "react";
 
 export function OrderSidebar() {
+    const [selectedMethod, setSelectedMethod] = useState<"CASH" | "UPI" | null>(null);
+
     const {
         state,
         updateQuantity,
@@ -108,13 +111,34 @@ export function OrderSidebar() {
                     </Button>
                 </div>
 
+                <div className="grid grid-cols-2 gap-2 pb-2">
+                    <Button
+                        variant={selectedMethod === "CASH" ? "default" : "outline"}
+                        onClick={() => setSelectedMethod("CASH")}
+                        className={`h-12 ${selectedMethod === "CASH" ? "bg-green-600 hover:bg-green-700" : ""}`}
+                    >
+                        <Banknote className="mr-2 h-5 w-5" /> Cash
+                    </Button>
+                    <Button
+                        variant={selectedMethod === "UPI" ? "default" : "outline"}
+                        onClick={() => setSelectedMethod("UPI")}
+                        className={`h-12 ${selectedMethod === "UPI" ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}`}
+                    >
+                        <SmartphoneNfc className="mr-2 h-5 w-5" /> UPI
+                    </Button>
+                </div>
+
                 <Button
                     className="w-full h-12 text-lg"
-                    onClick={placeOrder}
-                    disabled={state.items.length === 0 || isPlacingOrder}
+                    onClick={() => {
+                        if (selectedMethod) {
+                            placeOrder(selectedMethod).then(() => setSelectedMethod(null));
+                        }
+                    }}
+                    disabled={state.items.length === 0 || isPlacingOrder || !selectedMethod}
                 >
                     {isPlacingOrder ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
-                    Place Order
+                    {selectedMethod ? `Place Order (${selectedMethod})` : "Select Payment Method"}
                 </Button>
             </div>
         </div>
