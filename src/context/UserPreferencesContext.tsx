@@ -10,7 +10,7 @@ interface UserPreferencesContextType {
   favoriteIds: string[];
   toggleFavorite: (menuItemUuid: string) => void;
   isLoading: boolean;
-  fetchFavorites: (userId: string) => Promise<void>;
+  fetchFavorites: (userId: string, background?: boolean) => Promise<void>;
 }
 
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined);
@@ -22,26 +22,35 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchFavorites = useCallback(async (currentUserId: string) => {
+  const fetchFavorites = useCallback(async (currentUserId: string, background = false) => {
     if (!supabase) {
       setIsLoading(false);
       return;
     }
-    
-    setIsLoading(true);
-    const { data, error } = await supabase
-      .from('user_favorites')
-      .select('menu_item_uuid')
-      .eq('user_id', currentUserId);
 
-    if (error) {
-      console.error("Error fetching user favorites:", error);
-      toast({ title: 'Error', description: 'Could not load your favorites.', variant: 'destructive'});
-      setFavoriteIds([]);
-    } else {
-      setFavoriteIds(data?.map(fav => fav.menu_item_uuid) || []);
+    // Only block the UI if it's the very first load. Background visibility fetches should be invisible.
+    if (!background) {
+      setIsLoading(true);
     }
-    setIsLoading(false);
+
+    try {
+      const { data, error } = await supabase
+        .from('user_favorites')
+        .select('menu_item_uuid')
+        .eq('user_id', currentUserId);
+
+      if (error) throw error;
+      setFavoriteIds(data?.map(fav => fav.menu_item_uuid) || []);
+    } catch (error) {
+      console.error("Error fetching user favorites:", error);
+      // Only toast on manual/initial fetches, not silent background ones
+      if (!background) {
+        toast({ title: 'Error', description: 'Could not load your favorites.', variant: 'destructive' });
+      }
+      setFavoriteIds([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [supabase, toast]);
 
 
@@ -49,8 +58,8 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     if (!isUserLoading && user) {
       fetchFavorites(user.id);
     } else if (!isUserLoading && !user) {
-        setFavoriteIds([]);
-        setIsLoading(false);
+      setFavoriteIds([]);
+      setIsLoading(false);
     }
   }, [isUserLoading, user, fetchFavorites]);
 
@@ -66,51 +75,51 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     }
 
     if (user.is_anonymous) {
-        toast({
-            title: 'Account Required',
-            description: 'Please create an account to save your favorites.',
-            variant: 'destructive',
-        });
-        router.push('/');
-        return;
+      toast({
+        title: 'Account Required',
+        description: 'Please create an account to save your favorites.',
+        variant: 'destructive',
+      });
+      router.push('/');
+      return;
     }
 
     const isCurrentlyFavorited = favoriteIds.includes(menuItemUuid);
-    
+
     // Optimistic UI update
-    setFavoriteIds(prev => 
-        isCurrentlyFavorited 
-            ? prev.filter(id => id !== menuItemUuid) 
-            : [...prev, menuItemUuid]
+    setFavoriteIds(prev =>
+      isCurrentlyFavorited
+        ? prev.filter(id => id !== menuItemUuid)
+        : [...prev, menuItemUuid]
     );
-    
+
     let error;
     if (isCurrentlyFavorited) {
       const { error: deleteError } = await supabase
         .from('user_favorites')
         .delete()
         .match({ user_id: user.id, menu_item_uuid: menuItemUuid });
-        error = deleteError;
+      error = deleteError;
     } else {
       const { error: insertError } = await supabase
         .from('user_favorites')
         .insert({ user_id: user.id, menu_item_uuid: menuItemUuid });
-        error = insertError;
+      error = insertError;
     }
 
     if (error) {
-        const action = isCurrentlyFavorited ? 'remove from' : 'add to';
-        toast({ 
-            title: 'Error', 
-            description: `Could not ${action} favorites. Details: ${error.message}`, 
-            variant: 'destructive'
-        });
-        // Revert UI on failure
-        setFavoriteIds(prev => 
-            isCurrentlyFavorited 
-                ? [...prev, menuItemUuid]
-                : prev.filter(id => id !== menuItemUuid)
-        );
+      const action = isCurrentlyFavorited ? 'remove from' : 'add to';
+      toast({
+        title: 'Error',
+        description: `Could not ${action} favorites. Details: ${error.message}`,
+        variant: 'destructive'
+      });
+      // Revert UI on failure
+      setFavoriteIds(prev =>
+        isCurrentlyFavorited
+          ? [...prev, menuItemUuid]
+          : prev.filter(id => id !== menuItemUuid)
+      );
     }
   }, [user, supabase, toast, router, favoriteIds]);
 

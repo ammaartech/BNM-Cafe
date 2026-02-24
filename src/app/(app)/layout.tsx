@@ -93,9 +93,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible' && user) {
-                // Soft re-fetch data when the app becomes visible again
+                // Soft re-fetch data when the app becomes visible again.
+                // Pass background flags if available to avoid triggering heavy UI loaders
+                // that might get stuck if the connection is temporarily flaky.
                 fetchCart(user.id);
-                fetchFavorites(user.id);
+                fetchFavorites(user.id, true);
                 fetchOrdersStatus(user.id);
             }
         };
