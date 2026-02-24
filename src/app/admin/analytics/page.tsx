@@ -1,13 +1,15 @@
-
 "use client";
 
 import { useSupabase } from "@/lib/supabase/provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { BarChart, IndianRupee, ShoppingCart, Users, AlertCircle, Download, TrendingUp, TrendingDown, Package, LogIn, LogOut, Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    IndianRupee, ShoppingCart, Users, AlertCircle, Download,
+    TrendingUp, TrendingDown, Package, LogIn, LogOut, Loader2, Calendar
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
-import type { Order, OrderItem } from "@/lib/types";
+import type { OrderItem } from "@/lib/types";
 import {
     Table,
     TableBody,
@@ -18,37 +20,52 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
-    LineChart,
-    CartesianGrid,
-    XAxis,
-    YAxis,
-    Tooltip,
-    Legend,
-    Line,
-    Bar,
-    BarChart as RechartsBarChart,
-    ResponsiveContainer,
+    LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line,
+    Bar, BarChart as RechartsBarChart, ResponsiveContainer,
+    PieChart, Pie, Cell
 } from "recharts";
-import { format, subDays, startOfDay } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay, isWithinInterval, isToday, isYesterday } from 'date-fns';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 
+type TimeRange = 'today' | 'yesterday' | '7days' | '30days' | 'all';
+
+interface RawOrder {
+    id: string;
+    display_order_id: string;
+    order_date: string;
+    total_amount: number;
+    status: string;
+    payment_status: string;
+    user_id: string;
+    user_name: string;
+    order_items: (OrderItem & { menu_items?: { station_id: string } })[];
+}
 
 interface AnalyticsData {
     totalRevenue: number;
     totalOrders: number;
-    totalCustomers: number;
+    totalItemsSold: number;
+    aov: number; // Avg Order Value
     salesOverTime: { date: string; revenue: number; sales: number }[];
     topProducts: (OrderItem & { revenue: number, unitsSold: number })[];
+    paymentDistribution: { name: string; value: number }[];
+    recentOrders: RawOrder[];
 }
+
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', '#f59e0b', '#10b981', '#3b82f6'];
 
 function AnalyticsSkeleton() {
     return (
         <div className="space-y-6">
+            <div className="flex gap-2 mb-6 overlow-x-auto pb-2">
+                {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-10 w-24 rounded-full" />)}
+            </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {[...Array(4)].map((_, i) => (
-                    <Card key={i}>
+                    <Card key={i} className="shadow-sm">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <Skeleton className="h-5 w-24" />
                             <Skeleton className="h-6 w-6 rounded-full" />
@@ -60,8 +77,8 @@ function AnalyticsSkeleton() {
                     </Card>
                 ))}
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="lg:col-span-4">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+                <Card className="lg:col-span-4 shadow-sm">
                     <CardHeader>
                         <Skeleton className="h-6 w-40" />
                     </CardHeader>
@@ -69,7 +86,7 @@ function AnalyticsSkeleton() {
                         <Skeleton className="h-[350px] w-full" />
                     </CardContent>
                 </Card>
-                <Card className="lg:col-span-3">
+                <Card className="lg:col-span-3 shadow-sm">
                     <CardHeader>
                         <Skeleton className="h-6 w-48" />
                     </CardHeader>
@@ -78,274 +95,385 @@ function AnalyticsSkeleton() {
                     </CardContent>
                 </Card>
             </div>
-            <Card>
-                <CardHeader>
-                    <Skeleton className="h-6 w-32" />
-                </CardHeader>
-                <CardContent>
-                    <Skeleton className="h-[300px] w-full" />
-                </CardContent>
-            </Card>
         </div>
     )
 }
 
 const salesChartConfig = {
-    revenue: {
-        label: "Revenue (₹)",
-        color: "hsl(var(--primary))",
-    },
-    sales: {
-        label: "Sales",
-        color: "hsl(var(--accent))",
-    },
+    revenue: { label: "Revenue (₹)", color: "hsl(var(--primary))" },
+    sales: { label: "Orders", color: "hsl(var(--accent))" },
 } satisfies ChartConfig;
-
-const topProductsChartConfig = {
-    unitsSold: {
-        label: "Units Sold",
-        color: "hsl(var(--primary))",
-    },
-} satisfies ChartConfig;
-
 
 function AdminAnalyticsPage() {
     const { supabase } = useSupabase();
-    const [data, setData] = useState<AnalyticsData | null>(null);
+    const [allOrders, setAllOrders] = useState<RawOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [timeRange, setTimeRange] = useState<TimeRange>('today');
 
+    // 1. Fetch ALL data once
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchAllData = async () => {
             if (!supabase) return;
             setIsLoading(true);
 
+            // Fetching all non-cancelled orders
             const { data: ordersData, error: ordersError } = await supabase
                 .from("orders")
-                .select("*, order_items(*)")
-                .eq('status', 'Delivered');
+                .select("*, order_items(*, menu_items(station_id))")
+                .neq('status', 'CANCELLED')
+                .order('order_date', { ascending: false });
 
             if (ordersError) {
                 setError("Failed to fetch order data.");
-                console.error(ordersError);
                 setIsLoading(false);
                 return;
             }
 
-            // 1. Calculate KPIs
-            const totalRevenue = ordersData.reduce((acc, order) => acc + (order.total_amount || 0), 0);
-            const totalOrders = ordersData.length;
-            const totalCustomers = new Set(ordersData.map(o => o.user_id)).size;
-
-            // 2. Aggregate Sales over the last 30 days
-            const last30Days = Array.from({ length: 30 }, (_, i) => {
-                const d = subDays(new Date(), i);
-                return format(d, 'yyyy-MM-dd');
-            }).reverse();
-
-            const salesByDay = last30Days.map(date => {
-                const dayOrders = ordersData.filter(o => format(new Date(o.order_date), 'yyyy-MM-dd') === date);
-                return {
-                    date: format(new Date(date), 'MMM dd'),
-                    revenue: dayOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
-                    sales: dayOrders.length
-                };
-            });
-
-            // 3. Aggregate Top Products
-            const productSales = new Map<string, { name: string; unitsSold: number; revenue: number; id: string }>();
-            ordersData.forEach(order => {
-                (order.order_items || []).forEach((item: any) => {
-                    const existing = productSales.get(item.menu_item_id);
-                    const itemRevenue = (item.price || 0) * (item.quantity || 0);
-                    const itemQuantity = item.quantity || 0;
-
-                    if (itemQuantity === 0) return; // Don't process items with 0 quantity
-
-                    if (existing) {
-                        existing.unitsSold += itemQuantity;
-                        existing.revenue += itemRevenue;
-                    } else if (item.menu_item_id) {
-                        productSales.set(item.menu_item_id, {
-                            id: item.menu_item_id,
-                            name: item.name,
-                            unitsSold: itemQuantity,
-                            revenue: itemRevenue,
-                        });
-                    }
-                });
-            });
-
-            const topProducts = Array.from(productSales.values())
-                .sort((a, b) => b.unitsSold - a.unitsSold)
-                .map(p => ({ ...p, price: p.unitsSold > 0 ? p.revenue / p.unitsSold : 0, quantity: p.unitsSold }));
-
-
-            setData({
-                totalRevenue,
-                totalOrders,
-                totalCustomers,
-                salesOverTime: salesByDay,
-                topProducts: topProducts.map(p => ({ ...p, uuid: p.id })) // Ensure compatibility with OrderItem
-            });
+            setAllOrders(ordersData as RawOrder[]);
             setIsLoading(false);
         };
-        fetchData();
+        fetchAllData();
     }, [supabase]);
 
-    const downloadCSV = () => {
-        if (!data?.topProducts) return;
+    // 2. Compute Filtered Data based on timeRange
+    const dashboardData = useMemo<AnalyticsData | null>(() => {
+        if (!allOrders.length) return null;
 
-        const headers = ["Product ID", "Product Name", "Units Sold", "Total Revenue (INR)"];
-        const rows = data.topProducts.map(p => [p.id, `"${p.name.replace(/"/g, '""')}"`, p.unitsSold, (p.revenue || 0).toFixed(2)]);
+        const now = new Date();
+        let startDate: Date;
+        let endDate: Date = endOfDay(now);
 
-        let csvContent = headers.join(",") + "\r\n";
-        rows.forEach(rowArray => {
-            let row = rowArray.join(",");
-            csvContent += row + "\r\n";
+        switch (timeRange) {
+            case 'today':
+                startDate = startOfDay(now);
+                break;
+            case 'yesterday':
+                startDate = startOfDay(subDays(now, 1));
+                endDate = endOfDay(subDays(now, 1));
+                break;
+            case '7days':
+                startDate = startOfDay(subDays(now, 6)); // Includes today = 7 days
+                break;
+            case '30days':
+                startDate = startOfDay(subDays(now, 29));
+                break;
+            case 'all':
+            default:
+                startDate = new Date(0); // Epoch
+                break;
+        }
+
+        // Filter valid orders within range
+        const filteredOrders = allOrders.filter(order => {
+            const orderDate = new Date(order.order_date);
+            return isWithinInterval(orderDate, { start: startDate, end: endDate });
         });
 
+        // KPI Calculation
+        const totalRevenue = filteredOrders.reduce((acc, order) => acc + (order.total_amount || 0), 0);
+        const totalOrders = filteredOrders.length;
+        const totalCustomers = new Set(filteredOrders.map(o => o.user_id)).size;
+        const aov = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+        let totalItemsSold = 0;
+
+        // Top Products Aggregation
+        const productSales = new Map<string, { name: string; unitsSold: number; revenue: number; id: string }>();
+        filteredOrders.forEach(order => {
+            (order.order_items || []).forEach(item => {
+                const existing = productSales.get(item.menu_item_id || item.id);
+                const itemRevenue = (item.price || 0) * (item.quantity || 0);
+                const itemQuantity = item.quantity || 0;
+
+                totalItemsSold += itemQuantity;
+                if (itemQuantity === 0) return;
+
+                if (existing) {
+                    existing.unitsSold += itemQuantity;
+                    existing.revenue += itemRevenue;
+                } else {
+                    productSales.set(item.menu_item_id || item.id, {
+                        id: item.menu_item_id || item.id,
+                        name: item.name,
+                        unitsSold: itemQuantity,
+                        revenue: itemRevenue,
+                    });
+                }
+            });
+        });
+
+        const topProducts = Array.from(productSales.values())
+            .sort((a, b) => b.unitsSold - a.unitsSold)
+            .map(p => ({ ...p, price: p.unitsSold > 0 ? p.revenue / p.unitsSold : 0, quantity: p.unitsSold, uuid: p.id }));
+
+        // Time Series Chart Aggregation
+        let chartIntervals: string[] = [];
+        let dateFormat = 'MMM dd';
+
+        if (timeRange === 'today' || timeRange === 'yesterday') {
+            // Group by hour
+            chartIntervals = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
+            dateFormat = 'HH:mm';
+        } else if (timeRange === 'all') {
+            // Group by month
+            const uniqueMonths = new Set(filteredOrders.map(o => format(new Date(o.order_date), 'MMM yyyy')));
+            chartIntervals = Array.from(uniqueMonths).reverse();
+            dateFormat = 'MMM yyyy';
+        } else {
+            // Group by day
+            const daysCount = timeRange === '7days' ? 7 : 30;
+            chartIntervals = Array.from({ length: daysCount }, (_, i) => {
+                return format(subDays(endDate, i), 'yyyy-MM-dd');
+            }).reverse();
+            dateFormat = 'yyyy-MM-dd'; // Internal check key
+        }
+
+        const salesOverTime = chartIntervals.map(intervalKey => {
+            const periodOrders = filteredOrders.filter(o => {
+                const d = new Date(o.order_date);
+                if (timeRange === 'today' || timeRange === 'yesterday') return format(d, 'HH:00') === intervalKey;
+                if (timeRange === 'all') return format(d, 'MMM yyyy') === intervalKey;
+                return format(d, 'yyyy-MM-dd') === intervalKey;
+            });
+
+            return {
+                date: (timeRange === '7days' || timeRange === '30days') ? format(new Date(intervalKey), 'MMM dd') : intervalKey,
+                revenue: periodOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
+                sales: periodOrders.length
+            };
+        });
+
+        // Payment Distribution
+        const onlineCount = filteredOrders.filter(o => o.payment_status === 'PAID').length;
+        const counterCount = filteredOrders.filter(o => o.payment_status === 'PENDING').length;
+        const paymentDist = [
+            { name: 'Online (Razorpay)', value: onlineCount },
+            { name: 'Pay at Counter', value: counterCount }
+        ].filter(d => d.value > 0);
+
+        return {
+            totalRevenue,
+            totalOrders,
+            totalItemsSold,
+            aov,
+            salesOverTime,
+            topProducts,
+            paymentDistribution: paymentDist,
+            recentOrders: filteredOrders.slice(0, 10) // Last 10
+        };
+
+    }, [allOrders, timeRange]);
+
+
+    const downloadCSV = () => {
+        if (!dashboardData?.topProducts) return;
+        const headers = ["Product ID", "Product Name", "Units Sold", "Total Revenue (INR)"];
+        const rows = dashboardData.topProducts.map(p => [p.id, `"${p.name.replace(/"/g, '""')}"`, p.unitsSold, (p.revenue || 0).toFixed(2)]);
+        let csvContent = headers.join(",") + "\r\n" + rows.map(r => r.join(",")).join("\r\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", "top-products-analytics.csv");
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
+        link.href = URL.createObjectURL(blob);
+        link.download = `bnm_report_${timeRange}.csv`;
         link.click();
-        document.body.removeChild(link);
     }
 
     if (isLoading) return <AnalyticsSkeleton />;
     if (error) return (
-        <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-        </Alert>
-    );
-    if (!data) return (
-        <Alert>
-            <Package className="h-4 w-4" />
-            <AlertTitle>No Data</AlertTitle>
-            <AlertDescription>There is no sales data to analyze yet.</AlertDescription>
-        </Alert>
+        <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
     );
 
     return (
-        <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                        <IndianRupee className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">₹{(data.totalRevenue || 0).toFixed(2)}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-                        <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">+{data.totalOrders}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Unique Customers</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">+{data.totalCustomers}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Avg. Order Value</CardTitle>
-                        <BarChart className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">₹{(data.totalRevenue / data.totalOrders || 0).toFixed(2)}</div>
-                    </CardContent>
-                </Card>
+        <div className="space-y-6 animate-in fade-in duration-500">
+            {/* Context Filters */}
+            <div className="flex flex-wrap gap-2 pb-2">
+                <Button variant={timeRange === 'today' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('today')}>Today</Button>
+                <Button variant={timeRange === 'yesterday' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('yesterday')}>Yesterday</Button>
+                <Button variant={timeRange === '7days' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('7days')}>Last 7 Days</Button>
+                <Button variant={timeRange === '30days' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('30days')}>Last 30 Days</Button>
+                <Button variant={timeRange === 'all' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('all')}>All Time</Button>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="lg:col-span-4">
-                    <CardHeader>
-                        <CardTitle>Sales Overview (Last 30 Days)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pl-2">
-                        <ChartContainer config={salesChartConfig} className="min-h-[350px] w-full">
-                            <LineChart accessibilityLayer data={data.salesOverTime}>
-                                <CartesianGrid vertical={false} />
-                                <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
-                                <YAxis yAxisId="left" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `₹${value}`} />
-                                <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} tickMargin={8} />
-                                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                                <Legend />
-                                <Line dataKey="revenue" type="monotone" stroke="var(--color-revenue)" strokeWidth={2} dot={false} yAxisId="left" />
-                                <Line dataKey="sales" type="monotone" stroke="var(--color-sales)" strokeWidth={2} dot={false} yAxisId="right" />
-                            </LineChart>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
+            {!dashboardData ? (
+                <Alert><Package className="h-4 w-4" /><AlertTitle>No Data</AlertTitle><AlertDescription>There are no sales for the selected period.</AlertDescription></Alert>
+            ) : (
+                <>
+                    {/* KPI Cards */}
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <Card className="shadow-sm border-l-4 border-l-primary/60">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Gross Revenue</CardTitle>
+                                <IndianRupee className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold">₹{dashboardData.totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                            </CardContent>
+                        </Card>
+                        <Card className="shadow-sm border-l-4 border-l-accent/60">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Order Volume</CardTitle>
+                                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold">{dashboardData.totalOrders.toLocaleString()}</div>
+                            </CardContent>
+                        </Card>
+                        <Card className="shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Avg. Order Value</CardTitle>
+                                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold">₹{dashboardData.aov.toFixed(2)}</div>
+                            </CardContent>
+                        </Card>
+                        <Card className="shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Items Sold</CardTitle>
+                                <Package className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold">{dashboardData.totalItemsSold.toLocaleString()}</div>
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                <Card className="lg:col-span-3">
-                    <CardHeader>
-                        <CardTitle>Top Selling Items</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <ChartContainer config={topProductsChartConfig} className="min-h-[350px] w-full">
-                            <RechartsBarChart accessibilityLayer data={data.topProducts.slice(0, 5)} layout="vertical" margin={{ left: 50 }}>
-                                <CartesianGrid horizontal={false} />
-                                <YAxis dataKey="name" type="category" tickLine={false} tickMargin={10} axisLine={false} width={120} />
-                                <XAxis dataKey="unitsSold" type="number" hide />
-                                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                                <Legend />
-                                <Bar dataKey="unitsSold" layout="vertical" fill="var(--color-unitsSold)" radius={4} />
-                            </RechartsBarChart>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-            </div>
+                    {/* Main Charts */}
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+                        <Card className="lg:col-span-4 shadow-sm">
+                            <CardHeader>
+                                <CardTitle>Revenue & Order Trend</CardTitle>
+                                <CardDescription>Performance metrics across the selected time period.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="pl-0 pb-0">
+                                <ChartContainer config={salesChartConfig} className="min-h-[350px] w-full">
+                                    <LineChart accessibilityLayer data={dashboardData.salesOverTime} margin={{ right: 20, left: 10 }}>
+                                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                                        <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
+                                        <YAxis yAxisId="left" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `₹${value}`} width={60} />
+                                        <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} tickMargin={8} width={40} />
+                                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                                        <Legend verticalAlign="top" height={36} />
+                                        <Line dataKey="revenue" type="monotone" stroke="var(--color-revenue)" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 5 }} yAxisId="left" />
+                                        <Line dataKey="sales" type="monotone" stroke="var(--color-sales)" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 5 }} yAxisId="right" />
+                                    </LineChart>
+                                </ChartContainer>
+                            </CardContent>
+                        </Card>
 
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Top Products by Sales</CardTitle>
-                    <Button onClick={downloadCSV} variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download CSV
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Product</TableHead>
-                                <TableHead className="text-center">Units Sold</TableHead>
-                                <TableHead className="text-right">Total Revenue</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {data.topProducts.map(product => (
-                                <TableRow key={product.id}>
-                                    <TableCell className="font-medium">{product.name}</TableCell>
-                                    <TableCell className="text-center">{product.unitsSold}</TableCell>
-                                    <TableCell className="text-right">₹{(product.revenue || 0).toFixed(2)}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                        <Card className="lg:col-span-3 shadow-sm flex flex-col">
+                            <CardHeader>
+                                <CardTitle>Payment Methods</CardTitle>
+                                <CardDescription>Breakdown by collection type</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-1 pb-0 flex items-center justify-center">
+                                {dashboardData.paymentDistribution.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <PieChart>
+                                            <Pie
+                                                data={dashboardData.paymentDistribution}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={70}
+                                                outerRadius={100}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                                stroke="none"
+                                            >
+                                                {dashboardData.paymentDistribution.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip formatter={(value, name) => [`${value} orders`, name]} />
+                                            <Legend verticalAlign="bottom" height={36} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-muted-foreground">No payment data</div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
 
+                    {/* Data Tables */}
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+                        <Card className="shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle>Top Selling Items</CardTitle>
+                                    <CardDescription>Highest volume products</CardDescription>
+                                </div>
+                                <Button onClick={downloadCSV} variant="outline" size="sm">
+                                    <Download className="h-4 w-4 mr-2" /> Export
+                                </Button>
+                            </CardHeader>
+                            <CardContent className="px-0 sm:px-6">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="bg-muted/30">
+                                            <TableHead>Product</TableHead>
+                                            <TableHead className="text-right">Qty</TableHead>
+                                            <TableHead className="text-right">Revenue</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {dashboardData.topProducts.slice(0, 8).map(product => (
+                                            <TableRow key={product.id}>
+                                                <TableCell className="font-medium">{product.name}</TableCell>
+                                                <TableCell className="text-right">{product.unitsSold}</TableCell>
+                                                <TableCell className="text-right font-semibold">₹{(product.revenue || 0).toFixed(2)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm">
+                            <CardHeader>
+                                <CardTitle>Recent Transactions</CardTitle>
+                                <CardDescription>Latest {dashboardData.recentOrders.length} orders in this period</CardDescription>
+                            </CardHeader>
+                            <CardContent className="px-0 sm:px-6">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="bg-muted/30">
+                                            <TableHead>Order</TableHead>
+                                            <TableHead>Time</TableHead>
+                                            <TableHead>Method</TableHead>
+                                            <TableHead className="text-right">Total</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {dashboardData.recentOrders.map(order => (
+                                            <TableRow key={order.id}>
+                                                <TableCell className="font-medium">
+                                                    #{order.display_order_id}
+                                                    <div className="text-xs text-muted-foreground hidden sm:block">{order.user_name}</div>
+                                                </TableCell>
+                                                <TableCell className="text-sm">
+                                                    {format(new Date(order.order_date), 'MMM dd, HH:mm')}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline" className={order.payment_status === 'PAID' ? 'text-green-600 border-green-200' : 'text-orange-600 border-orange-200'}>
+                                                        {order.payment_status === 'PAID' ? 'Online' : 'Counter'}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right font-bold">₹{(order.total_amount).toFixed(2)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </>
+            )}
         </div>
     );
 }
+
+// ... Authentication wrappers remain mostly unchanged below ...
 
 function AdminLoginPage() {
     const { supabase } = useSupabase();
@@ -361,46 +489,25 @@ function AdminLoginPage() {
         if (!supabase) return;
 
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-        if (error) {
-            setError(error.message);
-        }
-        // On success, the main AdminPage component will detect the user and role change, and re-render.
+        if (error) setError(error.message);
         setIsLoading(false);
     };
 
     return (
         <div className="flex items-center justify-center h-full w-full">
-            <Card className="w-full max-w-sm">
+            <Card className="w-full max-w-sm border-0 shadow-xl ring-1 ring-border/50">
                 <CardHeader>
-                    <CardTitle className="text-2xl text-center">Analytics Login</CardTitle>
+                    <CardTitle className="text-2xl text-center">Admin Access</CardTitle>
+                    <CardDescription className="text-center">Sign in to view dashboard metrics</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleLogin} className="space-y-4">
-                        <Input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                        <Input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                        {error && (
-                            <Alert variant="destructive">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>Login Failed</AlertTitle>
-                                <AlertDescription>{error}</AlertDescription>
-                            </Alert>
-                        )}
-                        <Button type="submit" className="w-full" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
-                            {isLoading ? 'Signing In...' : 'Sign In'}
+                        <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-12 bg-muted/20" />
+                        <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-12 bg-muted/20" />
+                        {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+                        <Button type="submit" className="w-full h-12 text-md" disabled={isLoading}>
+                            {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
+                            {isLoading ? 'Authenticating...' : 'View Dashboard'}
                         </Button>
                     </form>
                 </CardContent>
@@ -409,24 +516,17 @@ function AdminLoginPage() {
     );
 }
 
-
 export default function AnalyticsPageContainer() {
     const { user, userProfile, isUserLoading, supabase } = useSupabase();
     const router = useRouter();
 
     const handleLogout = async () => {
-        if (supabase) {
-            await supabase.auth.signOut();
-        }
+        if (supabase) await supabase.auth.signOut();
         router.push('/');
     };
 
     if (isUserLoading) {
-        return (
-            <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <div className="p-8 bg-background min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
     }
 
     const isUserAdmin = user && !user.is_anonymous && userProfile?.role === 'admin';
@@ -434,43 +534,41 @@ export default function AnalyticsPageContainer() {
     if (!isUserAdmin) {
         const isUserLoggedInButNotAdmin = user && !user.is_anonymous && userProfile?.role !== 'admin';
         return (
-            <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
-                <div className="flex-grow flex items-center justify-center">
-                    {isUserLoggedInButNotAdmin ? (
-                        <Card className="w-full max-w-sm">
-                            <CardHeader>
-                                <CardTitle className="text-2xl text-center">Access Denied</CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-center">
-                                <Alert variant="destructive" className="mb-4">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <AlertTitle>Permission Error</AlertTitle>
-                                    <AlertDescription>You do not have permission to access the analytics dashboard.</AlertDescription>
-                                </Alert>
-                                <Button variant="outline" onClick={handleLogout} className="w-full">
-                                    <LogOut className="mr-2 h-4 w-4" /> Logout
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <AdminLoginPage />
-                    )}
-                </div>
+            <div className="p-4 sm:p-6 lg:p-8 bg-background/50 min-h-screen flex flex-col justify-center items-center">
+                {isUserLoggedInButNotAdmin ? (
+                    <Card className="w-full max-w-sm shadow-xl">
+                        <CardHeader><CardTitle className="text-2xl text-center">Access Denied</CardTitle></CardHeader>
+                        <CardContent className="text-center">
+                            <Alert variant="destructive" className="mb-6">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Permission Error</AlertTitle>
+                                <AlertDescription>You do not have permission to access the analytics dashboard.</AlertDescription>
+                            </Alert>
+                            <Button variant="outline" onClick={handleLogout} className="w-full h-12"><LogOut className="mr-2 h-5 w-5" /> Logout</Button>
+                        </CardContent>
+                    </Card>
+                ) : <AdminLoginPage />}
             </div>
         );
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen flex flex-col">
-            <header className="mb-6 flex justify-between items-center">
-                <h1 className="text-3xl font-bold tracking-tight text-foreground text-center flex-grow">
-                    Sales Analytics
-                </h1>
-                <Button variant="outline" onClick={handleLogout}>
+        <div className="p-4 sm:p-6 lg:p-8 bg-background/50 min-h-screen flex flex-col">
+            <header className="mb-8 flex justify-between items-center bg-card p-4 rounded-xl shadow-sm border">
+                <div className="flex items-center gap-3">
+                    <div className="bg-primary/10 p-2 rounded-lg"><TrendingUp className="h-6 w-6 text-primary" /></div>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h1>
+                        <p className="text-sm text-muted-foreground hidden sm:block">Real-time point of sale metrics</p>
+                    </div>
+                </div>
+                <Button variant="outline" onClick={handleLogout} className="rounded-full px-6">
                     <LogOut className="mr-2 h-4 w-4" /> Logout
                 </Button>
             </header>
-            <AdminAnalyticsPage />
+            <main>
+                <AdminAnalyticsPage />
+            </main>
         </div>
     );
 }
