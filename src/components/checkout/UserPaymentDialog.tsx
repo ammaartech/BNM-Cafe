@@ -2,9 +2,10 @@ import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, Copy } from "lucide-react";
 import { UPIQR } from "@adityavijay21/upiqr";
 import { useSupabase } from "@/lib/supabase/provider";
+import { toast } from "@/hooks/use-toast";
 
 const UPI_ID = process.env.NEXT_PUBLIC_UPI_ID || "";
 const UPI_NAME = process.env.NEXT_PUBLIC_UPI_NAME || "BNM Cafe";
@@ -54,14 +55,17 @@ export function UserPaymentDialog({
                     },
                 })
                 .generate();
+
+            // Add mc=0000 (Generic Merchant Category) to intent to bypass GPay Gallery Code limits on iOS
+            const intentWithMc = `${intent}& mc=0000`;
             setQrDataUrl(qr);
-            setUpiIntent(intent);
+            setUpiIntent(intentWithMc);
         } catch (err) {
             console.error("Failed to generate QR:", err);
         } finally {
             setIsGenerating(false);
         }
-    }, [totalPrice, orderId]);
+    }, [totalPrice]);
 
     // Generate QR whenever dialog opens and we have an order ID
     useEffect(() => {
@@ -75,14 +79,14 @@ export function UserPaymentDialog({
         if (!open || !orderId || !supabase) return;
 
         const channel = supabase
-            .channel(`user-payment-${orderId}`)
+            .channel(`user - payment - ${orderId} `)
             .on(
                 'postgres_changes',
                 {
                     event: 'UPDATE',
                     schema: 'public',
                     table: 'orders',
-                    filter: `id=eq.${orderId}`
+                    filter: `id = eq.${orderId} `
                 },
                 (payload) => {
                     const newStatus = payload.new.payment_status;
@@ -137,6 +141,15 @@ export function UserPaymentDialog({
             }, 500);
         }
     };
+
+    const handleCopyUpiId = () => {
+        navigator.clipboard.writeText(UPI_ID);
+        toast({
+            title: "UPI ID Copied!",
+            description: "Paste it directly in any UPI app to pay.",
+            duration: 3000,
+        });
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -207,7 +220,15 @@ export function UserPaymentDialog({
                                             Open Other UPI App
                                         </Button>
 
-                                        <p className="text-sm text-muted-foreground mt-4 animate-pulse flex items-center justify-center gap-2 col-span-2">
+                                        <Button
+                                            variant="ghost"
+                                            className="col-span-2 text-muted-foreground mt-2"
+                                            onClick={handleCopyUpiId}
+                                        >
+                                            <Copy className="mr-2 h-4 w-4" /> Facing issues? Copy UPI ID
+                                        </Button>
+
+                                        <p className="text-sm text-muted-foreground mt-2 animate-pulse flex items-center justify-center gap-2 col-span-2">
                                             <Loader2 className="w-4 h-4 animate-spin" />
                                             Waiting for payment confirmation...
                                         </p>
