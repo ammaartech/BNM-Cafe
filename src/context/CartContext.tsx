@@ -34,7 +34,7 @@ interface CartContextType {
   dispatch: React.Dispatch<CartAction>;
   totalItems: number;
   totalPrice: number;
-  placeOrder: () => Promise<void>;
+  placeOrder: (paymentStatus?: string) => Promise<void>;
   fetchCart: (userId: string) => Promise<void>;
   updatingItemId: string | null;
   addItem: (item: MenuItem, quantity?: number) => Promise<void>;
@@ -271,7 +271,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   /* -------- PLACE ORDER -------- */
 
-  const placeOrder = useCallback(async () => {
+  const placeOrder = useCallback(async (paymentStatus?: string) => {
     if (!supabase || !user || isUserLoading) return;
 
     const orderItemsParam = state.items.map(item => ({
@@ -296,6 +296,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
+
+      if (paymentStatus && data?.order_id) {
+        const { error: updateError } = await supabase
+          .from('orders')
+          .update({ payment_status: paymentStatus })
+          .eq('id', data.order_id);
+
+        if (updateError) {
+          console.error('Failed to update payment status:', updateError);
+        }
+      }
 
       // Manually clear the cart from the database after a successful order.
       const { error: deleteError } = await supabase
