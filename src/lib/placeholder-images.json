@@ -69,25 +69,25 @@
     {
       "id": "bisi-bele-bath",
       "description": "Spicy rice and lentil dish with vegetables.",
-      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Bisi_Bele_Bath.jpg/960px-Bisi_Bele_Bath.jpg?20110628102753",
+      "imageUrl": "https://images.unsplash.com/photo-1626776876729-abdf8b1a8f89?q=80&w=1200",
       "imageHint": "lentil rice"
     },
     {
       "id": "chai",
       "description": "Aromatic spiced tea with milk.",
-      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Red_Tea.jpg/640px-Red_Tea.jpg",
+      "imageUrl": "https://images.unsplash.com/photo-1571115177098-24d1421f15db?q=80&w=1200",
       "imageHint": "chai tea"
     },
     {
       "id": "coffee",
       "description": "Hot coffee.",
-      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Cup_of_coffee_%28Serbian_cuisine%2C_Grand_kava%29.jpg/640px-Cup_of_coffee_%28Serbian_cuisine%2C_Grand_kava%29.jpg",
+      "imageUrl": "https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=1200",
       "imageHint": "coffee"
     },
     {
       "id": "dahi-puri",
       "description": "Crispy shells filled with yogurt, potatoes, and chutneys.",
-      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Dahi_puri_1.jpg/640px-Dahi_puri_1.jpg",
+      "imageUrl": "https://images.unsplash.com/photo-1626777242635-f48937085732?q=80&w=1200",
       "imageHint": "dahi puri"
     },
     {
@@ -99,13 +99,13 @@
     {
       "id": "masala-puri",
       "description": "Crushed puris in a spicy green pea curry.",
-      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Masala_Puri_%28Chaat%29.jpg/640px-Masala_Puri_%28Chaat%29.jpg",
+      "imageUrl": "https://images.unsplash.com/photo-1626776876356-990a88bf2751?q=80&w=1200",
       "imageHint": "masala puri"
     },
     {
       "id": "bhel-puri",
       "description": "Savory bhel puri.",
-      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Indian_cuisine-Chaat-Bhelpuri-03.jpg/640px-Indian_cuisine-Chaat-Bhelpuri-03.jpg",
+      "imageUrl": "https://images.unsplash.com/photo-1645177628172-a94c1f96e6db?q=80&w=1200",
       "imageHint": "bhel puri"
     }
   ]
