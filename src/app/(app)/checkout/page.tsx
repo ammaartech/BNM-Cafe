@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useSupabase } from "@/lib/supabase/provider";
 import Script from "next/script";
 import { useToast } from "@/hooks/use-toast";
+import { Clock } from "lucide-react";
 
 function CheckoutSkeleton() {
     return (
@@ -75,6 +76,7 @@ export default function CheckoutPage() {
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
     const { state, totalPrice, totalItems, placeOrder } = useCart();
+    const [paymentMethod, setPaymentMethod] = useState<"RAZORPAY" | "COUNTER" | null>(null);
 
     // Prices are inclusive of 5% GST.
     const subTotal = totalPrice / 1.05;
@@ -83,6 +85,7 @@ export default function CheckoutPage() {
 
     const handlePlaceOrder = async () => {
         setIsPlacingOrder(true);
+        setPaymentMethod("RAZORPAY");
 
         try {
             // 1. Create order on our backend
@@ -110,6 +113,7 @@ export default function CheckoutPage() {
                     } catch (err: any) {
                         toast({ title: "Order Placement Failed", description: err.message, variant: "destructive" });
                         setIsPlacingOrder(false);
+                        setPaymentMethod(null);
                     }
                 },
                 prefill: {
@@ -124,6 +128,7 @@ export default function CheckoutPage() {
             const rzp = new (window as any).Razorpay(options);
             rzp.on("payment.failed", function (response: any) {
                 setIsPlacingOrder(false);
+                setPaymentMethod(null);
                 toast({
                     title: "Payment Failed",
                     description: response.error.description,
@@ -134,11 +139,24 @@ export default function CheckoutPage() {
         } catch (error: any) {
             console.error(error);
             setIsPlacingOrder(false);
+            setPaymentMethod(null);
             toast({
                 title: "Payment Initialization Failed",
                 description: error.message,
                 variant: "destructive",
             });
+        }
+    };
+
+    const handlePayAtCounter = async () => {
+        setIsPlacingOrder(true);
+        setPaymentMethod("COUNTER");
+        try {
+            await placeOrder('PENDING');
+        } catch (err: any) {
+            toast({ title: "Order Placement Failed", description: err.message, variant: "destructive" });
+            setIsPlacingOrder(false);
+            setPaymentMethod(null);
         }
     };
 
@@ -230,10 +248,23 @@ export default function CheckoutPage() {
                     </CardContent>
                 </Card>
 
-                <div className="flex items-center gap-4">
-                    <Button className="w-full h-14 text-lg font-bold" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
-                        {isPlacingOrder ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <CreditCard className="mr-2 h-6 w-6" />}
-                        {isPlacingOrder ? 'Processing...' : `Pay ₹${finalTotal.toFixed(2)}`}
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <Button
+                        className="w-full sm:w-1/2 h-14 text-lg font-bold bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+                        onClick={handlePayAtCounter}
+                        disabled={isPlacingOrder}
+                    >
+                        {isPlacingOrder && paymentMethod === "COUNTER" ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Clock className="mr-2 h-6 w-6" />}
+                        {isPlacingOrder && paymentMethod === "COUNTER" ? 'Processing...' : `Pay at Counter`}
+                    </Button>
+
+                    <Button
+                        className="w-full sm:w-1/2 h-14 text-lg font-bold"
+                        onClick={handlePlaceOrder}
+                        disabled={isPlacingOrder}
+                    >
+                        {isPlacingOrder && paymentMethod === "RAZORPAY" ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <CreditCard className="mr-2 h-6 w-6" />}
+                        {isPlacingOrder && paymentMethod === "RAZORPAY" ? 'Processing...' : `Pay online ₹${finalTotal.toFixed(2)}`}
                     </Button>
                 </div>
             </div>
