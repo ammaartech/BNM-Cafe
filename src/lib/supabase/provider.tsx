@@ -1,4 +1,3 @@
-
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
@@ -44,21 +43,36 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const processSession = useCallback(async (session: Session | null) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        await fetchUserProfile(currentUser);
-      } else {
-        setUserProfile(null);
-      }
-    }, [fetchUserProfile]);
+    const currentUser = session?.user ?? null;
+    setUser(currentUser);
+    if (currentUser) {
+      await fetchUserProfile(currentUser);
+    } else {
+      setUserProfile(null);
+    }
+  }, [fetchUserProfile]);
 
 
   useEffect(() => {
-    // Handle the initial session on page load to prevent UI flicker.
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      await processSession(session);
-      setIsUserLoading(false); // Initial load is complete.
+    // 🛡️ HOTFIX: Supabase's getSession() can hang indefinitely if Web Locks are
+    // stuck (e.g. tab backgrounded/suspended or multiple tabs racing).
+    // We add a 3-second timeout so the app doesn't stay stuck on the loading screen.
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => resolve(null), 3000);
+    });
+
+    const sessionPromise = supabase.auth.getSession().catch((err) => {
+      console.error("Supabase getSession error:", err);
+      return null;
+    });
+
+    Promise.race([sessionPromise, timeoutPromise]).then(async (result) => {
+      // result is either { data: { session } } or null (timeout/error)
+      const session = result && 'data' in result ? result.data.session : null;
+      if (session) {
+        await processSession(session);
+      }
+      setIsUserLoading(false); // Always unlock the UI eventually
     });
 
     // Listen for subsequent auth events like sign-in or sign-out.
@@ -79,8 +93,8 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (isUserLoading) return;
-    
-    const isAuthPage = pathname === '/login';
+
+    const isAuthPage = pathname === '/login' || pathname === '/';
     const isAdminPage = pathname.startsWith('/admin');
     const isStationPage = pathname.startsWith('/station');
 
@@ -88,7 +102,7 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     if (!user && !isAuthPage && !isAdminPage && !isStationPage) {
       router.replace('/login');
     }
-    
+
     // If user is logged in (and not anon) and they are on the auth page, redirect to menu.
     if (user && !user.is_anonymous && isAuthPage) {
       router.replace('/menu');
