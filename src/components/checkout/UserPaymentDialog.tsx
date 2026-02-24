@@ -116,29 +116,12 @@ export function UserPaymentDialog({
         }
     };
 
-    const handleOpenGPay = () => {
+    const handleOpenSpecificApp = () => {
         if (upiIntent) {
-            // Replace generic upi:// with GPay's scheme or just use upi:// but sometimes it's ambiguous
-            // Google Pay sometimes handles tez:// or gpay:// well. However, on Android upi:// allows selection.
-            // On iOS, gpay://upi/pay?... is more direct if the app is installed.
-            const gpayLink = upiIntent.replace('upi://', 'gpay://upi/');
-            window.location.href = gpayLink;
-
-            // Fallback in case gpay doesn't work, though we can't really "catch" it easily
-            setTimeout(() => {
-                window.location.href = upiIntent; // Try generic if specific fails
-            }, 500);
-        }
-    };
-
-    const handleOpenPhonePe = () => {
-        if (upiIntent) {
-            const phonepeLink = upiIntent.replace('upi://', 'phonepe://');
-            window.location.href = phonepeLink;
-
-            setTimeout(() => {
-                window.location.href = upiIntent;
-            }, 500);
+            // Strictly adhering to NPCI standards by ONLY using upi://pay
+            // Using custom schemes like gpay:// or phonepe:// triggers strict merchant validation
+            // and causes bank limit rejections for P2P transfers.
+            window.location.href = upiIntent;
         }
     };
 
@@ -189,7 +172,7 @@ export function UserPaymentDialog({
                                         <Button
                                             variant="outline"
                                             className="h-12 w-full text-sm font-semibold sm:hidden"
-                                            onClick={handleOpenGPay}
+                                            onClick={handleOpenSpecificApp}
                                         >
                                             <Image src="/google-pay.png" alt="GPay" width={20} height={20} className="mr-2" style={{ objectFit: 'contain' }} />
                                             Google Pay
@@ -197,7 +180,7 @@ export function UserPaymentDialog({
                                         <Button
                                             variant="outline"
                                             className="h-12 w-full text-sm font-semibold sm:hidden"
-                                            onClick={handleOpenPhonePe}
+                                            onClick={handleOpenSpecificApp}
                                         >
                                             <Image src="/phonepe.png" alt="PhonePe" width={20} height={20} className="mr-2" style={{ objectFit: 'contain' }} />
                                             PhonePe
