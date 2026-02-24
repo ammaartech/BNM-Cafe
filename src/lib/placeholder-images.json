@@ -69,13 +69,13 @@
     {
       "id": "bisi-bele-bath",
       "description": "Spicy rice and lentil dish with vegetables.",
-      "imageUrl": "https://images.unsplash.com/photo-1626776876729-abdf8b1a8f89?q=80&w=1200",
+      "imageUrl": "/images/bisi_bele_bath.png.png",
       "imageHint": "lentil rice"
     },
     {
       "id": "chai",
       "description": "Aromatic spiced tea with milk.",
-      "imageUrl": "https://images.unsplash.com/photo-1571115177098-24d1421f15db?q=80&w=1200",
+      "imageUrl": "/images/chai.png",
       "imageHint": "chai tea"
     },
     {
@@ -87,7 +87,7 @@
     {
       "id": "dahi-puri",
       "description": "Crispy shells filled with yogurt, potatoes, and chutneys.",
-      "imageUrl": "https://images.unsplash.com/photo-1626777242635-f48937085732?q=80&w=1200",
+      "imageUrl": "/images/dehi_puri.png",
       "imageHint": "dahi puri"
     },
     {
@@ -99,7 +99,7 @@
     {
       "id": "masala-puri",
       "description": "Crushed puris in a spicy green pea curry.",
-      "imageUrl": "https://images.unsplash.com/photo-1626776876356-990a88bf2751?q=80&w=1200",
+      "imageUrl": "/images/masala_puri.png",
       "imageHint": "masala puri"
     },
     {
