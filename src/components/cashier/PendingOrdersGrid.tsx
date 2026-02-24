@@ -129,23 +129,23 @@ export function PendingOrdersGrid() {
         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {pendingOrders.map((order) => (
                 <Card key={order.id} className="shadow-md border-t-4 border-t-orange-500">
-                    <CardContent className="p-6 flex flex-col gap-4">
+                    <CardContent className="p-4 flex flex-col gap-3">
                         <div className="flex justify-between items-start">
                             <div>
-                                <h3 className="font-bold text-2xl">#{order.display_order_id}</h3>
-                                <p className="text-md font-medium">{order.user_name}</p>
+                                <h3 className="font-bold text-lg">#{order.display_order_id}</h3>
+                                <p className="text-sm font-medium">{order.user_name}</p>
                             </div>
                         </div>
-                        <div className="flex justify-between items-center bg-muted/20 p-3 rounded-lg">
-                            <span className="text-sm text-muted-foreground flex items-center gap-2">
-                                <Clock className="h-4 w-4" />
+                        <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
                                 {formatDistanceToNow(new Date(order.order_date), { addSuffix: true })}
                             </span>
-                            <span className="font-bold text-xl">₹{order.total_amount.toFixed(2)}</span>
+                            <span className="font-bold text-lg">₹{order.total_amount.toFixed(2)}</span>
                         </div>
 
                         <Button
-                            className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold h-12 text-lg"
+                            className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold h-10 mt-1"
                             onClick={() => handleApprove(order.id, order.display_order_id)}
                             disabled={approvingIds.has(order.id)}
                         >

@@ -152,6 +152,18 @@ export function CashierProvider({ children }: { children: ReactNode }) {
 
             if (error) throw error;
 
+            // Immediately mark as PAID since the cashier collected the payment
+            if (data?.order_id) {
+                const { error: updateError } = await supabase
+                    .from('orders')
+                    .update({ payment_status: 'PAID' })
+                    .eq('id', data.order_id);
+
+                if (updateError) {
+                    console.error('Failed to update payment status:', updateError);
+                }
+            }
+
             toast({ title: "Order Placed", description: `Order #${data.display_order_id} created successfully.` });
             clearBill();
         } catch (err: any) {

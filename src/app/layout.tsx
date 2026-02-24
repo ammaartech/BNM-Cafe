@@ -27,37 +27,36 @@ function RootLayoutContent({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-    const pathname = usePathname();
-    const isAdminPage = pathname.startsWith('/admin');
-    const isStaffPage = pathname.startsWith('/staff');
-    const isStationPage = pathname.startsWith('/station');
-    const isAuthPage = pathname === '/' || pathname === '/login';
+  const pathname = usePathname();
+  const isAdminPage = pathname.startsWith('/admin');
+  const isStaffPage = pathname.startsWith('/staff');
+  const isStationPage = pathname.startsWith('/station');
+  const isAuthPage = pathname === '/' || pathname === '/login';
 
-    const layoutClass = () => {
-        if (isStaffPage || isStationPage || isAuthPage) return 'w-full max-w-full';
-        if (isAdminPage) return 'max-w-7xl';
-        return 'max-w-md shadow-2xl';
-    }
+  const layoutClass = () => {
+    if (isStaffPage || isStationPage || isAuthPage || isAdminPage) return 'w-full max-w-full';
+    return 'max-w-md shadow-2xl';
+  }
 
-    return (
-        <html lang="en" className={cn(isStaffPage && 'dark')} suppressHydrationWarning>
-            <head>
-                <title>B.N.M Cafe</title>
-                <meta name="description" content="Your university cafe companion" />
-            </head>
-            <body className={`font-sans antialiased ${inter.variable}`}>
-                <div className={cn(
-                    "mx-auto bg-background min-h-dvh flex flex-col",
-                    layoutClass()
-                )}>
-                    <SupabaseProvider>
-                        {children}
-                    </SupabaseProvider>
-                    <Toaster />
-                </div>
-            </body>
-        </html>
-    );
+  return (
+    <html lang="en" className={cn(isStaffPage && 'dark')} suppressHydrationWarning>
+      <head>
+        <title>B.N.M Cafe</title>
+        <meta name="description" content="Your university cafe companion" />
+      </head>
+      <body className={`font-sans antialiased ${inter.variable}`}>
+        <div className={cn(
+          "mx-auto bg-background min-h-dvh flex flex-col",
+          layoutClass()
+        )}>
+          <SupabaseProvider>
+            {children}
+          </SupabaseProvider>
+          <Toaster />
+        </div>
+      </body>
+    </html>
+  );
 }
 
 
