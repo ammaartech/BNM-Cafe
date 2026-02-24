@@ -16,6 +16,7 @@ import { MenuGrid } from "@/components/cashier/MenuGrid";
 import { OrderSidebar } from "@/components/cashier/OrderSidebar";
 import { ReceiptTemplate } from "@/components/cashier/ReceiptTemplate";
 import { AdminLogin } from "@/components/admin/AdminLogin";
+import { CashierPendingQueue } from "@/components/cashier/CashierPendingQueue";
 
 /* ---------------- INNER COMPONENT ---------------- */
 
@@ -144,14 +145,17 @@ function CashierPageContent() {
                             </p>
                         </div>
                     </div>
-                    <div className="w-1/3">
-                        <input
-                            type="text"
-                            placeholder="Search items..."
-                            className="w-full p-2 border rounded-md"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                    <div className="flex items-center gap-4 w-1/2 justify-end">
+                        <CashierPendingQueue />
+                        <div className="w-2/3 max-w-sm">
+                            <input
+                                type="text"
+                                placeholder="Search items..."
+                                className="w-full p-2 border rounded-md bg-muted/20"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </header>
 

@@ -160,15 +160,16 @@ export default function StationPage() {
       if (stationError || !stationData) throw new Error('Station not found.');
       setStation(stationData);
 
-      // 2. Fetch all LIVE orders (Pending or Ready)
+      // 2. Fetch all LIVE orders (Pending or Ready) that have been PAID
       const { data: liveOrdersData, error: liveOrdersError } = await supabase
         .from('orders')
         .select('*, order_stations(*), order_items(*, menu_items(station_id))')
         .in('status', ['PENDING', 'READY'])
+        .eq('payment_status', 'PAID')
         .order('order_date', { ascending: false });
 
       if (liveOrdersError) throw liveOrdersError;
-      
+
       // 3. Filter these orders to find the ones relevant to THIS station
       const stationOrders = liveOrdersData
         .map(order => {
@@ -191,7 +192,7 @@ export default function StationPage() {
           if (!orderStation || orderStation.status === 'PICKED_UP') {
             return null;
           }
-          
+
           return {
             orderStationId: orderStation.id,
             orderId: order.id,
@@ -209,7 +210,7 @@ export default function StationPage() {
         })
         .filter((o): o is StationOrder => o !== null);
 
-        setOrders(stationOrders);
+      setOrders(stationOrders);
 
     } catch (e: any) {
       setError(e.message);
@@ -221,39 +222,51 @@ export default function StationPage() {
   useEffect(() => {
     if (!isUserLoading) fetchData();
   }, [isUserLoading, fetchData]);
-  
+
   // REALTIME LISTENER
   useEffect(() => {
     if (!supabase || !station?.id) return;
 
     const channel: RealtimeChannel = supabase.channel(`station-channel-${station.id}`)
       .on(
-          'postgres_changes',
-          {
-              event: '*', 
-              schema: 'public',
-              table: 'order_stations',
-              filter: `station_id=eq.${station.id}`
-          },
-          (_payload) => {
-              fetchData();
-          }
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'order_stations',
+          filter: `station_id=eq.${station.id}`
+        },
+        (_payload) => {
+          fetchData();
+        }
       )
       .on(
-          'postgres_changes',
-          {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'orders',
-          },
-          (_payload) => {
-              fetchData();
-          }
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'orders',
+        },
+        (_payload) => {
+          fetchData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `payment_status=eq.PAID`
+        },
+        (_payload) => {
+          fetchData();
+        }
       )
       .subscribe();
 
     return () => {
-        supabase.removeChannel(channel);
+      supabase.removeChannel(channel);
     };
 
   }, [supabase, station?.id, fetchData]);
@@ -278,7 +291,7 @@ export default function StationPage() {
 
     toast({ title: 'Updated', description: `Marked as ${status}` });
   };
-  
+
   // --- AUTH GUARD ---
   if (isUserLoading) {
     return (
@@ -351,9 +364,9 @@ export default function StationPage() {
       </header>
 
       {loading ? (
-          <div className="flex justify-center p-8">
-            <Loader2 className="animate-spin h-8 w-8" />
-          </div>
+        <div className="flex justify-center p-8">
+          <Loader2 className="animate-spin h-8 w-8" />
+        </div>
       ) : orders.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground">
           <Package className="h-12 w-12 mb-4" />
