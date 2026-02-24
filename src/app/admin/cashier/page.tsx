@@ -16,7 +16,8 @@ import { MenuGrid } from "@/components/cashier/MenuGrid";
 import { OrderSidebar } from "@/components/cashier/OrderSidebar";
 import { ReceiptTemplate } from "@/components/cashier/ReceiptTemplate";
 import { AdminLogin } from "@/components/admin/AdminLogin";
-import { CashierPendingQueue } from "@/components/cashier/CashierPendingQueue";
+import { PendingOrdersGrid } from "@/components/cashier/PendingOrdersGrid";
+import { Badge } from "@/components/ui/badge";
 
 /* ---------------- INNER COMPONENT ---------------- */
 
@@ -29,6 +30,7 @@ function CashierPageContent() {
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [pendingCount, setPendingCount] = useState(0);
 
     // --- AUTH CHECK ---
     useEffect(() => {
@@ -55,6 +57,28 @@ function CashierPageContent() {
             setLoading(false);
         }
         fetchItems();
+    }, [supabase]);
+
+    // --- FETCH PENDING COUNT ---
+    useEffect(() => {
+        if (!supabase) return;
+
+        async function fetchCount() {
+            const { count } = await supabase
+                .from("orders")
+                .select("*", { count: 'exact', head: true })
+                .eq("payment_status", "PENDING");
+            setPendingCount(count || 0);
+        }
+
+        fetchCount();
+
+        const channel = supabase.channel('pending-count')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+                fetchCount();
+            }).subscribe();
+
+        return () => { supabase.removeChannel(channel); }
     }, [supabase]);
 
 
@@ -145,9 +169,8 @@ function CashierPageContent() {
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4 w-1/2 justify-end">
-                        <CashierPendingQueue />
-                        <div className="w-2/3 max-w-sm">
+                    <div className="flex items-center gap-4 w-1/3 justify-end">
+                        <div className="w-full">
                             <input
                                 type="text"
                                 placeholder="Search items..."
@@ -159,16 +182,34 @@ function CashierPageContent() {
                     </div>
                 </header>
 
-                <div className="p-4 bg-muted/10">
-                    <CategoryTabs
-                        categories={categories}
-                        selectedCategory={selectedCategory}
-                        onSelectCategory={setSelectedCategory}
-                    />
+                <div className="p-4 bg-muted/10 flex items-center gap-4 border-b">
+                    <div className="flex-grow">
+                        <CategoryTabs
+                            categories={categories}
+                            selectedCategory={selectedCategory}
+                            onSelectCategory={setSelectedCategory}
+                        />
+                    </div>
+
+                    <Button
+                        variant={selectedCategory === "pending" ? "default" : "outline"}
+                        onClick={() => setSelectedCategory("pending")}
+                        className="rounded-full relative shrink-0 whitespace-nowrap bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200 hover:text-orange-900 data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:border-orange-600 data-[state=active]:hover:bg-orange-700 h-10 px-6 font-semibold"
+                        data-state={selectedCategory === "pending" ? "active" : "inactive"}
+                    >
+                        Pending Payments
+                        {pendingCount > 0 && (
+                            <Badge className="absolute -top-2 -right-2 px-1.5 min-w-[1.25rem] h-5 flex items-center justify-center animate-pulse bg-red-600 hover:bg-red-700 text-white border-0 z-10">
+                                {pendingCount}
+                            </Badge>
+                        )}
+                    </Button>
                 </div>
 
                 <div className="flex-grow overflow-y-auto bg-muted/10">
-                    {loading ? (
+                    {selectedCategory === "pending" ? (
+                        <PendingOrdersGrid />
+                    ) : loading ? (
                         <div className="flex items-center justify-center h-40">
                             <Loader2 className="h-8 w-8 animate-spin" />
                         </div>
