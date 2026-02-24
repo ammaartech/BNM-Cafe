@@ -116,12 +116,25 @@ export function UserPaymentDialog({
         }
     };
 
-    const handleOpenSpecificApp = () => {
+    const handleOpenGPay = () => {
         if (upiIntent) {
-            // Strictly adhering to NPCI standards by ONLY using upi://pay
-            // Using custom schemes like gpay:// or phonepe:// triggers strict merchant validation
-            // and causes bank limit rejections for P2P transfers.
-            window.location.href = upiIntent;
+            const gpayLink = upiIntent.replace('upi://', 'gpay://upi/');
+            window.location.href = gpayLink;
+
+            setTimeout(() => {
+                window.location.href = upiIntent;
+            }, 500);
+        }
+    };
+
+    const handleOpenPhonePe = () => {
+        if (upiIntent) {
+            const phonepeLink = upiIntent.replace('upi://', 'phonepe://');
+            window.location.href = phonepeLink;
+
+            setTimeout(() => {
+                window.location.href = upiIntent;
+            }, 500);
         }
     };
 
@@ -172,17 +185,17 @@ export function UserPaymentDialog({
                                         <Button
                                             variant="outline"
                                             className="h-12 w-full text-sm font-semibold sm:hidden"
-                                            onClick={handleOpenSpecificApp}
+                                            onClick={handleOpenGPay}
                                         >
-                                            <Image src="/google-pay.png" alt="GPay" width={20} height={20} className="mr-2" style={{ objectFit: 'contain' }} />
+                                            <Image src="/google-pay.svg" alt="GPay" width={20} height={20} className="mr-2" style={{ objectFit: 'contain' }} />
                                             Google Pay
                                         </Button>
                                         <Button
                                             variant="outline"
                                             className="h-12 w-full text-sm font-semibold sm:hidden"
-                                            onClick={handleOpenSpecificApp}
+                                            onClick={handleOpenPhonePe}
                                         >
-                                            <Image src="/phonepe.png" alt="PhonePe" width={20} height={20} className="mr-2" style={{ objectFit: 'contain' }} />
+                                            <Image src="/phonepe.svg" alt="PhonePe" width={20} height={20} className="mr-2" style={{ objectFit: 'contain' }} />
                                             PhonePe
                                         </Button>
 
