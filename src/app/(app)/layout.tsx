@@ -11,6 +11,8 @@ import { OrderStatusProvider, useOrderStatus } from "@/context/OrderStatusContex
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 
+import { PlaceHolderImages } from "@/lib/placeholder-images";
+
 function CartSuccessDialog() {
     const { addedItemPopup, setAddedItemPopup } = useCart();
 
@@ -22,6 +24,8 @@ function CartSuccessDialog() {
             return () => clearTimeout(timer);
         }
     }, [addedItemPopup, setAddedItemPopup]);
+
+    const itemImage = addedItemPopup ? PlaceHolderImages.find((img) => img.id === addedItemPopup.image) : null;
 
     return (
         <div className="fixed top-4 left-0 right-0 z-[100] flex justify-center pointer-events-none px-4">
@@ -39,12 +43,14 @@ function CartSuccessDialog() {
                         className="bg-card border shadow-lg rounded-2xl p-3 flex items-center gap-3 w-full max-w-sm pointer-events-auto"
                     >
                         <div className="h-12 w-12 rounded-xl overflow-hidden bg-muted flex-shrink-0 relative">
-                            {addedItemPopup.image ? (
+                            {itemImage ? (
                                 <Image
-                                    src={addedItemPopup.image}
+                                    src={itemImage.imageUrl}
                                     alt={addedItemPopup.name}
                                     fill
+                                    sizes="(max-width: 48px) 100vw, 48px"
                                     className="object-cover"
+                                    data-ai-hint={itemImage.imageHint}
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
