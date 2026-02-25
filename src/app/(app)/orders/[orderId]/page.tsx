@@ -249,7 +249,7 @@ export default function OrderTicketPage() {
   const taxAmount = order.totalAmount - subTotal;
 
   return (
-    <>
+    <div className="pb-24">
       <div className="flex items-center gap-4 mb-8 sticky top-0 bg-background/95 backdrop-blur z-10 py-4 -mx-4 px-4 sm:mx-0 sm:px-0">
         <Button variant="ghost" size="icon" onClick={() => router.push("/orders")} className="shrink-0">
           <ArrowLeft />
@@ -258,6 +258,7 @@ export default function OrderTicketPage() {
       </div>
 
       <Card className="max-w-md mx-auto shadow-lg rounded-2xl">
+        {/* ... Card content remains the same ... */}
         <CardContent className="p-0">
           <div className="text-center p-8 border-b bg-muted/10 rounded-t-2xl">
             <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase mb-1">Order Number</p>
@@ -339,6 +340,6 @@ export default function OrderTicketPage() {
           </Button>
         </CardFooter>
       </Card>
-    </>
+    </div>
   );
 }
