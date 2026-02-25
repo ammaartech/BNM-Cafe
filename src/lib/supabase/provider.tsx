@@ -54,32 +54,36 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    // 🛡️ HOTFIX: Supabase's getSession() can hang indefinitely if Web Locks are
-    // stuck (e.g. tab backgrounded/suspended or multiple tabs racing).
-    // We add a 3-second timeout so the app doesn't stay stuck on the loading screen.
-    const timeoutPromise = new Promise<null>((resolve) => {
-      setTimeout(() => resolve(null), 3000);
-    });
+    // We remove the 3-second timeout hack because it caused forced logouts.
+    // Instead we rely on Supabase's built-in session detection, ensuring the UI unlocks.
+    const initSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-    const sessionPromise = supabase.auth.getSession().catch((err) => {
-      console.error("Supabase getSession error:", err);
-      return null;
-    });
-
-    Promise.race([sessionPromise, timeoutPromise]).then(async (result) => {
-      // result is either { data: { session } } or null (timeout/error)
-      const session = result && 'data' in result ? result.data.session : null;
-      if (session) {
-        await processSession(session);
+        if (error) {
+          console.warn("Supabase getSession error - could be lock contention:", error);
+          // Fallback to getUser if getSession fails due to lock issues
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await processSession({ user } as any); // Partial session just for user
+          }
+        } else if (session) {
+          await processSession(session);
+        }
+      } catch (err) {
+        console.error("Critial session init error:", err);
+      } finally {
+        setIsUserLoading(false);
       }
-      setIsUserLoading(false); // Always unlock the UI eventually
-    });
+    };
+
+    initSession();
 
     // Listen for subsequent auth events like sign-in or sign-out.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // We only re-process on explicit sign-in/out, not on token refreshes.
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        // Process on sign-in, sign-out, or user updates
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
           await processSession(session);
         }
       }

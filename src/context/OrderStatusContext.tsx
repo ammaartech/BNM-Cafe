@@ -1,24 +1,24 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useCallback, useEffect } from 'react';
 import { useSupabase } from '@/lib/supabase/provider';
 import { usePathname } from 'next/navigation';
+import useSWR from 'swr';
 
 interface OrderStatusContextType {
-  hasReadyOrder: boolean;
-  fetchOrdersStatus: (userId: string) => Promise<void>;
+    hasReadyOrder: boolean;
+    fetchOrdersStatus: (userId: string) => Promise<void>;
 }
 
 const OrderStatusContext = createContext<OrderStatusContextType | undefined>(undefined);
 
 export const OrderStatusProvider = ({ children }: { children: ReactNode }) => {
     const { supabase, user, isUserLoading } = useSupabase();
-    const [hasReadyOrder, setHasReadyOrder] = useState(false);
     const pathname = usePathname();
 
-    const fetchOrdersStatus = useCallback(async (userId: string) => {
-        if (!supabase) return;
+    const fetcher = async ([_, userId]: [string, string]) => {
+        if (!supabase) return false;
 
         const { count, error } = await supabase
             .from('orders')
@@ -26,31 +26,29 @@ export const OrderStatusProvider = ({ children }: { children: ReactNode }) => {
             .eq('user_id', userId)
             .eq('status', 'READY')
             .is('pickup_notified_at', null);
-        
-        if (!error) {
-            setHasReadyOrder((count || 0) > 0);
-        }
-    }, [supabase]);
 
-    useEffect(() => {
-        if (!isUserLoading && user) {
-            fetchOrdersStatus(user.id);
-        } else if (!isUserLoading && !user) {
-            setHasReadyOrder(false);
+        return !error ? (count || 0) > 0 : false;
+    };
+
+    const { data: hasReadyOrder, mutate } = useSWR(
+        user && !isUserLoading ? ['order-status', user.id] : null,
+        fetcher,
+        {
+            revalidateOnFocus: true
         }
-    }, [user, isUserLoading, fetchOrdersStatus, pathname]);
-    
+    );
+
     const handleRealtimeUpdate = useCallback((payload: any) => {
         if (user && payload.new.user_id === user.id) {
             if (payload.new.status === 'READY' && payload.new.pickup_notified_at === null) {
-                setHasReadyOrder(true);
+                mutate(true, false);
             } else {
                 // Re-fetch to get the accurate count for all states, especially after pickup or cancellation
-                fetchOrdersStatus(user.id);
+                mutate();
             }
         }
-    }, [user, fetchOrdersStatus]);
-    
+    }, [user, mutate]);
+
     useEffect(() => {
         if (!supabase) return;
 
@@ -69,14 +67,20 @@ export const OrderStatusProvider = ({ children }: { children: ReactNode }) => {
     }, [supabase, handleRealtimeUpdate]);
 
 
+    const fetchOrdersStatus = useCallback(async (userId: string) => {
+        if (user && user.id === userId) {
+            await mutate();
+        }
+    }, [user, mutate]);
+
     const value = {
-        hasReadyOrder,
+        hasReadyOrder: hasReadyOrder || false,
         fetchOrdersStatus,
     };
 
     return (
         <OrderStatusContext.Provider value={value}>
-          {children}
+            {children}
         </OrderStatusContext.Provider>
     );
 };

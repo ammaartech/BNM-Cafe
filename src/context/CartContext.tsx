@@ -14,6 +14,7 @@ import React, {
 } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
 
 
 /* ---------------- TYPES ---------------- */
@@ -104,69 +105,74 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   /* -------- FETCH CART -------- */
 
-  const fetchCart = useCallback(
-    async (userId: string) => {
-      if (!supabase) return;
+  const fetcher = async ([_, userId]: [string, string]): Promise<CartItem[] | null> => {
+    if (!supabase) return null;
 
-      const { data: cartRows, error } = await supabase
-        .from("user_cart_items")
-        .select("menu_item_uuid, quantity")
-        .eq("user_id", userId);
+    const { data: cartRows, error } = await supabase
+      .from("user_cart_items")
+      .select("menu_item_uuid, quantity")
+      .eq("user_id", userId);
 
-      if (error) {
-        toast({ title: "Failed to load cart", variant: "destructive" });
-        dispatch({ type: "SET_CART", payload: [] });
-        return;
-      }
+    if (error) {
+      toast({ title: "Failed to load cart", variant: "destructive" });
+      return [];
+    }
 
-      if (!cartRows || cartRows.length === 0) {
-        dispatch({ type: "SET_CART", payload: [] });
-        return;
-      }
+    if (!cartRows || cartRows.length === 0) {
+      return [];
+    }
 
-      const uuids = cartRows.map(r => r.menu_item_uuid);
+    const uuids = cartRows.map(r => r.menu_item_uuid);
 
-      const { data: menuItems, error: miError } = await supabase
-        .from("menu_items")
-        .select("*")
-        .in("uuid", uuids);
+    const { data: menuItems, error: miError } = await supabase
+      .from("menu_items")
+      .select("*")
+      .in("uuid", uuids);
 
-      if (miError || !menuItems) {
-        toast({ title: "Failed to load menu items", variant: "destructive" });
-        return;
-      }
+    if (miError || !menuItems) {
+      toast({ title: "Failed to load menu items", variant: "destructive" });
+      return null;
+    }
 
-      const items: CartItem[] = cartRows
-        .map(row => {
-          const mi = menuItems.find(m => m.uuid === row.menu_item_uuid);
-          if (!mi) return null;
+    return cartRows
+      .map(row => {
+        const mi = menuItems.find(m => m.uuid === row.menu_item_uuid);
+        if (!mi) return null;
 
-          return {
-            id: mi.id,
-            uuid: mi.uuid, // 🔥 THIS IS CRITICAL
-            name: mi.name,
-            price: mi.price,
-            stock: mi.stock,
-            image: mi.image,
-            quantity: row.quantity,
-            description: mi.description,
-            category: mi.category,
-          };
-        })
-        .filter(Boolean) as CartItem[];
+        return {
+          id: mi.id,
+          uuid: mi.uuid,
+          name: mi.name,
+          price: mi.price,
+          stock: mi.stock,
+          image: mi.image,
+          quantity: row.quantity,
+          description: mi.description,
+          category: mi.category,
+        };
+      })
+      .filter(Boolean) as CartItem[];
+  };
 
-      dispatch({ type: "SET_CART", payload: items });
-    },
-    [supabase, toast]
+  const { data: cartItems, mutate } = useSWR(
+    user && !isUserLoading ? ['cart', user.id] : null,
+    fetcher,
+    { revalidateOnFocus: true }
   );
 
+  const fetchCart = useCallback(async (userId: string) => {
+    if (user && user.id === userId) {
+      await mutate();
+    }
+  }, [user, mutate]);
+
   useEffect(() => {
-    if (!isUserLoading && user) {
-      fetchCart(user.id);
+    if (cartItems) {
+      dispatch({ type: "SET_CART", payload: cartItems });
     } else if (!isUserLoading && !user) {
       dispatch({ type: 'CLEAR_CART' });
     }
-  }, [user, isUserLoading, fetchCart]);
+  }, [cartItems, user, isUserLoading]);
 
 
   /* -------- CART ACTIONS -------- */
