@@ -88,34 +88,34 @@ export default function CheckoutPage() {
         setPaymentMethod("RAZORPAY");
 
         try {
-            // 1. Create order on our backend
+            // 1. Create order in our backend with PENDING status.
+            // TRUE flag prevents navigation so we can handle Razorpay flow here.
+            const orderId = await placeOrder('PENDING', true);
+
+            if (!orderId) {
+                throw new Error("Could not create order");
+            }
+
+            // 2. Create Razorpay order linking to our internal order
             const res = await fetch("/api/razorpay", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ amount: finalTotal }),
+                body: JSON.stringify({ amount: finalTotal, receipt: orderId }),
             });
             const data = await res.json();
 
             if (!res.ok) throw new Error(data.error || "Failed to create order");
 
-            // 2. Open Razorpay checkout modal
+            // 3. Open Razorpay checkout modal using callback_url instead of JS handler
             const options = {
-                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Enter the Key ID generated from the Dashboard
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                 amount: data.order.amount,
                 currency: "INR",
                 name: "BNM Cafe",
                 description: "Order Payment",
                 order_id: data.order.id,
-                handler: async function (response: any) {
-                    // 3. On successful payment, place order in Supabase
-                    try {
-                        await placeOrder('PAID');
-                    } catch (err: any) {
-                        toast({ title: "Order Placement Failed", description: err.message, variant: "destructive" });
-                        setIsPlacingOrder(false);
-                        setPaymentMethod(null);
-                    }
-                },
+                callback_url: `${window.location.origin}/api/razorpay/verify`,
+                redirect: true,
                 prefill: {
                     name: userProfile?.name || user?.email || "Guest",
                     email: user?.email || "",
@@ -134,6 +134,9 @@ export default function CheckoutPage() {
                     description: response.error.description,
                     variant: "destructive",
                 });
+                // If they fail, they are stuck on checkout with empty cart.
+                // Redirect them to their pending order so they can review or pay.
+                router.push(`/orders/${orderId}`);
             });
             rzp.open();
         } catch (error: any) {

@@ -35,7 +35,7 @@ interface CartContextType {
   dispatch: React.Dispatch<CartAction>;
   totalItems: number;
   totalPrice: number;
-  placeOrder: (paymentStatus?: string) => Promise<void>;
+  placeOrder: (paymentStatus?: string, isRazorpayCheckout?: boolean) => Promise<string | undefined>;
   fetchCart: (userId: string) => Promise<void>;
   updatingItemId: string | null;
   addItem: (item: MenuItem, quantity?: number) => Promise<void>;
@@ -277,7 +277,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   /* -------- PLACE ORDER -------- */
 
-  const placeOrder = useCallback(async (paymentStatus?: string) => {
+  const placeOrder = useCallback(async (paymentStatus?: string, isRazorpayCheckout: boolean = false) => {
     if (!supabase || !user || isUserLoading) return;
 
     const orderItemsParam = state.items.map(item => ({
@@ -331,7 +331,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
 
       dispatch({ type: "CLEAR_CART" });
-      router.push(`/orders/${data.order_id}`);
+      if (!isRazorpayCheckout) {
+        router.push(`/orders/${data.order_id}`);
+      }
+      return data.order_id;
     } catch (err: any) {
       toast({
         title: "Order Failed",

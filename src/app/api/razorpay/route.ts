@@ -8,7 +8,7 @@ const razorpay = new Razorpay({
 
 export async function POST(req: Request) {
     try {
-        const { amount } = await req.json();
+        const { amount, receipt } = await req.json();
 
         if (!amount) {
             return NextResponse.json({ error: "Amount is required" }, { status: 400 });
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
         const options = {
             amount: Math.round(amount * 100),
             currency: "INR",
-            receipt: `receipt_${Date.now()}`,
+            receipt: receipt || `receipt_${Date.now()}`,
         };
 
         const order = await razorpay.orders.create(options);
