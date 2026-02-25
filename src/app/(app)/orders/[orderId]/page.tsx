@@ -71,7 +71,7 @@ const stationStatusDisplayMap: Record<
   READY: {
     label: "Ready for Pickup",
     icon: <CookingPot className="h-4 w-4" />,
-    className: "bg-yellow-400/10 text-yellow-700 border-yellow-400/20",
+    className: "bg-yellow-400 text-yellow-900 border-yellow-500 animate-pulse font-bold shadow-sm",
   },
   PICKED_UP: {
     label: "Picked Up",
@@ -189,7 +189,7 @@ export default function OrderTicketPage() {
       const readyGroup = groupedItemsByStation.find(g => g.stationId === currentStation.station_id);
 
       if (prevStation?.status === "PENDING" && currentStation.status === "READY" && readyGroup) {
-        audioRef.current?.play().catch(() => {});
+        audioRef.current?.play().catch(() => { });
         toast({
           title: "👍 Items Ready for Pickup!",
           description: `Items from ${readyGroup.stationName} are now ready.`,
@@ -212,23 +212,23 @@ export default function OrderTicketPage() {
     const orderChannel: RealtimeChannel = supabase
       .channel(`order-${orderId}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` }, () => {
-          fetchOrder(); // Re-fetch all order data on update
+        fetchOrder(); // Re-fetch all order data on update
       })
       .subscribe();
 
     const stationChannel: RealtimeChannel = supabase
       .channel(`order-stations-${orderId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "order_stations", filter: `order_id=eq.${orderId}` }, 
-      (payload: RealtimePostgresChangesPayload<OrderStation>) => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "order_stations", filter: `order_id=eq.${orderId}` },
+        (payload: RealtimePostgresChangesPayload<OrderStation>) => {
           const updated = payload.new as OrderStation;
           setStationStatuses((prev) => {
-              const idx = prev.findIndex((s) => s.id === updated.id);
-              if (idx === -1) return [...prev, updated]; 
-              const copy = [...prev];
-              copy[idx] = updated;
-              return copy;
+            const idx = prev.findIndex((s) => s.id === updated.id);
+            if (idx === -1) return [...prev, updated];
+            const copy = [...prev];
+            copy[idx] = updated;
+            return copy;
           });
-      })
+        })
       .subscribe();
 
     return () => {
@@ -250,26 +250,26 @@ export default function OrderTicketPage() {
 
   return (
     <>
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/orders")}>
+      <div className="flex items-center gap-4 mb-8 sticky top-0 bg-background/95 backdrop-blur z-10 py-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <Button variant="ghost" size="icon" onClick={() => router.push("/orders")} className="shrink-0">
           <ArrowLeft />
         </Button>
-        <h1 className="text-2xl font-bold">Your Order</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">Your Order</h1>
       </div>
 
       <Card className="max-w-md mx-auto shadow-lg rounded-2xl">
         <CardContent className="p-0">
-          <div className="text-center p-8 border-b">
-            <p className="text-sm text-muted-foreground">Order Number</p>
-            <h2 className="text-6xl font-bold text-primary">{order.display_order_id}</h2>
-            <p className="font-medium mt-2">{order.userName}</p>
-            <p className="text-sm text-muted-foreground">{format(new Date(order.orderDate), "MMM dd, yyyy 'at' h:mm a")}</p>
+          <div className="text-center p-8 border-b bg-muted/10 rounded-t-2xl">
+            <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase mb-1">Order Number</p>
+            <h2 className="text-7xl font-extrabold tracking-tighter text-primary">{order.display_order_id}</h2>
+            <p className="font-semibold text-lg mt-3">{order.userName}</p>
+            <p className="text-sm text-muted-foreground mt-1">{format(new Date(order.orderDate), "MMM dd, yyyy 'at' h:mm a")}</p>
           </div>
 
           {order.status === 'DELIVERED' && (
-            <div className="flex items-center justify-center gap-3 p-4 text-lg font-bold bg-green-600 text-primary-foreground">
-                <CheckCircle2 className="h-5 w-5" />
-                <span>Delivered</span>
+            <div className="flex items-center justify-center gap-3 p-4 text-lg font-bold bg-green-600 text-primary-foreground shadow-inner">
+              <CheckCircle2 className="h-5 w-5" />
+              <span>Delivered</span>
             </div>
           )}
 
@@ -280,57 +280,60 @@ export default function OrderTicketPage() {
             </div>
           ) : (
             <div className="p-6 space-y-4">
-                <h3 className="flex items-center gap-2 font-semibold text-base">
-                    <ShoppingBag className="h-5 w-5" /> Item Status
-                </h3>
-                <div className="space-y-6">
-                    {groupedItemsByStation.map((group) => (
-                        <div key={group.stationId}>
-                             <div className="flex justify-between items-center mb-3">
-                                <p className="font-semibold text-muted-foreground">{group.stationName}</p>
-                                <Badge variant="outline" className={cn("gap-2 font-semibold", stationStatusDisplayMap[group.status].className)}>
-                                    {stationStatusDisplayMap[group.status].icon}
-                                    {stationStatusDisplayMap[group.status].label}
-                                </Badge>
-                            </div>
-                            <ul className="space-y-2 border-l-2 ml-1 pl-4 py-1">
-                                {group.items.map((item) => (
-                                    <li key={item.uuid} className="flex justify-between">
-                                        <span>{item.quantity} &times; {item.name}</span>
-                                        <span className="font-medium">₹{(item.quantity * item.price).toFixed(2)}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
-                </div>
+              <h3 className="flex items-center gap-2 font-semibold text-base">
+                <ShoppingBag className="h-5 w-5" /> Item Status
+              </h3>
+              <div className="space-y-6">
+                {groupedItemsByStation.map((group) => (
+                  <div key={group.stationId}>
+                    <div className="flex justify-between items-start sm:items-center gap-4 mb-4">
+                      <p className="font-bold text-lg leading-tight">{group.stationName}</p>
+                      <Badge variant="outline" className={cn("gap-1.5 font-semibold px-2.5 py-0.5 text-sm shrink-0", stationStatusDisplayMap[group.status].className)}>
+                        {stationStatusDisplayMap[group.status].icon}
+                        {stationStatusDisplayMap[group.status].label}
+                      </Badge>
+                    </div>
+                    <ul className="space-y-3 mt-4">
+                      {group.items.map((item) => (
+                        <li key={item.uuid} className="flex justify-between items-center bg-muted/20 p-4 rounded-xl border">
+                          <span className="font-medium flex items-center gap-3">
+                            <Badge variant="secondary" className="px-2 py-1 text-sm bg-background border">{item.quantity} &times;</Badge>
+                            <span className="text-base">{item.name}</span>
+                          </span>
+                          <span className="font-semibold text-base">₹{(item.quantity * item.price).toFixed(2)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           <Separator />
-           <div className="p-6 space-y-2">
-              <div className="flex justify-between text-muted-foreground text-sm">
-                  <span>Subtotal</span>
-                  <span>₹{subTotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-muted-foreground text-sm">
-                  <span>Taxes (GST 5%)</span>
-                  <span>₹{taxAmount.toFixed(2)}</span>
-              </div>
-              <Separator className="my-2"/>
-              <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span>₹{order.totalAmount.toFixed(2)}</span>
-              </div>
+          <div className="p-8 space-y-3 bg-muted/5 rounded-b-2xl">
+            <div className="flex justify-between text-muted-foreground text-base">
+              <span>Subtotal</span>
+              <span className="font-medium">₹{subTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground text-sm">
+              <span>Taxes (GST 5%)</span>
+              <span>₹{taxAmount.toFixed(2)}</span>
+            </div>
+            <Separator className="my-3" />
+            <div className="flex justify-between font-extrabold text-2xl">
+              <span>Total</span>
+              <span className="text-primary">₹{order.totalAmount.toFixed(2)}</span>
+            </div>
           </div>
         </CardContent>
 
         <CardFooter className="border-t">
           <Button variant="ghost" className="w-full" onClick={async () => {
-              setIsManualFetching(true);
-              await Promise.all([fetchOrder(), fetchStationStatuses()]);
-              setIsManualFetching(false);
-            }} disabled={isManualFetching}>
+            setIsManualFetching(true);
+            await Promise.all([fetchOrder(), fetchStationStatuses()]);
+            setIsManualFetching(false);
+          }} disabled={isManualFetching}>
             {isManualFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             <span className="ml-2">Check for updates</span>
           </Button>
