@@ -58,16 +58,33 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     // Instead we rely on Supabase's built-in session detection, ensuring the UI unlocks.
     const initSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Race getSession against a 2-second timeout to prevent indefinite hanging
+        // caused by background tab lock contention in Supabase
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: null }, error: Error }>((_, reject) =>
+          setTimeout(() => reject(new Error('getSession lock timeout')), 2000)
+        );
 
-        if (error) {
-          console.warn("Supabase getSession error - could be lock contention:", error);
-          // Fallback to getUser if getSession fails due to lock issues
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]).catch(err => ({ data: { session: null }, error: err }));
+
+        if (error || !session) {
+          if (error) console.warn("Supabase getSession timeout/error, failing over to getUser:", error.message);
+
+          // Fallback to getUser which bypasses the local storage refresh lock
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+          if (user && !userError) {
+            console.log("Successfully recovered session via getUser fallback");
             await processSession({ user } as any); // Partial session just for user
+          } else {
+            // Truly no session/user exists
+            await processSession(null);
           }
-        } else if (session) {
+        } else {
+          // getSession succeeded
           await processSession(session);
         }
       } catch (err) {
