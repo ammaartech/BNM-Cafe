@@ -36,19 +36,19 @@ function AuthForm() {
 
   useEffect(() => {
     if (showVerificationDialog) {
-        const timer = setTimeout(() => {
-            setShowVerificationDialog(false);
-        }, 3000);
-        return () => clearTimeout(timer);
+      const timer = setTimeout(() => {
+        setShowVerificationDialog(false);
+      }, 3000);
+      return () => clearTimeout(timer);
     }
   }, [showVerificationDialog]);
 
 
   if (isUserLoading || (user && !user.is_anonymous)) {
     return (
-        <div className="flex h-dvh w-full items-center justify-center bg-background">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </div>
+      <div className="flex h-dvh w-full items-center justify-center bg-background">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
     );
   }
 
@@ -82,49 +82,57 @@ function AuthForm() {
     if (error) {
       setError(error.message);
     } else if (data.user) {
-        // Also create a profile in the 'users' table
-        const { error: profileError } = await supabase.from('users').insert({
-            id: data.user.id,
-            name: name,
-            email: email,
-            role: 'customer',
-        });
+      // If identities array is empty, this means the user already exists.
+      // Supabase returns a fake user object for security reasons (to avoid enumeration attacks).
+      if (data.user.identities && data.user.identities.length === 0) {
+        setError('An account with this email already exists. Please log in.');
+        setIsLoading(false);
+        return;
+      }
 
-        if (profileError) {
-            setError(profileError.message);
-        } else {
-            setShowVerificationDialog(true);
-            setName('');
-            setEmail('');
-            setPassword('');
-            setActiveTab('login');
-        }
+      // Also create a profile in the 'users' table
+      const { error: profileError } = await supabase.from('users').insert({
+        id: data.user.id,
+        name: name,
+        email: email,
+        role: 'customer',
+      });
+
+      if (profileError) {
+        setError(profileError.message);
+      } else {
+        setShowVerificationDialog(true);
+        setName('');
+        setEmail('');
+        setPassword('');
+        setActiveTab('login');
+      }
     }
     setIsLoading(false);
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
-       <Dialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
-            <DialogContent className="max-w-xs rounded-2xl p-0">
-                <DialogHeader className="flex flex-col items-center justify-center text-center p-8">
-                <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-                <DialogTitle className="text-xl font-semibold">Verification Email Sent</DialogTitle>
-                <DialogDescription className="text-muted-foreground">
-                    Please check your email (and spam folder) to verify your account.
-                </DialogDescription>
-                </DialogHeader>
-            </DialogContent>
-        </Dialog>
+      <Dialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
+        <DialogContent className="max-w-xs rounded-2xl p-0">
+          <DialogHeader className="flex flex-col items-center justify-center text-center p-8">
+            <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+            <DialogTitle className="text-xl font-semibold">Verification Email Sent</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Please check your email (and spam folder) to verify your account.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
 
       <div className="w-full max-w-md">
         <div className="text-center mb-6 flex flex-col items-center">
-            <Image src="/bnmlogoB.png" alt="B.N.M Cafe Logo" width={150} height={150} priority className="mb-4" />
-            <div className="h-5 w-fit mx-auto mt-2">
-              <div className="typewriter-container">
-                <p className="typewriter-text text-muted-foreground">Your campus cafe companion.</p>
-              </div>
+          <Image src="/bnmlogoB.png" alt="B.N.M Cafe Logo" width={150} height={150} priority className="mb-4" />
+          <div className="h-5 w-fit mx-auto mt-2">
+            <div className="typewriter-container">
+              <p className="typewriter-text text-muted-foreground">Your campus cafe companion.</p>
             </div>
+          </div>
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -139,32 +147,32 @@ function AuthForm() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleLogin} className="space-y-4">
-                   <Input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="h-12"
-                    />
-                    <Input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="h-12"
-                    />
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-12"
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-12"
+                  />
                   {error && activeTab === 'login' && (
-                     <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Login Failed</AlertTitle>
-                        <AlertDescription>{error}</AlertDescription>
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Login Failed</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
                   <Button type="submit" className="w-full h-12 text-base" disabled={isLoading}>
                     {isLoading ? 'Signing In...' : 'Sign In'}
-                     <LogIn className="ml-2 h-4 w-4" />
+                    <LogIn className="ml-2 h-4 w-4" />
                   </Button>
                 </form>
               </CardContent>
@@ -178,41 +186,41 @@ function AuthForm() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSignUp} className="space-y-4">
-                    <Input
-                        type="text"
-                        placeholder="Name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        className="h-12"
-                    />
-                    <Input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="h-12"
-                    />
-                    <Input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="h-12"
-                    />
-                    {error && activeTab === 'signup' && (
-                        <Alert variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Sign Up Failed</AlertTitle>
-                            <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                    )}
-                    <Button type="submit" className="w-full h-12 text-base" disabled={isLoading}>
-                        {isLoading ? 'Creating Account...' : 'Sign Up'}
-                         <UserPlus className="ml-2 h-4 w-4" />
-                    </Button>
+                  <Input
+                    type="text"
+                    placeholder="Name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="h-12"
+                  />
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-12"
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-12"
+                  />
+                  {error && activeTab === 'signup' && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Sign Up Failed</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Button type="submit" className="w-full h-12 text-base" disabled={isLoading}>
+                    {isLoading ? 'Creating Account...' : 'Sign Up'}
+                    <UserPlus className="ml-2 h-4 w-4" />
+                  </Button>
                 </form>
               </CardContent>
             </Card>
@@ -224,5 +232,5 @@ function AuthForm() {
 }
 
 export default function LoginPage() {
-    return <AuthForm />;
+  return <AuthForm />;
 }
