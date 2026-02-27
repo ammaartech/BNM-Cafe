@@ -22,7 +22,9 @@ const formSchema = z.object({
     body: z.string().min(5, { message: "Feedback must be at least 5 characters long" }),
 });
 
-export default function FeedbackPage() {
+import { Suspense } from "react";
+
+function FeedbackFormContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const orderId = searchParams.get("orderId");
@@ -241,5 +243,17 @@ export default function FeedbackPage() {
                 </motion.div>
             </div>
         </div>
+    );
+}
+
+export default function FeedbackPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex min-h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        }>
+            <FeedbackFormContent />
+        </Suspense>
     );
 }
