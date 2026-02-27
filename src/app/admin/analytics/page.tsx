@@ -42,7 +42,7 @@ interface RawOrder {
     payment_method: string | null;
     user_id: string;
     user_name: string;
-    order_items: (OrderItem & { menu_items?: { station_id: string } })[];
+    order_items: (OrderItem & { menu_items?: { station_id?: string; category?: string } })[];
 }
 
 interface AnalyticsData {
@@ -53,6 +53,11 @@ interface AnalyticsData {
     salesOverTime: { date: string; revenue: number; sales: number }[];
     topProducts: (OrderItem & { revenue: number, unitsSold: number })[];
     paymentDistribution: { name: string; value: number }[];
+    uniqueCustomers: number;
+    newCustomers: number;
+    returningCustomers: number;
+    categorySales: { name: string; value: number }[];
+    peakHours: { hour: string; orders: number }[];
     recentOrders: RawOrder[];
 }
 
@@ -121,7 +126,7 @@ function AdminAnalyticsPage() {
             // Fetching all non-cancelled orders
             const { data: ordersData, error: ordersError } = await supabase
                 .from("orders")
-                .select("*, order_items(*, menu_items(station_id))")
+                .select("*, order_items(*, menu_items(station_id, category))")
                 .neq('status', 'CANCELLED')
                 .order('order_date', { ascending: false });
 
@@ -183,7 +188,9 @@ function AdminAnalyticsPage() {
         const productSales = new Map<string, { name: string; unitsSold: number; revenue: number; id: string }>();
         filteredOrders.forEach(order => {
             (order.order_items || []).forEach(item => {
-                const existing = productSales.get(item.menu_item_id || item.id);
+                // IMPORTANT: use menu_item_uuid, menu_item_id, or simply name as fallback
+                const aggregationKey = (item as any).menu_item_uuid || item.menu_item_id || item.name;
+                const existing = productSales.get(aggregationKey);
                 const itemRevenue = (item.price || 0) * (item.quantity || 0);
                 const itemQuantity = item.quantity || 0;
 
@@ -194,8 +201,8 @@ function AdminAnalyticsPage() {
                     existing.unitsSold += itemQuantity;
                     existing.revenue += itemRevenue;
                 } else {
-                    productSales.set(item.menu_item_id || item.id, {
-                        id: item.menu_item_id || item.id,
+                    productSales.set(aggregationKey, {
+                        id: aggregationKey,
                         name: item.name,
                         unitsSold: itemQuantity,
                         revenue: itemRevenue,
@@ -258,6 +265,47 @@ function AdminAnalyticsPage() {
             { name: 'Unknown/Legacy', value: unknownCount }
         ].filter(d => d.value > 0);
 
+        // Customer insights
+        const userFirstOrderDate = new Map<string, Date>();
+        allOrders.forEach(o => {
+            if (!o.user_id) return;
+            const d = new Date(o.order_date);
+            if (!userFirstOrderDate.has(o.user_id) || d < userFirstOrderDate.get(o.user_id)!) {
+                userFirstOrderDate.set(o.user_id, d);
+            }
+        });
+
+        let newCustomers = 0;
+        let returningCustomers = 0;
+        const uniqueUsersInPeriod = new Set(filteredOrders.filter(o => o.user_id).map(o => o.user_id));
+        uniqueUsersInPeriod.forEach(userId => {
+            const firstDate = userFirstOrderDate.get(userId);
+            if (firstDate && firstDate >= startDate) newCustomers++;
+            else returningCustomers++;
+        });
+
+        // Category breakdown
+        const categoryCount = new Map<string, number>();
+        filteredOrders.forEach(order => {
+            (order.order_items || []).forEach(item => {
+                const cat = (item as any).menu_items?.category || 'uncategorized';
+                categoryCount.set(cat, (categoryCount.get(cat) || 0) + (item.quantity || 0));
+            });
+        });
+        const categorySales = Array.from(categoryCount.entries())
+            .map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1).replace('-', ' '), value }))
+            .sort((a, b) => b.value - a.value);
+
+        // Peak Hours
+        const hourlyCount = new Map<string, number>();
+        filteredOrders.forEach(order => {
+            const hour = format(new Date(order.order_date), 'HH:00');
+            hourlyCount.set(hour, (hourlyCount.get(hour) || 0) + 1);
+        });
+        const peakHours = Array.from(hourlyCount.entries())
+            .map(([hour, orders]) => ({ hour, orders }))
+            .sort((a, b) => a.hour.localeCompare(b.hour));
+
         return {
             totalRevenue,
             totalOrders,
@@ -266,6 +314,11 @@ function AdminAnalyticsPage() {
             salesOverTime,
             topProducts,
             paymentDistribution: paymentDist,
+            uniqueCustomers: uniqueUsersInPeriod.size,
+            newCustomers,
+            returningCustomers,
+            categorySales,
+            peakHours,
             recentOrders: filteredOrders.slice(0, 10) // Last 10
         };
 
@@ -396,6 +449,87 @@ function AdminAnalyticsPage() {
                                     </ResponsiveContainer>
                                 ) : (
                                     <div className="flex h-full items-center justify-center text-muted-foreground">No payment data</div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Advanced Demographics & Insights */}
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <Card className="shadow-sm flex flex-col">
+                            <CardHeader>
+                                <CardTitle>Customer Retention</CardTitle>
+                                <CardDescription>New vs Returning Customers</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-1 pb-0 flex items-center justify-center">
+                                {dashboardData.newCustomers > 0 || dashboardData.returningCustomers > 0 ? (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <PieChart>
+                                            <Pie
+                                                data={[
+                                                    { name: 'New Customers', value: dashboardData.newCustomers },
+                                                    { name: 'Returning', value: dashboardData.returningCustomers }
+                                                ]}
+                                                cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="value" stroke="none"
+                                            >
+                                                <Cell fill="hsl(var(--primary))" />
+                                                <Cell fill="hsl(var(--accent))" />
+                                            </Pie>
+                                            <Tooltip formatter={(value, name) => [`${value} Users`, name]} />
+                                            <Legend verticalAlign="bottom" height={36} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-muted-foreground">No data</div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm flex flex-col">
+                            <CardHeader>
+                                <CardTitle>Category Trends</CardTitle>
+                                <CardDescription>Popularity by category (Volume)</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-1 pb-0 flex items-center justify-center">
+                                {dashboardData.categorySales.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <PieChart>
+                                            <Pie
+                                                data={dashboardData.categorySales}
+                                                cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="value" stroke="none"
+                                            >
+                                                {dashboardData.categorySales.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip formatter={(value, name) => [`${value} items`, name]} />
+                                            <Legend verticalAlign="bottom" height={36} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-muted-foreground">No data</div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm flex flex-col">
+                            <CardHeader>
+                                <CardTitle>Peak Business Hours</CardTitle>
+                                <CardDescription>Orders placed by time of day</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-1 pb-0 flex items-center justify-center">
+                                {dashboardData.peakHours.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <RechartsBarChart data={dashboardData.peakHours} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                                            <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                                            <XAxis dataKey="hour" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+                                            <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                                            <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px' }} />
+                                            <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                        </RechartsBarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-muted-foreground">No data</div>
                                 )}
                             </CardContent>
                         </Card>

@@ -92,6 +92,43 @@ function cartReducer(state: CartState, action: CartAction): CartState {
   }
 }
 
+/* ---------------- HELPER ---------------- */
+
+const playAddToCartSound = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const audioCtx = new AudioContext();
+
+    // Helper to play a single note
+    const playNote = (freq: number, startTime: number, duration: number) => {
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+
+      gainNode.gain.setValueAtTime(0, startTime);
+      // Fast attack
+      gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.02);
+      // Smooth release
+      gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+
+    // Play a nice two-tone chime (E6 to A6 - perfect fourth interval up)
+    playNote(1318.51, audioCtx.currentTime, 0.15);       // E6
+    playNote(1760.00, audioCtx.currentTime + 0.1, 0.3);  // A6
+  } catch (e) {
+    console.error("Audio playback error:", e);
+  }
+};
+
 /* ---------------- PROVIDER ---------------- */
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -258,6 +295,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const newCartItem: CartItem = { ...item, quantity: quantity };
         dispatch({ type: "ADD_ITEM", payload: newCartItem });
         setAddedItemPopup(item);
+        playAddToCartSound();
       }
     } catch (err: any) {
       toast({ title: "Failed to add item", description: err.message, variant: "destructive" });
