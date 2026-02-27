@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useOrderStatus } from "@/context/OrderStatusContext";
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { format } from "date-fns";
-import { motion } from "framer-motion";
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -34,7 +33,6 @@ import {
   Clock,
   CookingPot,
   XCircle,
-  MessageSquare,
 } from "lucide-react";
 
 /* ---------------- TYPES ---------------- */
@@ -73,51 +71,13 @@ const stationStatusDisplayMap: Record<
   READY: {
     label: "Ready for Pickup",
     icon: <CookingPot className="h-4 w-4" />,
-    className: "bg-amber-100 text-amber-800 border-amber-200 font-semibold",
+    className: "bg-yellow-400 text-yellow-900 border-yellow-500 animate-pulse font-bold shadow-sm",
   },
   PICKED_UP: {
     label: "Picked Up",
     icon: <CheckCircle2 className="h-4 w-4" />,
-    className: "bg-green-100/60 text-green-700 border-green-200/60 font-medium",
+    className: "bg-green-500/10 text-green-700 border-green-500/20",
   },
-};
-
-/* ---------------- Slot Machine Char ---------------- */
-const SlotChar = ({ char, index }: { char: string; index: number }) => {
-  const isNumber = /[0-9]/.test(char);
-  if (!isNumber) {
-    return <span className="inline-block">{char}</span>;
-  }
-
-  // Base array of numbers for spinning
-  const baseSequence = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-  // Repeat sequence so it spins for a bit before stopping. Later digits spin longer.
-  const repeats = 2 + index;
-  let sequence: number[] = [];
-  for (let i = 0; i < repeats; i++) {
-    sequence = [...sequence, ...baseSequence];
-  }
-  sequence.push(Number(char));
-
-  return (
-    <span className="inline-flex h-[1em] overflow-hidden align-bottom">
-      <motion.span
-        initial={{ y: 0 }}
-        animate={{ y: `-${(sequence.length - 1) * 100}%` }}
-        transition={{
-          duration: 1.5 + index * 0.2, // staggered stop
-          ease: [0.16, 1, 0.3, 1], // sweet deceleration curve
-        }}
-        className="flex flex-col leading-none items-center"
-      >
-        {sequence.map((num, i) => (
-          <span key={i} className="h-[1em] flex items-center justify-center">
-            {num}
-          </span>
-        ))}
-      </motion.span>
-    </span>
-  );
 };
 
 /* ---------------- PAGE ---------------- */
@@ -300,14 +260,10 @@ export default function OrderTicketPage() {
       <Card className="max-w-md mx-auto shadow-lg rounded-2xl">
         {/* ... Card content remains the same ... */}
         <CardContent className="p-0">
-          <div className="text-center p-8 border-b border-muted/60 rounded-t-2xl">
-            <p className="text-sm font-semibold tracking-wider text-muted-foreground uppercase mb-2">Order Number</p>
-            <h2 className="text-7xl font-extrabold tracking-tighter text-[#154b23] flex justify-center">
-              {order.display_order_id?.split("").map((char, i) => (
-                <SlotChar key={i} char={char} index={i} />
-              ))}
-            </h2>
-            <p className="font-bold text-lg mt-4 text-foreground">{order.userName}</p>
+          <div className="text-center p-8 border-b bg-muted/10 rounded-t-2xl">
+            <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase mb-1">Order Number</p>
+            <h2 className="text-7xl font-extrabold tracking-tighter text-primary">{order.display_order_id}</h2>
+            <p className="font-semibold text-lg mt-3">{order.userName}</p>
             <p className="text-sm text-muted-foreground mt-1">{format(new Date(order.orderDate), "MMM dd, yyyy 'at' h:mm a")}</p>
           </div>
 
@@ -340,12 +296,12 @@ export default function OrderTicketPage() {
                     </div>
                     <ul className="space-y-3 mt-4">
                       {group.items.map((item) => (
-                        <li key={item.uuid} className="flex justify-between items-center py-2 pl-4 ml-1 border-l-2 border-muted">
-                          <span className="flex items-center gap-3">
-                            <span className="text-sm text-muted-foreground whitespace-nowrap">{item.quantity} &times;</span>
-                            <span className="text-base text-foreground font-medium">{item.name}</span>
+                        <li key={item.uuid} className="flex justify-between items-center bg-muted/20 p-4 rounded-xl border">
+                          <span className="font-medium flex items-center gap-3">
+                            <Badge variant="secondary" className="px-2 py-1 text-sm bg-background border">{item.quantity} &times;</Badge>
+                            <span className="text-base">{item.name}</span>
                           </span>
-                          <span className="text-base font-semibold">₹{(item.quantity * item.price).toFixed(2)}</span>
+                          <span className="font-semibold text-base">₹{(item.quantity * item.price).toFixed(2)}</span>
                         </li>
                       ))}
                     </ul>
@@ -356,32 +312,25 @@ export default function OrderTicketPage() {
           )}
 
           <Separator />
-          <div className="p-8 space-y-3 rounded-b-2xl">
-            <div className="flex justify-between text-muted-foreground text-sm font-medium">
+          <div className="p-8 space-y-3 bg-muted/5 rounded-b-2xl">
+            <div className="flex justify-between text-muted-foreground text-base">
               <span>Subtotal</span>
-              <span className="font-semibold">₹{subTotal.toFixed(2)}</span>
+              <span className="font-medium">₹{subTotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-muted-foreground text-xs font-medium border-b pb-4">
+            <div className="flex justify-between text-muted-foreground text-sm">
               <span>Taxes (GST 5%)</span>
               <span>₹{taxAmount.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between font-extrabold text-2xl pt-2">
-              <span className="text-foreground">Total</span>
-              <span className="text-[#154b23]">₹{order.totalAmount.toFixed(2)}</span>
+            <Separator className="my-3" />
+            <div className="flex justify-between font-extrabold text-2xl">
+              <span>Total</span>
+              <span className="text-primary">₹{order.totalAmount.toFixed(2)}</span>
             </div>
           </div>
         </CardContent>
 
-        <CardFooter className="flex-col gap-3 border-t p-6 pb-6">
-          <Button
-            className="w-full bg-[#154b23] hover:bg-[#0e3318]"
-            onClick={() => router.push(`/feedback?orderId=${orderId}`)}
-          >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Submit Feedback
-          </Button>
-
-          <Button variant="outline" className="w-full" onClick={async () => {
+        <CardFooter className="border-t">
+          <Button variant="ghost" className="w-full" onClick={async () => {
             setIsManualFetching(true);
             await Promise.all([fetchOrder(), fetchStationStatuses()]);
             setIsManualFetching(false);

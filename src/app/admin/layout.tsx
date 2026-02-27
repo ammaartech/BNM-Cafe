@@ -8,7 +8,8 @@ import {
     ShoppingCart,
     Store,
     LogOut,
-    UtensilsCrossed
+    UtensilsCrossed,
+    MessageSquare
 } from "lucide-react";
 import { useSupabase } from "@/lib/supabase/provider";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,11 @@ const sidebarNavItems = [
         title: "Station Hub",
         href: "/station",
         icon: Store,
+    },
+    {
+        title: "Feedback",
+        href: "/admin/feedback",
+        icon: MessageSquare,
     },
 ];
 

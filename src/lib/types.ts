@@ -23,12 +23,12 @@ export interface Category {
 }
 
 export interface OrderItem {
-    id: string;
-    uuid: string;
-    name: string;
-    quantity: number;
-    price: number;
-    menu_item_id?: string;
+  id: string;
+  uuid: string;
+  name: string;
+  quantity: number;
+  price: number;
+  menu_item_id?: string;
 }
 
 export type OrderStatus = "PENDING" | "COOKING" | "READY" | "PICKED_UP" | "DELIVERED" | "CANCELLED";
@@ -36,7 +36,7 @@ export type OrderStationStatus = 'PENDING' | 'READY' | 'PICKED_UP';
 
 
 export interface Order {
-  id:string;
+  id: string;
   display_order_id?: string;
   userId?: string; // Optional because old orders might not have it
   userName: string;
@@ -57,16 +57,16 @@ export interface CartItem extends MenuItem {
 
 
 export interface UserProfile {
-    id: string;
-    name: string;
-    email: string;
-    role: 'admin' | 'customer';
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'customer';
 }
 
 export interface Station {
   id: string;
   code: string;
-  name:string;
+  name: string;
   active: boolean;
   description?: string;
 }
@@ -80,3 +80,15 @@ export interface StationOrder {
   status: OrderStationStatus;
   items: OrderItem[];
 }
+
+export interface CustomerFeedback {
+  id: string;
+  user_id: string;
+  order_id?: string;
+  name?: string;
+  phone: string;
+  email: string;
+  body: string;
+  created_at: string;
+}
+
