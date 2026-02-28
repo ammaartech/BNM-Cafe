@@ -24,6 +24,7 @@ import { useUserPreferences } from "@/context/UserPreferencesContext";
 import { useSupabase } from "@/lib/supabase/provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import useSWR from "swr";
+import { motion, AnimatePresence } from "framer-motion";
 
 
 function MenuItemGridCard({ item }: { item: MenuItem }) {
@@ -197,7 +198,17 @@ function MenuPageContent() {
         </div>
 
         <div className="relative flex items-center h-12">
-          <Button variant="ghost" size="icon" className="text-muted-foreground absolute left-0 top-1/2 -translate-y-1/2 z-20" onClick={() => setIsSearchOpen(!isSearchOpen)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground absolute left-0 top-1/2 -translate-y-1/2 z-20"
+            onClick={() => {
+              if (isSearchOpen) {
+                setSearchQuery('');
+              }
+              setIsSearchOpen(!isSearchOpen);
+            }}
+          >
             {isSearchOpen ? <X className="h-6 w-6" /> : <Search className="h-6 w-6" />}
             <span className="sr-only">{isSearchOpen ? 'Close search' : 'Open search'}</span>
           </Button>
@@ -206,9 +217,31 @@ function MenuPageContent() {
             "absolute inset-0 flex items-center justify-center transition-opacity duration-300 ease-in-out",
             isSearchOpen ? "opacity-0" : "opacity-100"
           )}>
-            <h2 className="text-xl font-bold tracking-tight text-primary">
-              {userProfile?.name ? `Welcome, ${userProfile.name}!` : 'Good Morning, Welcome!'}
-            </h2>
+            <motion.h2
+              className="text-xl font-bold tracking-tight text-primary flex"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: { staggerChildren: 0.05 }
+                }
+              }}
+            >
+              {(userProfile?.name ? `Welcome, ${userProfile.name}!` : 'Good Morning, Welcome!').split('').map((char, index) => (
+                <motion.span
+                  key={index}
+                  variants={{
+                    hidden: { opacity: 0, y: 10 },
+                    visible: { opacity: 1, y: 0 }
+                  }}
+                  className="inline-block"
+                >
+                  {char === ' ' ? '\u00A0' : char}
+                </motion.span>
+              ))}
+            </motion.h2>
           </div>
 
           <div className={cn(
@@ -256,11 +289,37 @@ function MenuPageContent() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
-            {displayedItems.map((item) => (
-              <MenuItemGridCard key={item.id} item={item} />
-            ))}
-          </div>
+          <motion.div
+            className="grid grid-cols-2 gap-4"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: { staggerChildren: 0.1 }
+              }
+            }}
+          >
+            <AnimatePresence mode="popLayout">
+              {displayedItems.map((item) => (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                  key={item.id}
+                  variants={{
+                    hidden: { opacity: 0, y: 20 },
+                    visible: { opacity: 1, y: 0 }
+                  }}
+                >
+                  <MenuItemGridCard item={item} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
         )}
         {!isLoading && displayedItems.length === 0 && (
           <div className="text-center py-16">
