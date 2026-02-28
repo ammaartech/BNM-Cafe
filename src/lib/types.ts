@@ -12,6 +12,7 @@ export interface MenuItem {
   category: "south-indian" | "north-indian" | "refreshments" | "chats";
   stock: number;
   station_id?: string;
+  search_keywords?: string[];
 }
 
 export interface Category {

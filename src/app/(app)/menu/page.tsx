@@ -118,7 +118,7 @@ function MenuPageContent() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const fetcher = async () => {
-    const { data, error } = await supabase.from('menu_items').select('id, uuid, name, description, price, image, category, stock');
+    const { data, error } = await supabase.from('menu_items').select('id, uuid, name, description, price, image, category, stock, search_keywords');
     if (error) {
       console.error('Error fetching menu items:', error);
       throw error;
@@ -157,7 +157,11 @@ function MenuPageContent() {
       || (activeFilter === 'favorites' && favoriteIds.includes(item.uuid))
       || (activeFilter === item.category);
 
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      item.name.toLowerCase().includes(query) ||
+      (item.description && item.description.toLowerCase().includes(query)) ||
+      (item.search_keywords && item.search_keywords.some(kw => kw.toLowerCase().includes(query)));
 
     return matchesFilter && matchesSearch;
   });
