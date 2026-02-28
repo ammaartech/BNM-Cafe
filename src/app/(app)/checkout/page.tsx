@@ -17,6 +17,7 @@ import { useSupabase } from "@/lib/supabase/provider";
 import Script from "next/script";
 import { useToast } from "@/hooks/use-toast";
 import { Clock } from "lucide-react";
+import { motion } from "framer-motion";
 
 function CheckoutSkeleton() {
     return (
@@ -194,83 +195,109 @@ export default function CheckoutPage() {
                 </Button>
                 <h1 className="text-2xl font-bold">Checkout</h1>
             </div>
-            <div className="flex-grow space-y-4 pt-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Items in Order ({totalItems})</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <ul className="divide-y">
-                            {state.items.map(item => {
-                                const itemImage = PlaceHolderImages.find(img => img.id === item.image);
-                                return (
-                                    <li key={item.id} className="flex items-center gap-4 p-6">
-                                        {itemImage && (
-                                            <Image
-                                                src={itemImage.imageUrl}
-                                                alt={item.name}
-                                                width={64}
-                                                height={64}
-                                                className="rounded-md object-cover"
-                                            />
-                                        )}
-                                        <div className="flex-grow grid gap-1">
-                                            <h3 className="font-semibold">{item.name}</h3>
-                                            <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
-                                        </div>
-                                        <div className="text-right font-semibold">
-                                            ₹{(item.price * item.quantity).toFixed(2)}
-                                        </div>
-                                    </li>
-                                )
-                            })}
-                        </ul>
-                    </CardContent>
-                </Card>
-            </div>
 
-            <div className="mt-auto pt-4 space-y-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Order Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-4">
-                        <div className="flex justify-between text-muted-foreground">
-                            <span>Subtotal</span>
-                            <span>₹{subTotal.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-muted-foreground">
-                            <span>Taxes (GST 5%)</span>
-                            <span>₹{taxAmount.toFixed(2)}</span>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between font-bold text-lg">
-                            <span>Total</span>
-                            <span>₹{finalTotal.toFixed(2)}</span>
-                        </div>
-                    </CardContent>
-                </Card>
+            <motion.div
+                className="flex flex-col flex-grow"
+                initial="hidden"
+                animate="visible"
+                variants={{
+                    hidden: { opacity: 0 },
+                    visible: {
+                        opacity: 1,
+                        transition: { staggerChildren: 0.1 }
+                    }
+                }}
+            >
+                <motion.div
+                    className="flex-grow space-y-4 pt-2"
+                    variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                    }}
+                >
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Items in Order ({totalItems})</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <ul className="divide-y">
+                                {state.items.map(item => {
+                                    const itemImage = PlaceHolderImages.find(img => img.id === item.image);
+                                    return (
+                                        <li key={item.id} className="flex items-center gap-4 p-6">
+                                            {itemImage && (
+                                                <Image
+                                                    src={itemImage.imageUrl}
+                                                    alt={item.name}
+                                                    width={64}
+                                                    height={64}
+                                                    className="rounded-md object-cover"
+                                                />
+                                            )}
+                                            <div className="flex-grow grid gap-1">
+                                                <h3 className="font-semibold">{item.name}</h3>
+                                                <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
+                                            </div>
+                                            <div className="text-right font-semibold">
+                                                ₹{(item.price * item.quantity).toFixed(2)}
+                                            </div>
+                                        </li>
+                                    )
+                                })}
+                            </ul>
+                        </CardContent>
+                    </Card>
+                </motion.div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-4">
-                    <Button
-                        className="w-full sm:w-1/2 h-14 text-lg font-bold bg-secondary hover:bg-secondary/80 text-secondary-foreground"
-                        onClick={handlePayAtCounter}
-                        disabled={isPlacingOrder}
-                    >
-                        {isPlacingOrder && paymentMethod === "COUNTER" ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Clock className="mr-2 h-6 w-6" />}
-                        {isPlacingOrder && paymentMethod === "COUNTER" ? 'Processing...' : `Pay at Counter`}
-                    </Button>
+                <motion.div
+                    className="mt-auto pt-4 space-y-4"
+                    variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                    }}
+                >
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Order Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            <div className="flex justify-between text-muted-foreground">
+                                <span>Subtotal</span>
+                                <span>₹{subTotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-muted-foreground">
+                                <span>Taxes (GST 5%)</span>
+                                <span>₹{taxAmount.toFixed(2)}</span>
+                            </div>
+                            <Separator />
+                            <div className="flex justify-between font-bold text-lg">
+                                <span>Total</span>
+                                <span>₹{finalTotal.toFixed(2)}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                    <Button
-                        className="w-full sm:w-1/2 h-14 text-lg font-bold"
-                        onClick={handlePlaceOrder}
-                        disabled={isPlacingOrder}
-                    >
-                        {isPlacingOrder && paymentMethod === "RAZORPAY" ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <CreditCard className="mr-2 h-6 w-6" />}
-                        {isPlacingOrder && paymentMethod === "RAZORPAY" ? 'Processing...' : `Pay online ₹${finalTotal.toFixed(2)}`}
-                    </Button>
-                </div>
-            </div>
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <Button
+                            className="w-full sm:w-1/2 h-14 text-lg font-bold bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+                            onClick={handlePayAtCounter}
+                            disabled={isPlacingOrder}
+                        >
+                            {isPlacingOrder && paymentMethod === "COUNTER" ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Clock className="mr-2 h-6 w-6" />}
+                            {isPlacingOrder && paymentMethod === "COUNTER" ? 'Processing...' : `Pay at Counter`}
+                        </Button>
+
+                        <Button
+                            className="w-full sm:w-1/2 h-14 text-lg font-bold"
+                            onClick={handlePlaceOrder}
+                            disabled={isPlacingOrder}
+                        >
+                            {isPlacingOrder && paymentMethod === "RAZORPAY" ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <CreditCard className="mr-2 h-6 w-6" />}
+                            {isPlacingOrder && paymentMethod === "RAZORPAY" ? 'Processing...' : `Pay online ₹${finalTotal.toFixed(2)}`}
+                        </Button>
+                    </div>
+                </motion.div>
+            </motion.div>
         </div>
     );
 }
