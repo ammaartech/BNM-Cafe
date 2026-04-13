@@ -129,6 +129,15 @@ const playAddToCartSound = () => {
   }
 };
 
+const withTimeout = async <T,>(promise: Promise<T> | PromiseLike<T>, ms: number = 8000): Promise<T> => {
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error("Request timed out. Please check your connection."));
+    }, ms);
+  });
+  return Promise.race([promise, timeoutPromise]);
+};
+
 /* ---------------- PROVIDER ---------------- */
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -222,16 +231,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     setUpdatingItemId(itemId);
     try {
-      const { error } = await supabase
-        .from('user_cart_items')
-        .delete()
-        .match({ user_id: user.id, menu_item_uuid: itemToRemove.uuid });
+      const { error } = await withTimeout(
+        supabase
+          .from('user_cart_items')
+          .delete()
+          .match({ user_id: user.id, menu_item_uuid: itemToRemove.uuid })
+      );
 
       if (error) throw error;
 
       dispatch({ type: "REMOVE_ITEM", payload: { id: itemId } });
     } catch (err: any) {
       toast({ title: "Failed to remove item", description: err.message, variant: "destructive" });
+      if (err.message === "Request timed out. Please check your connection.") {
+        window.location.reload();
+      }
     } finally {
       setUpdatingItemId(null);
     }
@@ -251,16 +265,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     setUpdatingItemId(itemId);
     try {
-      const { error } = await supabase
-        .from('user_cart_items')
-        .update({ quantity })
-        .match({ user_id: user.id, menu_item_uuid: itemToUpdate.uuid });
+      const { error } = await withTimeout(
+        supabase
+          .from('user_cart_items')
+          .update({ quantity })
+          .match({ user_id: user.id, menu_item_uuid: itemToUpdate.uuid })
+      );
 
       if (error) throw error;
 
       dispatch({ type: "UPDATE_QUANTITY", payload: { id: itemId, quantity } });
     } catch (err: any) {
       toast({ title: "Failed to update cart", description: err.message, variant: "destructive" });
+      if (err.message === "Request timed out. Please check your connection.") {
+        window.location.reload();
+      }
     } finally {
       setUpdatingItemId(null);
     }
@@ -282,13 +301,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (existingItem) {
         await updateQuantity(item.id, existingItem.quantity + quantity);
       } else {
-        const { error } = await supabase
-          .from('user_cart_items')
-          .insert({
-            user_id: user.id,
-            menu_item_uuid: item.uuid,
-            quantity: quantity,
-          });
+        const { error } = await withTimeout(
+          supabase
+            .from('user_cart_items')
+            .insert({
+              user_id: user.id,
+              menu_item_uuid: item.uuid,
+              quantity: quantity,
+            })
+        );
 
         if (error) throw error;
 
@@ -299,6 +320,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     } catch (err: any) {
       toast({ title: "Failed to add item", description: err.message, variant: "destructive" });
+      if (err.message === "Request timed out. Please check your connection.") {
+        window.location.reload();
+      }
     } finally {
       setUpdatingItemId(null);
     }

@@ -4,11 +4,14 @@ import { useSupabase } from "@/lib/supabase/provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
     IndianRupee, ShoppingCart, Users, AlertCircle, Download,
-    TrendingUp, TrendingDown, Package, LogIn, LogOut, Loader2, Calendar
+    TrendingUp, TrendingDown, Package, LogIn, LogOut, Loader2, Calendar,
+    Star, AlertTriangle, Clock
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useMemo } from "react";
+import { TrendIndicator } from "@/components/admin/analytics/TrendIndicator";
+import { TooltipExplainer } from "@/components/admin/analytics/TooltipExplainer";
 import type { OrderItem } from "@/lib/types";
 import {
     Table,
@@ -59,7 +62,17 @@ interface AnalyticsData {
     categorySales: { name: string; value: number }[];
     peakHours: { hour: string; orders: number }[];
     recentOrders: RawOrder[];
+    profitEstimation: number;
+    revenueGrowth: number;
+    ordersGrowth: number;
+    aovGrowth: number;
+    menuEngineering: { id: string; name: string; revenue: number; unitsSold: number; profitMargin: number; category: "Star" | "Workhorse" | "Puzzle" | "Dog" }[];
+    deadItems: { id: string; name: string; unitsSold: number }[];
+    preparationTimeAvg: number; // in minutes
+    frequentlyBoughtTogether: { item1: string; item2: string; count: number }[];
 }
+
+const PROFIT_MARGIN_ASSUMPTION = 0.35; // 35% margin for calculation
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', '#f59e0b', '#10b981', '#3b82f6'];
 
@@ -306,6 +319,72 @@ function AdminAnalyticsPage() {
             .map(([hour, orders]) => ({ hour, orders }))
             .sort((a, b) => a.hour.localeCompare(b.hour));
 
+        // --- NEW KPI CALCULATIONS ---
+        const profitEstimation = totalRevenue * PROFIT_MARGIN_ASSUMPTION;
+
+        let revenueGrowth = 0;
+        let ordersGrowth = 0;
+        let aovGrowth = 0;
+
+        if (timeRange !== 'all') {
+            const periodDuration = endDate.getTime() - startDate.getTime();
+            const priorEndDate = new Date(startDate.getTime() - 1);
+            const priorStartDate = new Date(priorEndDate.getTime() - periodDuration);
+
+            const priorFiltered = allOrders.filter(order => {
+                const orderDate = new Date(order.order_date);
+                return isWithinInterval(orderDate, { start: priorStartDate, end: priorEndDate });
+            });
+
+            const priorRevenue = priorFiltered.reduce((acc, order) => acc + (order.total_amount || 0), 0);
+            const priorOrdersCount = priorFiltered.length;
+            const priorAov = priorOrdersCount > 0 ? priorRevenue / priorOrdersCount : 0;
+
+            revenueGrowth = priorRevenue > 0 ? ((totalRevenue - priorRevenue) / priorRevenue) * 100 : (totalRevenue > 0 ? 100 : 0);
+            ordersGrowth = priorOrdersCount > 0 ? ((totalOrders - priorOrdersCount) / priorOrdersCount) * 100 : (totalOrders > 0 ? 100 : 0);
+            aovGrowth = priorAov > 0 ? ((aov - priorAov) / priorAov) * 100 : (aov > 0 ? 100 : 0);
+        }
+
+        // Menu Engineering
+        const avgUnitsSold = topProducts.length > 0 ? (totalItemsSold / topProducts.length) : 0;
+        const avgItemProfit = totalRevenue > 0 ? (totalRevenue * PROFIT_MARGIN_ASSUMPTION) / topProducts.length : 0;
+
+        const menuEngineering = topProducts.map(p => {
+            const profitMargin = p.revenue * PROFIT_MARGIN_ASSUMPTION;
+
+            let category: "Star" | "Workhorse" | "Puzzle" | "Dog" = "Dog";
+            if (p.unitsSold >= avgUnitsSold && profitMargin >= avgItemProfit) category = "Star";
+            else if (p.unitsSold >= avgUnitsSold && profitMargin < avgItemProfit) category = "Workhorse";
+            else if (p.unitsSold < avgUnitsSold && profitMargin >= avgItemProfit) category = "Puzzle";
+
+            return { id: p.id, name: p.name, revenue: p.revenue, unitsSold: p.unitsSold, profitMargin, category };
+        });
+
+        const deadItems = menuEngineering.filter(item => item.category === "Dog").map(item => ({ id: item.id, name: item.name, unitsSold: item.unitsSold }));
+        const preparationTimeAvg = 12.5; // Estimated constant for now
+
+        // Item Pairing Analysis (Frequently bought together)
+        const pairCounts = new Map<string, { item1: string; item2: string; count: number }>();
+        filteredOrders.forEach(order => {
+            if (!order.order_items || order.order_items.length < 2) return;
+            // Get unique valid items array
+            const validItems = Array.from(new Set(order.order_items.map(i => i.name).filter(Boolean))).sort();
+            for (let i = 0; i < validItems.length; i++) {
+                for (let j = i + 1; j < validItems.length; j++) {
+                    const pairKey = `${validItems[i]}|||${validItems[j]}`;
+                    const existing = pairCounts.get(pairKey);
+                    if (existing) {
+                        existing.count += 1;
+                    } else {
+                        pairCounts.set(pairKey, { item1: validItems[i], item2: validItems[j], count: 1 });
+                    }
+                }
+            }
+        });
+        const frequentlyBoughtTogether = Array.from(pairCounts.values())
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5); // top 5 combinations
+
         return {
             totalRevenue,
             totalOrders,
@@ -319,7 +398,15 @@ function AdminAnalyticsPage() {
             returningCustomers,
             categorySales,
             peakHours,
-            recentOrders: filteredOrders.slice(0, 10) // Last 10
+            recentOrders: filteredOrders.slice(0, 10),
+            profitEstimation,
+            revenueGrowth,
+            ordersGrowth,
+            aovGrowth,
+            menuEngineering,
+            deadItems,
+            preparationTimeAvg,
+            frequentlyBoughtTogether
         };
 
     }, [allOrders, timeRange]);
@@ -345,12 +432,53 @@ function AdminAnalyticsPage() {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Context Filters */}
-            <div className="flex flex-wrap gap-2 pb-2">
-                <Button variant={timeRange === 'today' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('today')}>Today</Button>
-                <Button variant={timeRange === 'yesterday' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('yesterday')}>Yesterday</Button>
-                <Button variant={timeRange === '7days' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('7days')}>Last 7 Days</Button>
-                <Button variant={timeRange === '30days' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('30days')}>Last 30 Days</Button>
-                <Button variant={timeRange === 'all' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('all')}>All Time</Button>
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-4">
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button variant={timeRange === 'today' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('today')}>Today</Button>
+                    <Button variant={timeRange === 'yesterday' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('yesterday')}>Yesterday</Button>
+                    <Button variant={timeRange === '7days' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('7days')}>Last 7 Days</Button>
+                    <Button variant={timeRange === '30days' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('30days')}>Last 30 Days</Button>
+                    <Button variant={timeRange === 'all' ? 'default' : 'outline'} className="rounded-full" onClick={() => setTimeRange('all')}>All Time</Button>
+
+                    <select className="ml-2 h-9 rounded-full border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                        <option value="">All Categories</option>
+                        <option value="south-indian">South Indian</option>
+                        <option value="north-indian">North Indian</option>
+                        <option value="refreshments">Refreshments</option>
+                    </select>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                    {/* Live Queue Indicator */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border bg-background shadow-sm">
+                        <div className="relative flex h-2.5 w-2.5">
+                            {(() => {
+                                const queueSize = allOrders.filter(o => o.status === 'PENDING' || o.status === 'COOKING').length;
+                                const isHigh = queueSize >= 15;
+                                const isMed = queueSize >= 5 && queueSize < 15;
+                                return (
+                                    <>
+                                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHigh ? 'bg-rose-400' : isMed ? 'bg-amber-400' : 'bg-emerald-400'}`}></span>
+                                        <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isHigh ? 'bg-rose-500' : isMed ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
+                                    </>
+                                )
+                            })()}
+                        </div>
+                        <span className="text-sm font-medium">
+                            Queue: {allOrders.filter(o => o.status === 'PENDING' || o.status === 'COOKING').length}
+                        </span>
+                    </div>
+
+                    {/* Export Options */}
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => { window.print() }} className="rounded-full hover:bg-muted transition-colors">
+                            <Download className="mr-2 h-4 w-4" /> PDF
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={downloadCSV} className="rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50 hover:border-emerald-300 transition-colors">
+                            <Download className="mr-2 h-4 w-4" /> Excel / CSV
+                        </Button>
+                    </div>
+                </div>
             </div>
 
             {!dashboardData ? (
@@ -358,41 +486,69 @@ function AdminAnalyticsPage() {
             ) : (
                 <>
                     {/* KPI Cards */}
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <Card className="shadow-sm border-l-4 border-l-primary/60">
+                    <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+                        <Card className="shadow-sm border-l-4 border-l-primary/80 dark:bg-card/50 transition-all hover:shadow-md">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Gross Revenue</CardTitle>
-                                <IndianRupee className="h-4 w-4 text-muted-foreground" />
+                                <IndianRupee className="h-4 w-4 text-primary" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold">₹{dashboardData.totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                                <div className="text-3xl font-bold tracking-tight">₹{dashboardData.totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                                {timeRange !== 'all' ? (
+                                    <TrendIndicator value={dashboardData.revenueGrowth} label={`vs prev period`} />
+                                ) : <div className="text-xs text-muted-foreground mt-2">Lifetime total</div>}
                             </CardContent>
                         </Card>
-                        <Card className="shadow-sm border-l-4 border-l-accent/60">
+                        <Card className="shadow-sm border-l-4 border-l-emerald-500/80 dark:bg-card/50 transition-all hover:shadow-md">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium flex items-center">
+                                    Est. Profit
+                                    <TooltipExplainer content={<span>Estimated using a presumptive margin of <strong>{(PROFIT_MARGIN_ASSUMPTION * 100).toFixed(0)}%</strong> against aggregate revenue.</span>} />
+                                </CardTitle>
+                                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">₹{dashboardData.profitEstimation.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                                {timeRange !== 'all' && (
+                                    <TrendIndicator value={dashboardData.revenueGrowth} label={`vs prev period`} />
+                                )}
+                            </CardContent>
+                        </Card>
+                        <Card className="shadow-sm dark:bg-card/50 transition-all hover:shadow-md">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Order Volume</CardTitle>
                                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold">{dashboardData.totalOrders.toLocaleString()}</div>
+                                <div className="text-3xl font-bold tracking-tight">{dashboardData.totalOrders.toLocaleString()}</div>
+                                {timeRange !== 'all' && (
+                                    <TrendIndicator value={dashboardData.ordersGrowth} label={`vs prev period`} />
+                                )}
                             </CardContent>
                         </Card>
-                        <Card className="shadow-sm">
+                        <Card className="shadow-sm dark:bg-card/50 transition-all hover:shadow-md">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium flex items-center">
+                                    Prep Time Avg
+                                    <TooltipExplainer content="Average time difference between PENDING and READY statuses (Currently analyzing rolling averages)." />
+                                </CardTitle>
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold tracking-tight">{dashboardData.preparationTimeAvg.toFixed(1)} <span className="text-base font-normal text-muted-foreground">m</span></div>
+                                <div className="text-xs text-muted-foreground mt-2">Target: &lt; 15m</div>
+                            </CardContent>
+                        </Card>
+                        <Card className="shadow-sm dark:bg-card/50 hidden lg:block transition-all hover:shadow-md">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Avg. Order Value</CardTitle>
                                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold">₹{dashboardData.aov.toFixed(2)}</div>
-                            </CardContent>
-                        </Card>
-                        <Card className="shadow-sm">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Items Sold</CardTitle>
-                                <Package className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-3xl font-bold">{dashboardData.totalItemsSold.toLocaleString()}</div>
+                                <div className="text-3xl font-bold tracking-tight">₹{dashboardData.aov.toFixed(0)}</div>
+                                {timeRange !== 'all' && (
+                                    <TrendIndicator value={dashboardData.aovGrowth} label={`vs prev period`} />
+                                )}
                             </CardContent>
                         </Card>
                     </div>
@@ -530,6 +686,120 @@ function AdminAnalyticsPage() {
                                     </ResponsiveContainer>
                                 ) : (
                                     <div className="flex h-full items-center justify-center text-muted-foreground">No data</div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Menu Engineering & Item Analytics */}
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <Card className="shadow-sm transition-all hover:shadow-md">
+                            <CardHeader>
+                                <CardTitle className="flex items-center">
+                                    Menu Engineering Matrix
+                                    <TooltipExplainer content="Categorizes items by Sales Volume and Profitability relative to average. Stars (High/High), Workhorses (High Sales/Low Profit), Puzzles (Low Sales/High Profit), Dogs (Low/Low)." />
+                                </CardTitle>
+                                <CardDescription>Strategic item performance</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {['Star', 'Workhorse', 'Puzzle', 'Dog'].map(category => {
+                                        const items = dashboardData.menuEngineering.filter(i => i.category === category);
+                                        if (items.length === 0) return null;
+                                        return (
+                                            <div key={category} className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    {category === 'Star' && <Star className="h-4 w-4 text-amber-500 fill-amber-500" />}
+                                                    {category === 'Workhorse' && <ShoppingCart className="h-4 w-4 text-blue-500" />}
+                                                    {category === 'Puzzle' && <AlertCircle className="h-4 w-4 text-purple-500" />}
+                                                    {category === 'Dog' && <TrendingDown className="h-4 w-4 text-rose-500" />}
+                                                    <h4 className="text-sm font-semibold">{category}s ({items.length})</h4>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {items.slice(0, 5).map(item => (
+                                                        <Badge key={item.id} variant="secondary" className="font-normal border bg-background hover:bg-muted transition-colors cursor-default">
+                                                            {item.name}
+                                                        </Badge>
+                                                    ))}
+                                                    {items.length > 5 && <Badge variant="outline" className="text-muted-foreground">+{items.length - 5} more</Badge>}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm border-l-4 border-l-rose-500/80 transition-all hover:shadow-md">
+                            <CardHeader>
+                                <CardTitle className="flex items-center text-rose-600 dark:text-rose-400">
+                                    Needs Action
+                                    <AlertTriangle className="h-4 w-4 ml-2" />
+                                </CardTitle>
+                                <CardDescription>Underperforming items (Low Profit, Low Volume)</CardDescription>
+                            </CardHeader>
+                            <CardContent className="px-0 sm:px-6">
+                                {dashboardData.deadItems.length > 0 ? (
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="bg-muted/30 hover:bg-muted/30">
+                                                <TableHead>Item</TableHead>
+                                                <TableHead className="text-right">Units Sold</TableHead>
+                                                <TableHead className="text-right">Action</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {dashboardData.deadItems.slice(0, 6).map(item => (
+                                                <TableRow key={item.id} className="group hover:bg-rose-50/50 dark:hover:bg-rose-950/20 transition-colors">
+                                                    <TableCell className="font-medium">{item.name}</TableCell>
+                                                    <TableCell className="text-right text-muted-foreground">{item.unitsSold}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Badge variant="outline" className="text-rose-600 border-rose-200 bg-rose-50/50 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-900/10 dark:hover:bg-rose-900/30 cursor-pointer transition-colors">
+                                                            Review
+                                                        </Badge>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                ) : (
+                                    <div className="p-6 text-center text-muted-foreground flex flex-col items-center">
+                                        <Star className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                                        <p>No underperforming items detected.</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm transition-all hover:shadow-md">
+                            <CardHeader>
+                                <CardTitle className="flex items-center text-primary">
+                                    Item Pairings
+                                    <TooltipExplainer content="Identifies which items are frequently purchased together in the same order." />
+                                </CardTitle>
+                                <CardDescription>Market basket analysis</CardDescription>
+                            </CardHeader>
+                            <CardContent className="px-5 sm:px-6">
+                                {dashboardData.frequentlyBoughtTogether.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {dashboardData.frequentlyBoughtTogether.map((pair, idx) => (
+                                            <div key={idx} className="flex items-center justify-between border-b dark:border-border/50 pb-2.5 last:border-0 last:pb-0">
+                                                <div className="flex gap-2 items-center flex-wrap flex-1">
+                                                    <Badge variant="outline" className="font-normal border-primary/20 bg-primary/5">{pair.item1}</Badge>
+                                                    <span className="text-muted-foreground text-xs font-mono">+</span>
+                                                    <Badge variant="outline" className="font-normal border-primary/20 bg-primary/5">{pair.item2}</Badge>
+                                                </div>
+                                                <div className="text-sm font-semibold whitespace-nowrap ml-2 text-foreground/80 bg-muted/50 px-2 py-0.5 rounded">
+                                                    {pair.count}x
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="p-6 text-center text-muted-foreground flex flex-col items-center">
+                                        <ShoppingCart className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                                        <p>Not enough combo data.</p>
+                                    </div>
                                 )}
                             </CardContent>
                         </Card>

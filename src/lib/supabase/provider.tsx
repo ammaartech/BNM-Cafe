@@ -54,41 +54,50 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    // We remove the 3-second timeout hack because it caused forced logouts.
-    // Instead we rely on Supabase's built-in session detection, ensuring the UI unlocks.
-    const initSession = async () => {
-      try {
-        // Race getSession against a 2-second timeout to prevent indefinite hanging
-        // caused by background tab lock contention in Supabase
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise<{ data: { session: null }, error: Error }>((_, reject) =>
-          setTimeout(() => reject(new Error('getSession lock timeout')), 2000)
-        );
+    let sessionTimeout: NodeJS.Timeout;
 
-        const { data: { session }, error } = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]).catch(err => ({ data: { session: null }, error: err }));
+    const checkSessionActivity = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error || !session) {
-          if (error) console.warn("Supabase getSession timeout/error, failing over to getUser:", error.message);
+          setUser(null);
+          setUserProfile(null);
+        } else if (session?.expires_at) {
+          const expiresAt = session.expires_at * 1000;
+          const timeUntilExpiry = expiresAt - Date.now();
 
-          // Fallback to getUser which bypasses the local storage refresh lock
-          const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-          if (user && !userError) {
-            console.log("Successfully recovered session via getUser fallback");
-            await processSession({ user } as any); // Partial session just for user
+          if (timeUntilExpiry < 5000) {
+            console.log("Token expiring soon, actively refreshing immediately...");
+            const { data, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError || !data.session) {
+              console.error("Failed to actively refresh token. Logging out.", refreshError);
+              setUser(null);
+              setUserProfile(null);
+            }
           } else {
-            // Truly no session/user exists
-            await processSession(null);
+            // Schedule the next check 1 minute before expiry, or at least 5 seconds from now
+            clearTimeout(sessionTimeout);
+            sessionTimeout = setTimeout(checkSessionActivity, Math.max(timeUntilExpiry - 60000, 5000));
           }
-        } else {
-          // getSession succeeded
-          await processSession(session);
         }
       } catch (err) {
-        console.error("Critial session init error:", err);
+        console.error("Error during session check:", err);
+      }
+    };
+
+    const initSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error || !session) {
+          await processSession(null);
+        } else {
+          await processSession(session);
+        }
+        await checkSessionActivity(); // start adaptive check
+      } catch (err) {
+        console.error("Critical session init error:", err);
       } finally {
         setIsUserLoading(false);
       }
@@ -96,18 +105,48 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
 
     initSession();
 
-    // Listen for subsequent auth events like sign-in or sign-out.
+    // Listen for ALL auth events to ensure NO DELAYS when state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // Process on sign-in, sign-out, or user updates
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+        console.log(`Supabase auth event detected: ${event}`);
+
+        if (event === 'SIGNED_OUT' || !session) {
+          setUser(null);
+          setUserProfile(null);
+          clearTimeout(sessionTimeout);
+          return;
+        }
+
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           await processSession(session);
+          await checkSessionActivity();
         }
       }
     );
 
+    // Actively verify session immediately whenever the user switches back to the tab
+    const handleVisibilityCange = () => {
+      if (document.visibilityState === 'visible') {
+        checkSessionActivity();
+      }
+    };
+
+    const handleFocus = () => {
+      checkSessionActivity();
+    };
+
+    if (typeof window !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityCange);
+      window.addEventListener('focus', handleFocus);
+    }
+
     return () => {
       subscription.unsubscribe();
+      clearTimeout(sessionTimeout);
+      if (typeof window !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityCange);
+        window.removeEventListener('focus', handleFocus);
+      }
     };
   }, [processSession]);
 
