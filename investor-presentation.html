@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Campus Cafe Connect — Investor Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #FF7043;
+      --orange-light: #FF8A65;
+      --orange-dark: #E64A19;
+      --yellow: #FFB300;
+      --beige: #F5F5DC;
+      --dark: #0A0A0A;
+      --dark2: #111111;
+      --dark3: #1A1A1A;
+      --dark4: #222222;
+      --glass: rgba(255,255,255,0.04);
+      --glass-border: rgba(255,255,255,0.08);
+      --text: #F0F0F0;
+      --text-muted: #888;
+    }
+
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--dark);
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+    }
+
+    /* ──────── SLIDESHOW CONTAINER ──────── */
+    .deck {
+      width: 100vw; height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1), transform 0.7s cubic-bezier(0.4,0,0.2,1);
+      pointer-events: none;
+      padding: 40px 60px;
+    }
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+    .slide.prev {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* ──────── PROGRESS BAR ──────── */
+    .progress-bar {
+      position: fixed; bottom: 0; left: 0;
+      height: 3px; background: var(--orange);
+      transition: width 0.5s ease;
+      z-index: 100;
+    }
+
+    /* ──────── NAV DOTS ──────── */
+    .nav-dots {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; z-index: 100;
+    }
+    .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      cursor: pointer; transition: all 0.3s;
+    }
+    .dot.active { background: var(--orange); width: 24px; border-radius: 3px; }
+
+    /* ──────── NAV ARROWS ──────── */
+    .nav-arrow {
+      position: fixed; top: 50%; transform: translateY(-50%);
+      width: 48px; height: 48px; border-radius: 50%;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 100;
+      transition: background 0.2s;
+      backdrop-filter: blur(8px);
+    }
+    .nav-arrow:hover { background: rgba(255,112,67,0.2); }
+    .nav-arrow.left { left: 20px; }
+    .nav-arrow.right { right: 20px; }
+    .nav-arrow svg { width: 20px; height: 20px; stroke: white; fill: none; stroke-width: 2; }
+
+    /* ──────── SLIDE COUNTER ──────── */
+    .slide-counter {
+      position: fixed; top: 24px; right: 32px;
+      font-size: 13px; color: var(--text-muted);
+      z-index: 100; font-weight: 500; letter-spacing: 0.05em;
+    }
+
+    /* ──────── SLIDE LOGO ──────── */
+    .slide-logo {
+      position: fixed; top: 24px; left: 32px;
+      font-size: 14px; font-weight: 700; letter-spacing: 0.08em;
+      color: var(--orange); z-index: 100;
+      text-transform: uppercase;
+    }
+
+    /* ═══════════════════════════════════════
+       SLIDE 1 — HERO
+    ═══════════════════════════════════════ */
+    .s1 { background: var(--dark); }
+    .s1-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(255,112,67,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .s1-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(255,112,67,0.12);
+      animation: pulse-ring 4s ease-in-out infinite;
+    }
+    .s1-ring:nth-child(1) { width: 500px; height: 500px; animation-delay: 0s; }
+    .s1-ring:nth-child(2) { width: 700px; height: 700px; animation-delay: 0.8s; }
+    .s1-ring:nth-child(3) { width: 900px; height: 900px; animation-delay: 1.6s; }
+    @keyframes pulse-ring {
+      0%,100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.1; transform: scale(1.03); }
+    }
+    .s1-content {
+      position: relative; text-align: center; z-index: 2;
+    }
+    .s1-eyebrow {
+      font-size: 13px; font-weight: 600; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--orange);
+      margin-bottom: 24px; opacity: 0.9;
+    }
+    .s1-title {
+      font-size: clamp(56px, 8vw, 100px);
+      font-weight: 800; line-height: 1.0;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+    .s1-title span {
+      background: linear-gradient(135deg, var(--orange) 0%, var(--yellow) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .s1-sub {
+      font-size: clamp(18px, 2.5vw, 24px);
+      color: rgba(255,255,255,0.45); font-weight: 400;
+      letter-spacing: -0.01em; margin-top: 20px;
+    }
+    .s1-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-top: 48px; padding: 10px 20px; border-radius: 100px;
+      background: rgba(255,112,67,0.1); border: 1px solid rgba(255,112,67,0.25);
+      font-size: 13px; font-weight: 500; color: var(--orange-light);
+    }
+    .s1-badge .dot-live {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #4CAF50; box-shadow: 0 0 0 0 rgba(76,175,80,0.5);
+      animation: live-pulse 1.5s infinite;
+    }
+    @keyframes live-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(76,175,80,0.5); }
+      70% { box-shadow: 0 0 0 8px rgba(76,175,80,0); }
+      100% { box-shadow: 0 0 0 0 rgba(76,175,80,0); }
+    }
+
+    /* ═══════════════════════════════════════
+       SLIDE 2 — PROBLEM
+    ═══════════════════════════════════════ */
+    .s2 { background: var(--dark2); }
+    .s2-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: center; max-width: 1100px; width: 100%;
+    }
+    .section-eyebrow {
+      font-size: 12px; font-weight: 600; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--orange); margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(36px, 5vw, 60px); font-weight: 800;
+      line-height: 1.1; letter-spacing: -0.03em;
+    }
+    .section-body {
+      font-size: 17px; line-height: 1.7;
+      color: rgba(255,255,255,0.5); margin-top: 20px;
+    }
+    .problem-stats {
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .stat-card {
+      padding: 24px 28px; border-radius: 16px;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      backdrop-filter: blur(8px);
+    }
+    .stat-card .num {
+      font-size: 48px; font-weight: 800; letter-spacing: -0.04em;
+      color: var(--orange); line-height: 1;
+    }
+    .stat-card .label {
+      font-size: 14px; color: rgba(255,255,255,0.45); margin-top: 6px; font-weight: 500;
+    }
+
+    /* ═══════════════════════════════════════
+       SLIDE 3 — SOLUTION
+    ═══════════════════════════════════════ */
+    .s3 { background: var(--dark); }
+    .s3-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 60% at 70% 50%, rgba(255,179,0,0.08) 0%, transparent 60%),
+                  radial-gradient(ellipse 50% 50% at 30% 60%, rgba(255,112,67,0.08) 0%, transparent 60%);
+    }
+    .s3-content { max-width: 800px; text-align: center; position: relative; z-index: 1; }
+    .s3-title {
+      font-size: clamp(44px, 7vw, 80px); font-weight: 800;
+      line-height: 1.05; letter-spacing: -0.03em;
+    }
+    .s3-title .highlight {
+      background: linear-gradient(90deg, var(--orange), var(--yellow));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .s3-pillars {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 20px; margin-top: 60px;
+    }
+    .pillar {
+      padding: 28px 24px; border-radius: 20px;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      text-align: center; transition: border-color 0.3s;
+    }
+    .pillar:hover { border-color: rgba(255,112,67,0.3); }
+    .pillar-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--orange-dark), var(--orange));
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px; font-size: 22px;
+    }
+    .pillar h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .pillar p { font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.6; }
+
+    /* ═══════════════════════════════════════
+       SLIDE 4 — MENU EXPERIENCE (phone mockup)
+    ═══════════════════════════════════════ */
+    .s4 { background: var(--dark2); }
+    .s4-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; max-width: 1100px; width: 100%; }
+
+    /* Phone mockup */
+    .phone-wrap {
+      display: flex; justify-content: center; align-items: center;
+    }
+    .phone {
+      width: 240px; border-radius: 40px;
+      background: #111; border: 8px solid #2a2a2a;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05),
+                  inset 0 0 0 1px rgba(255,255,255,0.05);
+      overflow: hidden; position: relative;
+    }
+    .phone-screen {
+      background: var(--beige); padding: 0;
+      min-height: 460px; position: relative; overflow: hidden;
+    }
+    .phone-header {
+      background: var(--orange); padding: 14px 16px 10px;
+      color: white; font-family: 'PT Sans', sans-serif;
+    }
+    .phone-header .app-name { font-size: 11px; font-weight: 700; opacity: 0.8; letter-spacing: 0.05em; text-transform: uppercase; }
+    .phone-header .greeting { font-size: 16px; font-weight: 700; margin-top: 2px; }
+    .phone-search {
+      background: rgba(255,255,255,0.3); border-radius: 8px;
+      padding: 6px 10px; margin-top: 8px; font-size: 10px;
+      color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 6px;
+    }
+    .phone-cats {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px;
+    }
+    .phone-cat {
+      border-radius: 12px; padding: 12px 10px; text-align: center;
+      font-family: 'PT Sans', sans-serif;
+      cursor: pointer; transition: transform 0.2s;
+    }
+    .phone-cat:hover { transform: scale(1.02); }
+    .phone-cat .cat-emoji { font-size: 24px; }
+    .phone-cat .cat-name { font-size: 11px; font-weight: 700; margin-top: 4px; }
+    .phone-cat .cat-desc { font-size: 9px; margin-top: 2px; opacity: 0.6; }
+    .cat-si { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); color: #E65100; }
+    .cat-ni { background: linear-gradient(135deg, #FCE4EC, #F8BBD9); color: #880E4F; }
+    .cat-rf { background: linear-gradient(135deg, #E3F2FD, #BBDEFB); color: #0D47A1; }
+    .cat-ch { background: linear-gradient(135deg, #F3E5F5, #E1BEE7); color: #4A148C; }
+    .phone-nav {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: white; display: flex; justify-content: space-around;
+      padding: 8px 0 4px; border-top: 1px solid #eee;
+    }
+    .phone-nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .phone-nav-item .nav-icon { font-size: 16px; }
+    .phone-nav-item .nav-label { font-size: 8px; color: #999; }
+    .phone-nav-item.active .nav-icon { filter: none; }
+    .phone-nav-item.active .nav-label { color: var(--orange); }
+
+    /* ═══════════════════════════════════════
+       SLIDE 5 — SMART ORDERING
+    ═══════════════════════════════════════ */
+    .s5 { background: var(--dark); }
+    .s5-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; max-width: 1100px; width: 100%; }
+    .menu-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .menu-card {
+      border-radius: 16px; overflow: hidden;
+      background: var(--dark3); border: 1px solid var(--glass-border);
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    .menu-card:hover { transform: translateY(-4px); border-color: rgba(255,112,67,0.3); }
+    .menu-card-img {
+      height: 80px; display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+    }
+    .menu-card-body { padding: 12px; }
+    .menu-card-name { font-size: 13px; font-weight: 700; }
+    .menu-card-price { font-size: 15px; font-weight: 800; color: var(--orange); margin-top: 4px; }
+    .menu-card-desc { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 4px; line-height: 1.4; }
+    .menu-card-add {
+      width: 26px; height: 26px; border-radius: 8px;
+      background: var(--orange); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 8px; font-size: 16px; color: white; font-weight: bold;
+    }
+
+    /* ═══════════════════════════════════════
+       SLIDE 6 — ORDER TRACKING
+    ═══════════════════════════════════════ */
+    .s6 { background: var(--dark2); }
+    .s6-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; max-width: 1100px; width: 100%; }
+    .order-tracker {
+      background: var(--dark3); border-radius: 24px; padding: 28px;
+      border: 1px solid var(--glass-border); max-width: 340px;
+    }
+    .order-id { font-size: 12px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+    .order-title { font-size: 22px; font-weight: 800; margin-top: 4px; }
+    .order-amount { font-size: 16px; color: var(--orange); font-weight: 700; margin-top: 4px; }
+    .order-items-mini { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .order-item-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+    .order-item-row span { color: rgba(255,255,255,0.5); }
+    .status-track { margin-top: 28px; position: relative; }
+    .status-line {
+      position: absolute; left: 15px; top: 15px; bottom: 15px; width: 2px;
+      background: rgba(255,255,255,0.06);
+    }
+    .status-line-fill {
+      position: absolute; left: 15px; top: 15px; width: 2px;
+      background: linear-gradient(180deg, var(--orange), var(--yellow));
+      transition: height 1s ease;
+    }
+    .status-step {
+      display: flex; align-items: center; gap: 16px; position: relative;
+      margin-bottom: 20px;
+    }
+    .status-dot {
+      width: 30px; height: 30px; border-radius: 50%;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; position: relative; z-index: 1;
+    }
+    .status-dot.done { background: linear-gradient(135deg, var(--orange-dark), var(--orange)); }
+    .status-dot.active { background: var(--orange); box-shadow: 0 0 0 4px rgba(255,112,67,0.2); animation: pulse-dot 1.5s infinite; }
+    .status-dot.pending { background: var(--dark4); border: 2px solid rgba(255,255,255,0.1); }
+    @keyframes pulse-dot { 0%,100% { box-shadow: 0 0 0 4px rgba(255,112,67,0.2); } 50% { box-shadow: 0 0 0 8px rgba(255,112,67,0.05); } }
+    .status-info .title { font-size: 14px; font-weight: 700; }
+    .status-info .sub { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+    /* ═══════════════════════════════════════
+       SLIDE 7 — ADMIN DASHBOARD
+    ═══════════════════════════════════════ */
+    .s7 { background: var(--dark); }
+    .dashboard-mock {
+      background: var(--dark2); border-radius: 20px; padding: 24px;
+      border: 1px solid rgba(255,255,255,0.07);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+      max-width: 700px; width: 100%;
+    }
+    .dash-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px; padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .dash-title { font-size: 16px; font-weight: 700; }
+    .dash-badge {
+      font-size: 11px; padding: 4px 10px; border-radius: 100px;
+      background: rgba(76,175,80,0.15); color: #66BB6A; font-weight: 600;
+    }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .kpi-card {
+      padding: 16px; border-radius: 14px;
+      background: var(--dark3); border: 1px solid var(--glass-border);
+    }
+    .kpi-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+    .kpi-value { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; margin-top: 6px; }
+    .kpi-change { font-size: 11px; font-weight: 600; margin-top: 4px; }
+    .kpi-change.up { color: #66BB6A; }
+    .kpi-change.down { color: #EF5350; }
+    .chart-area { background: var(--dark3); border-radius: 14px; padding: 20px; border: 1px solid var(--glass-border); }
+    .chart-title { font-size: 13px; font-weight: 700; margin-bottom: 16px; color: rgba(255,255,255,0.7); }
+
+    /* ═══════════════════════════════════════
+       SLIDE 8 — ANALYTICS DEEP DIVE
+    ═══════════════════════════════════════ */
+    .s8 { background: var(--dark2); }
+    .s8-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; max-width: 1100px; width: 100%; }
+    .analytics-card {
+      background: var(--dark3); border-radius: 20px; padding: 28px;
+      border: 1px solid var(--glass-border);
+    }
+    .analytics-card h3 { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.6); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .top-item { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .top-item-rank { font-size: 13px; font-weight: 800; color: var(--text-muted); width: 20px; }
+    .top-item-name { flex: 1; font-size: 14px; font-weight: 600; }
+    .top-item-bar-wrap { width: 80px; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; }
+    .top-item-bar { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--orange), var(--yellow)); }
+    .top-item-val { font-size: 13px; font-weight: 700; color: var(--orange); width: 40px; text-align: right; }
+    .order-status-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .status-pill {
+      padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 700;
+    }
+    .status-pill.delivered { background: rgba(76,175,80,0.15); color: #66BB6A; }
+    .status-pill.pending { background: rgba(255,179,0,0.15); color: var(--yellow); }
+    .status-pill.cooking { background: rgba(255,112,67,0.15); color: var(--orange); }
+    .status-pill.cancelled { background: rgba(239,83,80,0.15); color: #EF5350; }
+
+    /* ═══════════════════════════════════════
+       SLIDE 9 — MENU SHOWCASE
+    ═══════════════════════════════════════ */
+    .s9 { background: var(--dark); }
+    .s9-content { max-width: 1100px; width: 100%; }
+    .s9-header { text-align: center; margin-bottom: 48px; }
+    .menu-showcase { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .menu-category-card {
+      border-radius: 24px; overflow: hidden; position: relative;
+      transition: transform 0.3s;
+    }
+    .menu-category-card:hover { transform: translateY(-6px); }
+    .mcc-si { background: linear-gradient(145deg, #FF6F00, #FF8F00); }
+    .mcc-ni { background: linear-gradient(145deg, #C62828, #E53935); }
+    .mcc-rf { background: linear-gradient(145deg, #1565C0, #1976D2); }
+    .mcc-ch { background: linear-gradient(145deg, #6A1B9A, #8E24AA); }
+    .mcc-body { padding: 28px 24px 24px; }
+    .mcc-emoji { font-size: 48px; }
+    .mcc-name { font-size: 20px; font-weight: 800; margin-top: 12px; color: white; }
+    .mcc-desc { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 6px; }
+    .mcc-items { margin-top: 20px; display: flex; flex-direction: column; gap: 6px; }
+    .mcc-item { display: flex; justify-content: space-between; align-items: center; }
+    .mcc-item-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .mcc-item-price { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.95); }
+    .mcc-footer {
+      padding: 12px 24px; background: rgba(0,0,0,0.2);
+      font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600;
+    }
+
+    /* ═══════════════════════════════════════
+       SLIDE 10 — HOW IT WORKS
+    ═══════════════════════════════════════ */
+    .s10 { background: var(--dark2); }
+    .s10-content { max-width: 1000px; width: 100%; }
+    .s10-header { text-align: center; margin-bottom: 64px; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; position: relative; }
+    .steps::before {
+      content: ''; position: absolute; top: 52px; left: calc(16.67% + 28px); right: calc(16.67% + 28px);
+      height: 2px; background: linear-gradient(90deg, var(--orange), var(--yellow));
+      pointer-events: none;
+    }
+    .step { text-align: center; padding: 0 24px; }
+    .step-num {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--orange-dark), var(--orange));
+      font-size: 22px; font-weight: 800; color: white;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px; position: relative; z-index: 1;
+      box-shadow: 0 8px 24px rgba(255,112,67,0.4);
+    }
+    .step h3 { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+    .step p { font-size: 14px; color: rgba(255,255,255,0.45); line-height: 1.7; }
+    .step-detail {
+      margin-top: 20px; padding: 16px; border-radius: 14px;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      font-size: 13px; color: rgba(255,255,255,0.35);
+    }
+
+    /* ═══════════════════════════════════════
+       SLIDE 11 — TECH STACK
+    ═══════════════════════════════════════ */
+    .s11 { background: var(--dark); }
+    .s11-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; max-width: 1100px; width: 100%; }
+    .tech-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .tech-item {
+      padding: 20px; border-radius: 16px; display: flex; align-items: center; gap: 14px;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      transition: border-color 0.3s;
+    }
+    .tech-item:hover { border-color: rgba(255,112,67,0.3); }
+    .tech-icon { font-size: 28px; }
+    .tech-name { font-size: 14px; font-weight: 700; }
+    .tech-role { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    .tech-highlight {
+      margin-top: 28px; padding: 20px 24px; border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255,112,67,0.1), rgba(255,179,0,0.05));
+      border: 1px solid rgba(255,112,67,0.2);
+    }
+    .tech-highlight h4 { font-size: 14px; font-weight: 700; color: var(--orange); margin-bottom: 8px; }
+    .tech-highlight p { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.6; }
+
+    /* ═══════════════════════════════════════
+       SLIDE 12 — PRICING
+    ═══════════════════════════════════════ */
+    .s12 { background: var(--dark2); }
+    .s12-content { max-width: 900px; width: 100%; }
+    .s12-header { text-align: center; margin-bottom: 56px; }
+    .pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+    .pricing-card {
+      border-radius: 24px; padding: 36px 28px; position: relative; overflow: hidden;
+      transition: transform 0.3s;
+    }
+    .pricing-card:hover { transform: translateY(-4px); }
+    .pricing-card.standard { background: var(--dark3); border: 1px solid var(--glass-border); }
+    .pricing-card.featured {
+      background: linear-gradient(135deg, rgba(255,112,67,0.15) 0%, rgba(255,179,0,0.08) 100%);
+      border: 1.5px solid rgba(255,112,67,0.4);
+    }
+    .pricing-card.featured::before {
+      content: 'RECOMMENDED'; position: absolute; top: 16px; right: -28px;
+      background: var(--orange); font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+      padding: 4px 36px; transform: rotate(35deg); color: white;
+    }
+    .pricing-tier { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); }
+    .pricing-price {
+      font-size: 42px; font-weight: 900; letter-spacing: -0.04em;
+      margin: 12px 0 4px; line-height: 1;
+    }
+    .pricing-price .currency { font-size: 22px; font-weight: 600; vertical-align: top; margin-top: 8px; display: inline-block; }
+    .pricing-period { font-size: 13px; color: var(--text-muted); }
+    .pricing-divider { height: 1px; background: var(--glass-border); margin: 24px 0; }
+    .pricing-feature { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; font-size: 13px; }
+    .pricing-feature .check { color: var(--orange); font-weight: 800; flex-shrink: 0; }
+    .pricing-btn {
+      width: 100%; margin-top: 28px; padding: 13px;
+      border-radius: 12px; border: none; cursor: pointer;
+      font-size: 14px; font-weight: 700; transition: opacity 0.2s;
+    }
+    .pricing-btn.outline {
+      background: transparent; border: 1.5px solid rgba(255,255,255,0.15); color: white;
+    }
+    .pricing-btn.primary {
+      background: linear-gradient(135deg, var(--orange-dark), var(--orange)); color: white;
+    }
+    .pricing-btn:hover { opacity: 0.85; }
+    .competitor-note {
+      text-align: center; margin-top: 32px; font-size: 13px; color: rgba(255,255,255,0.35);
+    }
+    .competitor-note strong { color: rgba(255,255,255,0.6); }
+
+    /* ═══════════════════════════════════════
+       SLIDE 13 — MARKET OPPORTUNITY
+    ═══════════════════════════════════════ */
+    .s13 { background: var(--dark); }
+    .s13-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; max-width: 1100px; width: 100%; }
+    .market-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .market-stat {
+      padding: 24px; border-radius: 18px;
+      background: var(--glass); border: 1px solid var(--glass-border);
+    }
+    .market-stat .big { font-size: 40px; font-weight: 900; letter-spacing: -0.04em; line-height: 1; }
+    .market-stat .label { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 8px; line-height: 1.5; }
+    .market-stat.accent { background: linear-gradient(135deg, rgba(255,112,67,0.12), rgba(255,179,0,0.06)); border-color: rgba(255,112,67,0.25); }
+    .market-stat.accent .big { color: var(--orange); }
+
+    /* ═══════════════════════════════════════
+       SLIDE 14 — CTA / CLOSE
+    ═══════════════════════════════════════ */
+    .s14 { background: var(--dark); }
+    .s14-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 70% at 50% 50%, rgba(255,112,67,0.15) 0%, transparent 65%);
+    }
+    .s14-content { position: relative; z-index: 1; text-align: center; max-width: 720px; }
+    .s14-label {
+      font-size: 13px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--orange); margin-bottom: 28px;
+    }
+    .s14-title {
+      font-size: clamp(48px, 7vw, 80px); font-weight: 800;
+      line-height: 1.05; letter-spacing: -0.03em;
+    }
+    .s14-title .or { color: rgba(255,255,255,0.25); font-weight: 300; font-style: italic; }
+    .s14-sub { font-size: 18px; color: rgba(255,255,255,0.4); margin-top: 20px; line-height: 1.6; }
+    .s14-ctas {
+      display: flex; gap: 16px; justify-content: center; margin-top: 48px;
+    }
+    .cta-btn {
+      padding: 16px 36px; border-radius: 14px; font-size: 16px; font-weight: 700;
+      cursor: pointer; border: none; transition: all 0.2s;
+    }
+    .cta-btn.primary {
+      background: linear-gradient(135deg, var(--orange-dark), var(--orange));
+      color: white; box-shadow: 0 8px 32px rgba(255,112,67,0.4);
+    }
+    .cta-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(255,112,67,0.5); }
+    .cta-btn.ghost {
+      background: transparent; color: white;
+      border: 1.5px solid rgba(255,255,255,0.15);
+    }
+    .cta-btn.ghost:hover { border-color: rgba(255,255,255,0.35); }
+    .contact-detail { margin-top: 40px; font-size: 14px; color: rgba(255,255,255,0.3); }
+    .contact-detail a { color: var(--orange); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<!-- ─── CONTROLS ─── -->
+<div class="slide-logo">CCC</div>
+<div class="slide-counter"><span id="cur">1</span> / 14</div>
+<div class="progress-bar" id="progressBar"></div>
+<div class="nav-dots" id="navDots"></div>
+<button class="nav-arrow left" id="prevBtn" onclick="go(-1)">
+  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+</button>
+<button class="nav-arrow right" id="nextBtn" onclick="go(1)">
+  <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+</button>
+
+<div class="deck" id="deck">
+
+  <!-- ════════════════ SLIDE 1 — HERO ════════════════ -->
+  <section class="slide s1 active" data-index="0">
+    <div class="s1-bg"></div>
+    <div class="s1-ring"></div><div class="s1-ring"></div><div class="s1-ring"></div>
+    <div class="s1-content">
+      <div class="s1-eyebrow">Investor Presentation · 2025</div>
+      <h1 class="s1-title">Campus<br><span>Cafe Connect</span></h1>
+      <p class="s1-sub">The digital ordering platform built for campus cafeterias</p>
+      <div class="s1-badge">
+        <span class="dot-live"></span>
+        Live · Built with real-time technology
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 2 — THE PROBLEM ════════════════ -->
+  <section class="slide s2" data-index="1">
+    <div class="s2-grid">
+      <div>
+        <div class="section-eyebrow">The Problem</div>
+        <h2 class="section-title">Campus cafeterias are stuck in the past.</h2>
+        <p class="section-body">Students lose valuable time standing in queues. Cafe staff struggle with manual order management. Critical sales data goes uncaptured. The result? Lost revenue, frustrated customers, and operational chaos.</p>
+      </div>
+      <div class="problem-stats">
+        <div class="stat-card">
+          <div class="num">20+</div>
+          <div class="label">Minutes lost per student per day waiting in line</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">40%</div>
+          <div class="label">Orders have errors when taken manually by staff</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">₹0</div>
+          <div class="label">Data captured on peak hours, popular items, or customer behavior</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 3 — THE SOLUTION ════════════════ -->
+  <section class="slide s3" data-index="2">
+    <div class="s3-bg"></div>
+    <div class="s3-content">
+      <div class="section-eyebrow" style="text-align:center">The Solution</div>
+      <h2 class="s3-title">One app.<br><span class="highlight">Total control.</span></h2>
+      <div class="s3-pillars">
+        <div class="pillar">
+          <div class="pillar-icon">📱</div>
+          <h3>Student-First Ordering</h3>
+          <p>Browse, customize, and order from anywhere on campus. No queues. No confusion.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-icon">⚡</div>
+          <h3>Real-Time Operations</h3>
+          <p>Live order management for staff. Instant status updates. Zero missed orders.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-icon">📊</div>
+          <h3>Smart Analytics</h3>
+          <p>Revenue dashboards, top sellers, and customer insights — all in one place.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 4 — MENU EXPERIENCE ════════════════ -->
+  <section class="slide s4" data-index="3">
+    <div class="s4-grid">
+      <div>
+        <div class="section-eyebrow">Product · Student App</div>
+        <h2 class="section-title">A menu students actually love using.</h2>
+        <p class="section-body">Four curated categories, beautiful item cards, and a cart that makes ordering feel effortless. Designed mobile-first with warm, inviting visuals that match the cafe's identity.</p>
+        <div style="margin-top:32px; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px; font-size:14px; color:rgba(255,255,255,0.5);">
+            <span style="color:var(--orange); font-weight:800;">✓</span> 4 food categories, 14+ menu items
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; font-size:14px; color:rgba(255,255,255,0.5);">
+            <span style="color:var(--orange); font-weight:800;">✓</span> Real-time stock availability
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; font-size:14px; color:rgba(255,255,255,0.5);">
+            <span style="color:var(--orange); font-weight:800;">✓</span> Keyword search across all items
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; font-size:14px; color:rgba(255,255,255,0.5);">
+            <span style="color:var(--orange); font-weight:800;">✓</span> Favorites & personalized experience
+          </div>
+        </div>
+      </div>
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="phone-header">
+              <div class="app-name">Campus Cafe Connect</div>
+              <div class="greeting">What are you hungry for?</div>
+              <div class="phone-search">
+                <span>🔍</span> Search menu items...
+              </div>
+            </div>
+            <div style="padding:10px 12px 0; font-size:10px; font-weight:700; color:#666; font-family:'PT Sans'">CATEGORIES</div>
+            <div class="phone-cats">
+              <div class="phone-cat cat-si">
+                <div class="cat-emoji">🍛</div>
+                <div class="cat-name">South Indian</div>
+                <div class="cat-desc">Classic flavors</div>
+              </div>
+              <div class="phone-cat cat-ni">
+                <div class="cat-emoji">🫓</div>
+                <div class="cat-name">North Indian</div>
+                <div class="cat-desc">Hearty dishes</div>
+              </div>
+              <div class="phone-cat cat-rf">
+                <div class="cat-emoji">☕</div>
+                <div class="cat-name">Refreshments</div>
+                <div class="cat-desc">Cool drinks</div>
+              </div>
+              <div class="phone-cat cat-ch">
+                <div class="cat-emoji">🥙</div>
+                <div class="cat-name">Chats</div>
+                <div class="cat-desc">Street food</div>
+              </div>
+            </div>
+            <div class="phone-nav">
+              <div class="phone-nav-item active">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label" style="color:#FF7043">Menu</span>
+              </div>
+              <div class="phone-nav-item">
+                <span class="nav-icon">🛒</span>
+                <span class="nav-label">Cart</span>
+              </div>
+              <div class="phone-nav-item">
+                <span class="nav-icon">📋</span>
+                <span class="nav-label">Orders</span>
+              </div>
+              <div class="phone-nav-item">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Profile</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 5 — SMART ORDERING ════════════════ -->
+  <section class="slide s5" data-index="4">
+    <div class="s5-grid">
+      <div class="menu-card-grid">
+        <div class="menu-card">
+          <div class="menu-card-img" style="background:linear-gradient(135deg,#FFF3E0,#FFE0B2)">🍛</div>
+          <div class="menu-card-body">
+            <div class="menu-card-name">Masala Dosa</div>
+            <div class="menu-card-price">₹40</div>
+            <div class="menu-card-desc">Crispy rice crepe filled with spiced potatoes</div>
+            <button class="menu-card-add">+</button>
+          </div>
+        </div>
+        <div class="menu-card">
+          <div class="menu-card-img" style="background:linear-gradient(135deg,#FCE4EC,#F8BBD9)">🫓</div>
+          <div class="menu-card-body">
+            <div class="menu-card-name">Chole Bhature</div>
+            <div class="menu-card-price">₹70</div>
+            <div class="menu-card-desc">Spicy chickpea curry with fluffy fried bread</div>
+            <button class="menu-card-add">+</button>
+          </div>
+        </div>
+        <div class="menu-card">
+          <div class="menu-card-img" style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9)">🥙</div>
+          <div class="menu-card-body">
+            <div class="menu-card-name">Pani Puri</div>
+            <div class="menu-card-price">₹30</div>
+            <div class="menu-card-desc">Hollow crisps filled with tangy water</div>
+            <button class="menu-card-add">+</button>
+          </div>
+        </div>
+        <div class="menu-card">
+          <div class="menu-card-img" style="background:linear-gradient(135deg,#E3F2FD,#BBDEFB)">☕</div>
+          <div class="menu-card-body">
+            <div class="menu-card-name">Filter Coffee</div>
+            <div class="menu-card-price">₹20</div>
+            <div class="menu-card-desc">South Indian style authentic filter coffee</div>
+            <button class="menu-card-add">+</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-eyebrow">Product · Item Selection</div>
+        <h2 class="section-title">From browse to cart in two taps.</h2>
+        <p class="section-body">Each item displays live stock status, pricing, and a rich description. Students can add to cart instantly, adjust quantities, and see their running total in real time.</p>
+        <div style="margin-top:36px; padding:20px 24px; border-radius:18px; background:rgba(255,112,67,0.08); border:1px solid rgba(255,112,67,0.2);">
+          <div style="font-size:13px; color:var(--orange); font-weight:700; margin-bottom:8px;">SAMPLE MENU · 14 ITEMS</div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <span style="font-size:11px; padding:4px 10px; border-radius:100px; background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.5);">₹15 Chai</span>
+            <span style="font-size:11px; padding:4px 10px; border-radius:100px; background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.5);">₹30 Plain Dosa</span>
+            <span style="font-size:11px; padding:4px 10px; border-radius:100px; background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.5);">₹40 Masala Dosa</span>
+            <span style="font-size:11px; padding:4px 10px; border-radius:100px; background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.5);">₹60 Bisi Bele Bath</span>
+            <span style="font-size:11px; padding:4px 10px; border-radius:100px; background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.5);">₹80 Chapati Platter</span>
+            <span style="font-size:11px; padding:4px 10px; border-radius:100px; background:rgba(255,112,67,0.15); color:var(--orange-light);">+ 9 more</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 6 — ORDER TRACKING ════════════════ -->
+  <section class="slide s6" data-index="5">
+    <div class="s6-grid">
+      <div>
+        <div class="section-eyebrow">Product · Live Tracking</div>
+        <h2 class="section-title">Every order. Live. Always.</h2>
+        <p class="section-body">Students receive real-time status updates from the moment they place an order to when it's ready for pickup. No calls. No confusion. Just a seamless experience powered by Supabase real-time subscriptions.</p>
+        <div style="margin-top:28px; display:flex; flex-direction:column; gap:10px;">
+          <div style="font-size:13px; color:rgba(255,255,255,0.45); display:flex; align-items:center; gap:10px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:var(--orange); display:inline-block; flex-shrink:0"></span>
+            6 distinct order states with live transitions
+          </div>
+          <div style="font-size:13px; color:rgba(255,255,255,0.45); display:flex; align-items:center; gap:10px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:var(--orange); display:inline-block; flex-shrink:0"></span>
+            QR code payment integration at checkout
+          </div>
+          <div style="font-size:13px; color:rgba(255,255,255,0.45); display:flex; align-items:center; gap:10px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:var(--orange); display:inline-block; flex-shrink:0"></span>
+            Full order history accessible at any time
+          </div>
+          <div style="font-size:13px; color:rgba(255,255,255,0.45); display:flex; align-items:center; gap:10px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:var(--orange); display:inline-block; flex-shrink:0"></span>
+            Station-based fulfillment routing
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:center;">
+        <div class="order-tracker">
+          <div class="order-id">ORDER #CBC-2847</div>
+          <div class="order-title">Your Order</div>
+          <div class="order-amount">₹110 · 3 items</div>
+          <div class="order-items-mini">
+            <div class="order-item-row"><span>Masala Dosa</span><span>₹40</span></div>
+            <div class="order-item-row"><span>Chole Bhature</span><span>₹70</span></div>
+            <div class="order-item-row"><span>Chai</span><span>₹15</span></div>
+          </div>
+          <div class="status-track">
+            <div class="status-line"></div>
+            <div class="status-line-fill" style="height:45%"></div>
+            <div class="status-step">
+              <div class="status-dot done">✓</div>
+              <div class="status-info"><div class="title">Order Placed</div><div class="sub">2:14 PM · Confirmed</div></div>
+            </div>
+            <div class="status-step">
+              <div class="status-dot done">✓</div>
+              <div class="status-info"><div class="title">Payment Received</div><div class="sub">2:14 PM · QR scan</div></div>
+            </div>
+            <div class="status-step">
+              <div class="status-dot active">🔥</div>
+              <div class="status-info"><div class="title">Being Prepared</div><div class="sub">Est. 8 mins</div></div>
+            </div>
+            <div class="status-step">
+              <div class="status-dot pending"></div>
+              <div class="status-info"><div class="title" style="opacity:.4">Ready for Pickup</div><div class="sub">Station A</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 7 — ADMIN DASHBOARD ════════════════ -->
+  <section class="slide s7" data-index="6">
+    <div style="max-width:900px; width:100%;">
+      <div style="text-align:center; margin-bottom:40px;">
+        <div class="section-eyebrow">Product · Admin Panel</div>
+        <h2 class="section-title">Command center for cafe management.</h2>
+      </div>
+      <div class="dashboard-mock">
+        <div class="dash-header">
+          <div class="dash-title">Admin Dashboard</div>
+          <div class="dash-badge">● Live</div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Total Revenue</div>
+            <div class="kpi-value" style="color:#66BB6A">₹48.2K</div>
+            <div class="kpi-change up">↑ 18% this week</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Orders Today</div>
+            <div class="kpi-value" style="color:var(--orange)">342</div>
+            <div class="kpi-change up">↑ 12% vs avg</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Unique Customers</div>
+            <div class="kpi-value" style="color:#42A5F5">218</div>
+            <div class="kpi-change up">↑ 9% this month</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Avg Order Value</div>
+            <div class="kpi-value">₹141</div>
+            <div class="kpi-change down">↓ 3% vs last week</div>
+          </div>
+        </div>
+        <div class="chart-area">
+          <div class="chart-title">Revenue Trend · Last 7 Days</div>
+          <canvas id="revenueChart" height="110"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 8 — ANALYTICS ════════════════ -->
+  <section class="slide s8" data-index="7">
+    <div style="max-width:1000px; width:100%;">
+      <div style="text-align:center; margin-bottom:40px;">
+        <div class="section-eyebrow">Product · Analytics</div>
+        <h2 class="section-title">Data that drives decisions.</h2>
+      </div>
+      <div class="s8-layout">
+        <div class="analytics-card">
+          <h3>Top Selling Items</h3>
+          <div class="top-item">
+            <div class="top-item-rank">#1</div>
+            <div class="top-item-name">Masala Dosa</div>
+            <div class="top-item-bar-wrap"><div class="top-item-bar" style="width:100%"></div></div>
+            <div class="top-item-val">89</div>
+          </div>
+          <div class="top-item">
+            <div class="top-item-rank">#2</div>
+            <div class="top-item-name">Chole Bhature</div>
+            <div class="top-item-bar-wrap"><div class="top-item-bar" style="width:78%"></div></div>
+            <div class="top-item-val">69</div>
+          </div>
+          <div class="top-item">
+            <div class="top-item-rank">#3</div>
+            <div class="top-item-name">Chai</div>
+            <div class="top-item-bar-wrap"><div class="top-item-bar" style="width:70%"></div></div>
+            <div class="top-item-val">62</div>
+          </div>
+          <div class="top-item">
+            <div class="top-item-rank">#4</div>
+            <div class="top-item-name">Pani Puri</div>
+            <div class="top-item-bar-wrap"><div class="top-item-bar" style="width:58%"></div></div>
+            <div class="top-item-val">51</div>
+          </div>
+          <div class="top-item">
+            <div class="top-item-rank">#5</div>
+            <div class="top-item-name">Dahi Puri</div>
+            <div class="top-item-bar-wrap"><div class="top-item-bar" style="width:48%"></div></div>
+            <div class="top-item-val">43</div>
+          </div>
+          <div style="margin-top:20px;">
+            <canvas id="categoryChart" height="140"></canvas>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:20px;">
+          <div class="analytics-card">
+            <h3>Order Status Breakdown</h3>
+            <div class="order-status-row">
+              <div class="status-pill delivered">DELIVERED</div>
+              <div style="flex:1; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;"><div style="height:100%; width:68%; background:#66BB6A; border-radius:3px;"></div></div>
+              <div style="font-size:13px; font-weight:700; color:#66BB6A; width:36px; text-align:right;">68%</div>
+            </div>
+            <div class="order-status-row">
+              <div class="status-pill cooking">COOKING</div>
+              <div style="flex:1; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;"><div style="height:100%; width:15%; background:var(--orange); border-radius:3px;"></div></div>
+              <div style="font-size:13px; font-weight:700; color:var(--orange); width:36px; text-align:right;">15%</div>
+            </div>
+            <div class="order-status-row">
+              <div class="status-pill pending">PENDING</div>
+              <div style="flex:1; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;"><div style="height:100%; width:10%; background:var(--yellow); border-radius:3px;"></div></div>
+              <div style="font-size:13px; font-weight:700; color:var(--yellow); width:36px; text-align:right;">10%</div>
+            </div>
+            <div class="order-status-row">
+              <div class="status-pill cancelled">CANCELLED</div>
+              <div style="flex:1; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;"><div style="height:100%; width:7%; background:#EF5350; border-radius:3px;"></div></div>
+              <div style="font-size:13px; font-weight:700; color:#EF5350; width:36px; text-align:right;">7%</div>
+            </div>
+          </div>
+          <div class="analytics-card">
+            <h3>Export Capabilities</h3>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:rgba(255,255,255,0.5);">
+                <span style="color:var(--orange)">📄</span> Export orders to CSV
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:rgba(255,255,255,0.5);">
+                <span style="color:var(--orange)">📊</span> Export menu items with pricing
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:rgba(255,255,255,0.5);">
+                <span style="color:var(--orange)">🔄</span> Real-time sync with Supabase backend
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 9 — MENU SHOWCASE ════════════════ -->
+  <section class="slide s9" data-index="8">
+    <div class="s9-content">
+      <div class="s9-header">
+        <div class="section-eyebrow">Product · The Menu</div>
+        <h2 class="section-title">Four categories. Endless appetite.</h2>
+      </div>
+      <div class="menu-showcase">
+        <div class="menu-category-card mcc-si">
+          <div class="mcc-body">
+            <div class="mcc-emoji">🍛</div>
+            <div class="mcc-name">South Indian</div>
+            <div class="mcc-desc">Classic flavors from the South</div>
+            <div class="mcc-items">
+              <div class="mcc-item"><span class="mcc-item-name">Masala Dosa</span><span class="mcc-item-price">₹40</span></div>
+              <div class="mcc-item"><span class="mcc-item-name">Set Dosa</span><span class="mcc-item-price">₹50</span></div>
+              <div class="mcc-item"><span class="mcc-item-name">Plain Dosa</span><span class="mcc-item-price">₹30</span></div>
+              <div class="mcc-item"><span class="mcc-item-name">Bisi Bele Bath</span><span class="mcc-item-price">₹60</span></div>
+            </div>
+          </div>
+          <div class="mcc-footer">4 items · ₹30–₹60</div>
+        </div>
+        <div class="menu-category-card mcc-ni">
+          <div class="mcc-body">
+            <div class="mcc-emoji">🫓</div>
+            <div class="mcc-name">North Indian</div>
+            <div class="mcc-desc">Rich and hearty dishes</div>
+            <div class="mcc-items">
+              <div class="mcc-item"><span class="mcc-item-name">Chapati Platter</span><span class="mcc-item-price">₹80</span></div>
+              <div class="mcc-item"><span class="mcc-item-name">Chole Bhature</span><span class="mcc-item-price">₹70</span></div>
+              <div class="mcc-item"><span class="mcc-item-name">Aloo Paratha</span><span class="mcc-item-price">₹50</span></div>
+              <div class="mcc-item"><span class="mcc-item-name">Pulao</span><span class="mcc-item-price">₹60</span></div>
+            </div>
+          </div>
+          <div class="mcc-footer">4 items · ₹50–₹80</div>
+        </div>
+        <div class="menu-category-card mcc-rf">
+          <div class="mcc-body">
+            <div class="mcc-emoji">☕</div>
+            <div class="mcc-name">Refreshments</div>
+            <div class="mcc-desc">Cool drinks to refresh</div>
+            <div class="mcc-items">
+              <div class="mcc-item"><span class="mcc-item-name">Chai</span><span class="mcc-item-price">₹15</span></div>
+              <div class="mcc-item"><span class="mcc-item-name">Filter Coffee</span><span class="mcc-item-price">₹20</span></div>
+            </div>
+          </div>
+          <div class="mcc-footer">2 items · ₹15–₹20</div>
+        </div>
+        <div class="menu-category-card mcc-ch">
+          <div class="mcc-body">
+            <div class="mcc-emoji">🥙</div>
+            <div class="mcc-name">Chats</div>
+            <div class="mcc-desc">Tangy street food delights</div>
+            <div class="mcc-items">
+              <div class="mcc-item"><span class="mcc-item-name">Dahi Puri</span><span class="mcc-item-price">₹40</span></div>
+              <div class="mcc-item"><span class="mcc-item-name">Pani Puri</span><span class="mcc-item-price">₹30</span></div>
+              <div class="mcc-item"><span class="mcc-item-name">Masala Puri</span><span class="mcc-item-price">₹35</span></div>
+              <div class="mcc-item"><span class="mcc-item-name">Bhel Puri</span><span class="mcc-item-price">₹35</span></div>
+            </div>
+          </div>
+          <div class="mcc-footer">4 items · ₹30–₹40</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 10 — HOW IT WORKS ════════════════ -->
+  <section class="slide s10" data-index="9">
+    <div class="s10-content">
+      <div class="s10-header">
+        <div class="section-eyebrow">How It Works</div>
+        <h2 class="section-title">Three steps. Zero friction.</h2>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Browse & Order</h3>
+          <p>Students open the app, browse the live menu, add items to cart, and place their order in under a minute.</p>
+          <div class="step-detail">No login required to browse. Personalized after sign-in.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Pay & Wait</h3>
+          <p>A QR code is generated at checkout. Students scan to pay and immediately receive live order status updates.</p>
+          <div class="step-detail">Real-time Supabase subscriptions power instant push notifications.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Pickup & Enjoy</h3>
+          <p>Staff marks the order as ready. Student gets notified and walks to the station to collect — no wait, no queue.</p>
+          <div class="step-detail">Station-routing ensures orders reach the right prep counter.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 11 — TECH STACK ════════════════ -->
+  <section class="slide s11" data-index="10">
+    <div class="s11-grid">
+      <div>
+        <div class="section-eyebrow">Technology</div>
+        <h2 class="section-title">Built for scale. Engineered to last.</h2>
+        <p class="section-body">Every component was chosen for reliability, performance, and developer velocity. The stack is modern, well-supported, and cost-effective to operate.</p>
+        <div class="tech-highlight">
+          <h4>Why this stack matters for investors</h4>
+          <p>No expensive infrastructure. Supabase handles auth, database, and real-time at a fraction of the cost of traditional backends. Next.js ensures sub-second load times. The entire system can be maintained by a single developer.</p>
+        </div>
+      </div>
+      <div>
+        <div class="tech-grid">
+          <div class="tech-item">
+            <div class="tech-icon">▲</div>
+            <div><div class="tech-name">Next.js 14</div><div class="tech-role">App Router · SSR · SEO</div></div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">🗄️</div>
+            <div><div class="tech-name">Supabase</div><div class="tech-role">Auth · DB · Real-time</div></div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">🔷</div>
+            <div><div class="tech-name">TypeScript</div><div class="tech-role">Type-safe · Reliable</div></div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">🎨</div>
+            <div><div class="tech-name">Tailwind CSS</div><div class="tech-role">Design system · Fast UI</div></div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">🧩</div>
+            <div><div class="tech-name">shadcn/ui</div><div class="tech-role">Accessible components</div></div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">🚀</div>
+            <div><div class="tech-name">Firebase Hosting</div><div class="tech-role">Global CDN · Fast deploys</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 12 — PRICING ════════════════ -->
+  <section class="slide s12" data-index="11">
+    <div class="s12-content">
+      <div class="s12-header">
+        <div class="section-eyebrow">Pricing</div>
+        <h2 class="section-title">Simple, honest pricing.</h2>
+      </div>
+      <div class="pricing-grid">
+        <div class="pricing-card standard">
+          <div class="pricing-tier">Annual SaaS</div>
+          <div class="pricing-price"><span class="currency">₹</span>50,000</div>
+          <div class="pricing-period">per year · all-inclusive</div>
+          <div class="pricing-divider"></div>
+          <div class="pricing-feature"><span class="check">✓</span> Full platform access</div>
+          <div class="pricing-feature"><span class="check">✓</span> Maintenance & security updates</div>
+          <div class="pricing-feature"><span class="check">✓</span> Technical support included</div>
+          <div class="pricing-feature"><span class="check">✓</span> Always up-to-date system</div>
+          <button class="pricing-btn outline">Learn More</button>
+        </div>
+        <div class="pricing-card featured">
+          <div class="pricing-tier">One-Time License</div>
+          <div class="pricing-price"><span class="currency">₹</span>1,50,000</div>
+          <div class="pricing-period">one-time · perpetual ownership</div>
+          <div class="pricing-divider"></div>
+          <div class="pricing-feature"><span class="check">✓</span> Full ownership of software</div>
+          <div class="pricing-feature"><span class="check">✓</span> No recurring fees ever</div>
+          <div class="pricing-feature"><span class="check">✓</span> Ideal for institutions</div>
+          <div class="pricing-feature"><span class="check">✓</span> First year maintenance included</div>
+          <button class="pricing-btn primary">Get Started</button>
+        </div>
+        <div class="pricing-card standard">
+          <div class="pricing-tier">Annual Maintenance</div>
+          <div class="pricing-price"><span class="currency">₹</span>25,000</div>
+          <div class="pricing-period">per year · add-on to license</div>
+          <div class="pricing-divider"></div>
+          <div class="pricing-feature"><span class="check">✓</span> Bug fixes & patches</div>
+          <div class="pricing-feature"><span class="check">✓</span> Security updates</div>
+          <div class="pricing-feature"><span class="check">✓</span> Dependency upgrades</div>
+          <div class="pricing-feature"><span class="check">✓</span> Priority support</div>
+          <button class="pricing-btn outline">Add On</button>
+        </div>
+      </div>
+      <div class="competitor-note">
+        Comparable SaaS (UrbanPiper, Petpooja): <strong>₹24,000–₹1,20,000/year</strong> with generic features.
+        Custom dev equivalent: <strong>₹8–15 lakhs</strong>.
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 13 — MARKET OPPORTUNITY ════════════════ -->
+  <section class="slide s13" data-index="12">
+    <div class="s13-grid">
+      <div>
+        <div class="section-eyebrow">Market Opportunity</div>
+        <h2 class="section-title">A massive, underserved market.</h2>
+        <p class="section-body">India has thousands of colleges and universities, each with one or more cafeterias operating on manual processes. The campus food service market is largely untouched by modern digital solutions.</p>
+        <div style="margin-top:28px; padding:20px 24px; border-radius:18px; background:rgba(255,112,67,0.06); border:1px solid rgba(255,112,67,0.15);">
+          <div style="font-size:13px; font-weight:700; color:var(--orange); margin-bottom:12px;">COMPETITIVE ADVANTAGE</div>
+          <div style="font-size:13px; color:rgba(255,255,255,0.45); line-height:1.8;">
+            Unlike generic restaurant SaaS, Campus Cafe Connect is purpose-built for the campus context — student accounts, station routing, cashier interface, and analytics designed for high-volume, low-price environments.
+          </div>
+        </div>
+      </div>
+      <div class="market-stats">
+        <div class="market-stat accent">
+          <div class="big">50K+</div>
+          <div class="label">Colleges & universities in India with campus cafeterias</div>
+        </div>
+        <div class="market-stat">
+          <div class="big" style="color:#42A5F5">₹2500Cr</div>
+          <div class="label">Estimated campus food service market size in India</div>
+        </div>
+        <div class="market-stat">
+          <div class="big" style="color:#66BB6A">10×</div>
+          <div class="label">ROI vs. cost of building equivalent custom software</div>
+        </div>
+        <div class="market-stat accent">
+          <div class="big">Day 1</div>
+          <div class="label">Ready to deploy — no setup time, full feature parity</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ SLIDE 14 — CTA ════════════════ -->
+  <section class="slide s14" data-index="13">
+    <div class="s14-bg"></div>
+    <div class="s14-content">
+      <div class="s14-label">Ready to transform your campus cafe?</div>
+      <h2 class="s14-title">Let's build something<br><span class="or">extraordinary</span><br>together.</h2>
+      <p class="s14-sub">A turnkey digital ordering platform. Real-time operations. Powerful analytics. Available today.</p>
+      <div class="s14-ctas">
+        <button class="cta-btn primary">Request a Demo</button>
+        <button class="cta-btn ghost">View Pricing</button>
+      </div>
+      <div class="contact-detail">
+        Contact us at <a href="mailto:faisal.hussain4150@gmail.com">faisal.hussain4150@gmail.com</a>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /deck -->
+
+<script>
+  const TOTAL = 14;
+  let cur = 0;
+  const slides = document.querySelectorAll('.slide');
+  const counter = document.getElementById('cur');
+  const progressBar = document.getElementById('progressBar');
+  const navDots = document.getElementById('navDots');
+
+  // build dots
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    navDots.appendChild(d);
+  }
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= TOTAL) return;
+    slides[cur].classList.remove('active');
+    slides[cur].classList.add('prev');
+    setTimeout(() => slides[cur].classList.remove('prev'), 700);
+    cur = idx;
+    slides[cur].classList.add('active');
+    counter.textContent = cur + 1;
+    progressBar.style.width = ((cur + 1) / TOTAL * 100) + '%';
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === cur));
+
+    // Init charts when relevant slides become active
+    if (cur === 6) initRevenueChart();
+    if (cur === 7) initCategoryChart();
+  }
+
+  function go(dir) { goTo(cur + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); go(-1); }
+  });
+
+  // swipe
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const dx = tx - e.changedTouches[0].clientX;
+    if (Math.abs(dx) > 50) go(dx > 0 ? 1 : -1);
+  });
+
+  // progress init
+  progressBar.style.width = (1 / TOTAL * 100) + '%';
+
+  /* ─── CHARTS ─── */
+  let revenueChartInst = null;
+  let catChartInst = null;
+
+  function initRevenueChart() {
+    if (revenueChartInst) return;
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    revenueChartInst = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: [5200, 6800, 5900, 7400, 8200, 9100, 8400],
+          fill: true,
+          borderColor: '#FF7043',
+          backgroundColor: 'rgba(255,112,67,0.1)',
+          tension: 0.4,
+          pointBackgroundColor: '#FF7043',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#666', font: { size: 11 } } },
+          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#666', font: { size: 11 }, callback: v => '₹' + (v/1000).toFixed(0) + 'K' } }
+        }
+      }
+    });
+  }
+
+  function initCategoryChart() {
+    if (catChartInst) return;
+    const ctx = document.getElementById('categoryChart').getContext('2d');
+    catChartInst = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['South Indian', 'North Indian', 'Chats', 'Refreshments'],
+        datasets: [{
+          data: [38, 30, 22, 10],
+          backgroundColor: ['#FF6F00', '#C62828', '#6A1B9A', '#1565C0'],
+          borderColor: '#1A1A1A',
+          borderWidth: 3,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { color: 'rgba(255,255,255,0.5)', font: { size: 11 }, padding: 12, boxWidth: 10, boxHeight: 10 }
+          }
+        }
+      }
+    });
+  }
+</script>
+</body>
+</html>
