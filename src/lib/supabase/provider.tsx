@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
-import { SupabaseClient, User, Session, AuthChangeEvent } from '@supabase/supabase-js';
+import { SupabaseClient, User } from '@supabase/supabase-js';
 import { supabase } from './client';
 import type { UserProfile } from '@/lib/types';
 import { useRouter, usePathname } from 'next/navigation';
@@ -42,113 +42,55 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const processSession = useCallback(async (session: Session | null) => {
-    const currentUser = session?.user ?? null;
-    setUser(currentUser);
-    if (currentUser) {
-      await fetchUserProfile(currentUser);
-    } else {
-      setUserProfile(null);
-    }
-  }, [fetchUserProfile]);
-
-
   useEffect(() => {
-    let sessionTimeout: NodeJS.Timeout;
+    let isMounted = true;
 
-    const checkSessionActivity = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+    // Safety net: never let the app hang on the initial loading screen, even
+    // if the very first auth event is delayed for some reason.
+    const loadingSafetyTimer = setTimeout(() => {
+      if (isMounted) setIsUserLoading(false);
+    }, 8000);
 
-        if (error || !session) {
-          setUser(null);
-          setUserProfile(null);
-        } else if (session?.expires_at) {
-          const expiresAt = session.expires_at * 1000;
-          const timeUntilExpiry = expiresAt - Date.now();
-
-          if (timeUntilExpiry < 5000) {
-            console.log("Token expiring soon, actively refreshing immediately...");
-            const { data, error: refreshError } = await supabase.auth.refreshSession();
-            if (refreshError || !data.session) {
-              console.error("Failed to actively refresh token. Logging out.", refreshError);
-              setUser(null);
-              setUserProfile(null);
-            }
-          } else {
-            // Schedule the next check 1 minute before expiry, or at least 5 seconds from now
-            clearTimeout(sessionTimeout);
-            sessionTimeout = setTimeout(checkSessionActivity, Math.max(timeUntilExpiry - 60000, 5000));
-          }
-        }
-      } catch (err) {
-        console.error("Error during session check:", err);
-      }
-    };
-
-    const initSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (error || !session) {
-          await processSession(null);
-        } else {
-          await processSession(session);
-        }
-        await checkSessionActivity(); // start adaptive check
-      } catch (err) {
-        console.error("Critical session init error:", err);
-      } finally {
-        setIsUserLoading(false);
-      }
-    };
-
-    initSession();
-
-    // Listen for ALL auth events to ensure NO DELAYS when state changes
+    // onAuthStateChange fires INITIAL_SESSION on registration (handling the
+    // initial load) and TOKEN_REFRESHED whenever the token is renewed —
+    // including when the tab regains focus, since autoRefreshToken is enabled
+    // in client.ts. Supabase handles refresh/visibility internally, so no
+    // manual timer or focus/visibility listeners are needed here.
+    //
+    // CRITICAL: this callback runs while Supabase holds the auth lock
+    // (navigator.locks). It MUST stay synchronous — awaiting any Supabase call
+    // here re-acquires the same lock and deadlocks the entire client, which
+    // previously froze the app after tabbing out and back. Defer any Supabase
+    // work with setTimeout(0) so the lock is released first.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log(`Supabase auth event detected: ${event}`);
+      (event, session) => {
+        if (!isMounted) return;
 
-        if (event === 'SIGNED_OUT' || !session) {
-          setUser(null);
+        console.log(`Supabase auth event: ${event}`);
+
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+
+        if (!currentUser || event === 'SIGNED_OUT' || currentUser.is_anonymous) {
           setUserProfile(null);
-          clearTimeout(sessionTimeout);
-          return;
+        } else {
+          setTimeout(() => {
+            if (isMounted) fetchUserProfile(currentUser);
+          }, 0);
         }
 
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          await processSession(session);
-          await checkSessionActivity();
-        }
+        // Auth state is now resolved — release the initial loading screen.
+        setIsUserLoading(false);
+        clearTimeout(loadingSafetyTimer);
       }
     );
 
-    // Actively verify session immediately whenever the user switches back to the tab
-    const handleVisibilityCange = () => {
-      if (document.visibilityState === 'visible') {
-        checkSessionActivity();
-      }
-    };
-
-    const handleFocus = () => {
-      checkSessionActivity();
-    };
-
-    if (typeof window !== 'undefined') {
-      document.addEventListener('visibilitychange', handleVisibilityCange);
-      window.addEventListener('focus', handleFocus);
-    }
-
     return () => {
+      isMounted = false;
+      clearTimeout(loadingSafetyTimer);
       subscription.unsubscribe();
-      clearTimeout(sessionTimeout);
-      if (typeof window !== 'undefined') {
-        document.removeEventListener('visibilitychange', handleVisibilityCange);
-        window.removeEventListener('focus', handleFocus);
-      }
     };
-  }, [processSession]);
+  }, [fetchUserProfile]);
 
 
   useEffect(() => {

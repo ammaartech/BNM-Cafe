@@ -36,22 +36,55 @@ export async function POST(req: Request) {
             return NextResponse.redirect(new URL("/cart?error=MissingOrderMapping", req.url));
         }
 
-        // Update Supabase using Service Role Key to bypass RLS
+        // Require the service role key. We must never silently fall back to the anon key:
+        // post-RLS the anon key cannot update the order, which would leave paid orders stuck.
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        // Fallback to anon key if service role key is not available, but it might fail due to RLS
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!serviceRoleKey) {
+            console.error("SUPABASE_SERVICE_ROLE_KEY is not configured; cannot verify payment.");
+            return NextResponse.redirect(new URL("/cart?error=ServerMisconfigured", req.url));
+        }
+        const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-        const { error } = await supabase
+        // Load our order so we can validate the amount and apply the update idempotently.
+        const { data: dbOrder, error: fetchError } = await supabase
             .from("orders")
-            .update({
-                payment_status: "PAID",
-                payment_method: "RAZORPAY"
-            })
-            .eq("id", supabaseOrderId);
+            .select("total_amount, payment_status")
+            .eq("id", supabaseOrderId)
+            .single();
 
-        if (error) {
-            console.error("Failed to update order in Supabase:", error);
+        if (fetchError || !dbOrder) {
+            console.error("Order not found for verification:", supabaseOrderId, fetchError);
+            return NextResponse.redirect(new URL("/cart?error=OrderNotFound", req.url));
+        }
+
+        // Amount check: Razorpay amounts are in the smallest currency unit (paise).
+        const expectedPaise = Math.round(Number(dbOrder.total_amount) * 100);
+        const paidPaise = Number(order.amount);
+        if (!Number.isNaN(paidPaise) && paidPaise !== expectedPaise) {
+            console.error(
+                `Amount mismatch for order ${supabaseOrderId}: razorpay=${paidPaise} expected=${expectedPaise}`
+            );
+            return NextResponse.redirect(
+                new URL(`/orders/${supabaseOrderId}?error=AmountMismatch`, req.url)
+            );
+        }
+
+        // Idempotency: only flip PENDING -> PAID. A replayed callback becomes a no-op
+        // because the row is no longer PENDING.
+        if (dbOrder.payment_status !== "PAID") {
+            const { error } = await supabase
+                .from("orders")
+                .update({
+                    payment_status: "PAID",
+                    payment_method: "RAZORPAY"
+                })
+                .eq("id", supabaseOrderId)
+                .eq("payment_status", "PENDING");
+
+            if (error) {
+                console.error("Failed to update order in Supabase:", error);
+            }
         }
 
         // Redirect user to the order ticket page!
