@@ -1,66 +1,73 @@
-# Graph Report - .  (2026-06-02)
+# Graph Report - BNM-Cafe  (2026-06-20)
 
 ## Corpus Check
-- 121 files · ~151,827 words
+- 108 files · ~497,834 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 617 nodes · 1254 edges · 51 communities (42 shown, 9 thin omitted)
+- 647 nodes · 1288 edges · 52 communities (40 shown, 12 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 64 edges (avg confidence: 0.89)
-- Token cost: 2,800 input · 1,100 output
+- Token cost: 0 input · 0 output
+
+## Graph Freshness
+- Built from commit: `3f940a42`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Admin & Cashier Order Mgmt|Admin & Cashier Order Mgmt]]
-- [[_COMMUNITY_Admin Dashboard & Layout|Admin Dashboard & Layout]]
-- [[_COMMUNITY_Dependencies & Packages|Dependencies & Packages]]
-- [[_COMMUNITY_Analytics & Data Viz|Analytics & Data Viz]]
-- [[_COMMUNITY_App Root & Notifications|App Root & Notifications]]
-- [[_COMMUNITY_Menu & Cashier Checkout|Menu & Cashier Checkout]]
-- [[_COMMUNITY_Project Docs & Business Model|Project Docs & Business Model]]
-- [[_COMMUNITY_Feedback Form|Feedback Form]]
-- [[_COMMUNITY_TypeScript Config|TypeScript Config]]
-- [[_COMMUNITY_Component System Config|Component System Config]]
-- [[_COMMUNITY_Menubar UI Component|Menubar UI Component]]
-- [[_COMMUNITY_Dahi Puri Menu Images|Dahi Puri Menu Images]]
-- [[_COMMUNITY_Chai Beverage Images|Chai Beverage Images]]
-- [[_COMMUNITY_Base UI Utilities|Base UI Utilities]]
-- [[_COMMUNITY_Carousel UI Component|Carousel UI Component]]
-- [[_COMMUNITY_Cashier Pending Queue|Cashier Pending Queue]]
-- [[_COMMUNITY_Masala Puri Menu Images|Masala Puri Menu Images]]
-- [[_COMMUNITY_Dev Tools & Linting|Dev Tools & Linting]]
-- [[_COMMUNITY_Dropdown Menu Component|Dropdown Menu Component]]
-- [[_COMMUNITY_Trend Indicator & Dialogs|Trend Indicator & Dialogs]]
-- [[_COMMUNITY_Bisi Bele Bath Images|Bisi Bele Bath Images]]
-- [[_COMMUNITY_Alert Dialog Component|Alert Dialog Component]]
-- [[_COMMUNITY_South Indian Rice Dish|South Indian Rice Dish]]
-- [[_COMMUNITY_Build & Dev Scripts|Build & Dev Scripts]]
-- [[_COMMUNITY_Select UI Component|Select UI Component]]
-- [[_COMMUNITY_User Profile Page|User Profile Page]]
-- [[_COMMUNITY_Brand Logo (Black Variant)|Brand Logo (Black Variant)]]
-- [[_COMMUNITY_Category Tabs & Scroll|Category Tabs & Scroll]]
-- [[_COMMUNITY_Brand Logo (Color Variant)|Brand Logo (Color Variant)]]
-- [[_COMMUNITY_Database Schema Check|Database Schema Check]]
-- [[_COMMUNITY_App Icon & Brand Colors|App Icon & Brand Colors]]
-- [[_COMMUNITY_Package Metadata|Package Metadata]]
-- [[_COMMUNITY_Accordion Component|Accordion Component]]
-- [[_COMMUNITY_Button & Calendar|Button & Calendar]]
-- [[_COMMUNITY_Claude Dev Settings|Claude Dev Settings]]
-- [[_COMMUNITY_PhonePe QR Payment|PhonePe QR Payment]]
-- [[_COMMUNITY_Razorpay Payment Route|Razorpay Payment Route]]
-- [[_COMMUNITY_Razorpay Webhook Route|Razorpay Webhook Route]]
-- [[_COMMUNITY_Genkit AI Integration|Genkit AI Integration]]
-- [[_COMMUNITY_ESLint Config|ESLint Config]]
-- [[_COMMUNITY_Image Placeholder|Image Placeholder]]
-- [[_COMMUNITY_Next.js Config|Next.js Config]]
-- [[_COMMUNITY_PostCSS Config|PostCSS Config]]
+- [[_COMMUNITY_Community 0|Community 0]]
+- [[_COMMUNITY_Community 1|Community 1]]
+- [[_COMMUNITY_Community 2|Community 2]]
+- [[_COMMUNITY_Community 3|Community 3]]
+- [[_COMMUNITY_Community 4|Community 4]]
+- [[_COMMUNITY_Community 5|Community 5]]
+- [[_COMMUNITY_Community 6|Community 6]]
+- [[_COMMUNITY_Community 7|Community 7]]
+- [[_COMMUNITY_Community 8|Community 8]]
+- [[_COMMUNITY_Community 9|Community 9]]
+- [[_COMMUNITY_Community 10|Community 10]]
+- [[_COMMUNITY_Community 11|Community 11]]
+- [[_COMMUNITY_Community 12|Community 12]]
+- [[_COMMUNITY_Community 13|Community 13]]
+- [[_COMMUNITY_Community 14|Community 14]]
+- [[_COMMUNITY_Community 15|Community 15]]
+- [[_COMMUNITY_Community 16|Community 16]]
+- [[_COMMUNITY_Community 17|Community 17]]
+- [[_COMMUNITY_Community 18|Community 18]]
+- [[_COMMUNITY_Community 19|Community 19]]
+- [[_COMMUNITY_Community 20|Community 20]]
+- [[_COMMUNITY_Community 21|Community 21]]
+- [[_COMMUNITY_Community 22|Community 22]]
+- [[_COMMUNITY_Community 23|Community 23]]
+- [[_COMMUNITY_Community 24|Community 24]]
+- [[_COMMUNITY_Community 25|Community 25]]
+- [[_COMMUNITY_Community 26|Community 26]]
+- [[_COMMUNITY_Community 27|Community 27]]
+- [[_COMMUNITY_Community 28|Community 28]]
+- [[_COMMUNITY_Community 29|Community 29]]
+- [[_COMMUNITY_Community 30|Community 30]]
+- [[_COMMUNITY_Community 31|Community 31]]
+- [[_COMMUNITY_Community 32|Community 32]]
+- [[_COMMUNITY_Community 33|Community 33]]
+- [[_COMMUNITY_Community 34|Community 34]]
+- [[_COMMUNITY_Community 35|Community 35]]
+- [[_COMMUNITY_Community 36|Community 36]]
+- [[_COMMUNITY_Community 37|Community 37]]
+- [[_COMMUNITY_Community 38|Community 38]]
+- [[_COMMUNITY_Community 41|Community 41]]
+- [[_COMMUNITY_Community 43|Community 43]]
+- [[_COMMUNITY_Community 45|Community 45]]
+- [[_COMMUNITY_Community 46|Community 46]]
+- [[_COMMUNITY_Community 52|Community 52]]
+- [[_COMMUNITY_Community 54|Community 54]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `cn()` - 65 edges
-2. `useSupabase()` - 55 edges
-3. `Button` - 30 edges
-4. `useToast()` - 25 edges
-5. `Card` - 19 edges
-6. `CardContent` - 19 edges
+2. `useSupabase()` - 53 edges
+3. `Button` - 29 edges
+4. `useToast()` - 23 edges
+5. `Card` - 18 edges
+6. `CardContent` - 18 edges
 7. `compilerOptions` - 17 edges
 8. `useCart()` - 15 edges
 9. `MenuItem` - 15 edges
@@ -86,163 +93,159 @@
 - **Core Features of Campus Cafe Connect App** — concept_user_authentication, concept_menu_display, concept_cart_management, concept_order_history, concept_realtime_inventory [EXTRACTED 1.00]
 - **Admin Capabilities of Campus Cafe Connect** — concept_admin_analytics, concept_realtime_order_mgmt, concept_csv_export [EXTRACTED 1.00]
 
-## Communities (51 total, 9 thin omitted)
+## Communities (52 total, 12 thin omitted)
 
-### Community 0 - "Admin & Cashier Order Mgmt"
-Cohesion: 0.09
-Nodes (45): AdminLogin(), KOTCard(), safeFormatDistanceToNow(), statusDisplayMap, syncOrderStatus(), placeholderImages, Order, OrderStationStatus (+37 more)
+### Community 0 - "Community 0"
+Cohesion: 0.08
+Nodes (47): AdminLogin(), AdminPage(), statusDisplayMap, syncOrderStatus(), placeholderImages, Order, OrderStationStatus, OrderStatus (+39 more)
 
-### Community 1 - "Admin Dashboard & Layout"
+### Community 1 - "Community 1"
 Cohesion: 0.06
-Nodes (47): AdminLayout(), sidebarNavItems, AdminDashboard(), AdminPage(), AdminAnalyticsPage(), AdminLoginPage(), AnalyticsPageContainer(), BottomNavBar() (+39 more)
+Nodes (47): AdminLayout(), sidebarNavItems, AdminDashboard(), AdminLoginPage(), AnalyticsPageContainer(), BottomNavBar(), AppLayoutContent(), CartSuccessDialog() (+39 more)
 
-### Community 2 - "Dependencies & Packages"
+### Community 2 - "Community 2"
 Cohesion: 0.04
 Nodes (46): dependencies, class-variance-authority, clsx, date-fns, dotenv, embla-carousel-react, framer-motion, genkit (+38 more)
 
-### Community 3 - "Analytics & Data Viz"
+### Community 3 - "Community 3"
 Cohesion: 0.09
-Nodes (24): AnalyticsData, COLORS, RawOrder, TimeRange, TooltipExplainer(), OrderItem, OrderItem, OrderItem (+16 more)
+Nodes (28): AnalyticsData, COLORS, RawOrder, TimeRange, TooltipExplainer(), TrendIndicator(), TrendIndicatorProps, OrderItem (+20 more)
 
-### Community 4 - "App Root & Notifications"
+### Community 4 - "Community 4"
 Cohesion: 0.09
 Nodes (26): inter, RootLayoutContent(), Action, ActionType, actionTypes, addToRemoveQueue(), dispatch(), genId() (+18 more)
 
-### Community 5 - "Menu & Cashier Checkout"
-Cohesion: 0.11
-Nodes (20): CategoryTabs(), MenuGrid(), MenuGridProps, OrderSidebar(), CashierPageContent(), ReceiptTemplate(), MenuItemCardProps, CartContextType (+12 more)
+### Community 5 - "Community 5"
+Cohesion: 0.10
+Nodes (26): AdminAnalyticsPage(), CategoryTabs(), CategoryTabsProps, MenuGrid(), MenuGridProps, OrderSidebar(), CashierPageContent(), PendingOrder (+18 more)
 
-### Community 6 - "Project Docs & Business Model"
+### Community 6 - "Community 6"
 Cohesion: 0.10
 Nodes (26): Firebase App Hosting Configuration, Campus Cafe Connect App Blueprint, Graphify Knowledge Graph Instructions, Admin Sales Analytics Dashboard, Annual Subscription SaaS Model, Final Buy-Out Ownership Transfer, Campus Cafe Connect Web Application, Cart Management (+18 more)
 
-### Community 7 - "Feedback Form"
-Cohesion: 0.13
-Nodes (15): FeedbackFormContent(), formSchema, FormControl, FormDescription, FormField(), FormFieldContext, FormFieldContextValue, FormItem (+7 more)
+### Community 7 - "Community 7"
+Cohesion: 0.14
+Nodes (14): formSchema, FormControl, FormDescription, FormField(), FormFieldContext, FormFieldContextValue, FormItem, FormItemContext (+6 more)
 
-### Community 8 - "TypeScript Config"
+### Community 8 - "Community 8"
 Cohesion: 0.10
 Nodes (20): compilerOptions, allowJs, baseUrl, esModuleInterop, incremental, isolatedModules, jsx, lib (+12 more)
 
-### Community 9 - "Component System Config"
+### Community 9 - "Community 9"
 Cohesion: 0.11
 Nodes (17): aliases, components, hooks, lib, ui, utils, iconLibrary, rsc (+9 more)
 
-### Community 10 - "Menubar UI Component"
+### Community 10 - "Community 10"
 Cohesion: 0.12
 Nodes (11): Menubar, MenubarCheckboxItem, MenubarContent, MenubarItem, MenubarLabel, MenubarRadioItem, MenubarSeparator, MenubarShortcut() (+3 more)
 
-### Community 11 - "Dahi Puri Menu Images"
+### Community 11 - "Community 11"
 Cohesion: 0.14
 Nodes (16): Chaat Category Snack, Chaat Category, Indian Street Food Cuisine, Indian Street Food Cuisine, Dahi Puri Dish, Dahi Puri Image, Tamarind and Green Chutney, Chutneys (Tamarind and Green) (+8 more)
 
-### Community 12 - "Chai Beverage Images"
+### Community 12 - "Community 12"
 Cohesion: 0.19
 Nodes (15): Cafe Menu Item, Cardamom, Cinnamon, Cloves, Hot Beverage, Chai Image, Masala Chai, Milk Tea (+7 more)
 
-### Community 13 - "Base UI Utilities"
+### Community 13 - "Community 13"
 Cohesion: 0.14
-Nodes (7): Checkbox, PopoverContent, Progress, RadioGroup, RadioGroupItem, Slider, Switch
+Nodes (9): KOTCard(), safeFormatDistanceToNow(), cn(), KOTCard(), Checkbox, PopoverContent, Progress, Slider (+1 more)
 
-### Community 14 - "Carousel UI Component"
+### Community 14 - "Community 14"
 Cohesion: 0.14
 Nodes (12): Carousel, CarouselApi, CarouselContent, CarouselContext, CarouselContextProps, CarouselItem, CarouselNext, CarouselOptions (+4 more)
 
-### Community 15 - "Cashier Pending Queue"
-Cohesion: 0.21
-Nodes (10): CashierPendingQueue(), PendingOrder, SheetContent, SheetContentProps, SheetDescription, SheetFooter(), SheetHeader(), SheetOverlay (+2 more)
+### Community 15 - "Community 15"
+Cohesion: 0.22
+Nodes (8): SheetContent, SheetContentProps, SheetDescription, SheetFooter(), SheetHeader(), SheetOverlay, SheetTitle, sheetVariants
 
-### Community 16 - "Masala Puri Menu Images"
+### Community 16 - "Community 16"
 Cohesion: 0.20
 Nodes (11): Chaat Category, Indian Street Food Cuisine, Masala Puri, Masala Puri Image, Green Curry / Masala Gravy, Spiced Masala Gravy, Diced Onion, Puri (Fried Bread) (+3 more)
 
-### Community 17 - "Dev Tools & Linting"
-Cohesion: 0.20
-Nodes (10): devDependencies, eslint, eslint-config-next, genkit-cli, postcss, tailwindcss, @types/node, @types/react (+2 more)
+### Community 17 - "Community 17"
+Cohesion: 0.09
+Nodes (21): devDependencies, eslint, eslint-config-next, genkit-cli, postcss, tailwindcss, @types/node, @types/react (+13 more)
 
-### Community 18 - "Dropdown Menu Component"
+### Community 18 - "Community 18"
 Cohesion: 0.20
 Nodes (9): DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut(), DropdownMenuSubContent (+1 more)
 
-### Community 19 - "Trend Indicator & Dialogs"
-Cohesion: 0.31
-Nodes (7): TrendIndicator(), TrendIndicatorProps, cn(), KOTCard(), DialogFooter(), DialogHeader(), DialogOverlay
+### Community 19 - "Community 19"
+Cohesion: 0.29
+Nodes (6): DialogContent, DialogDescription, DialogFooter(), DialogHeader(), DialogOverlay, DialogTitle
 
-### Community 20 - "Bisi Bele Bath Images"
+### Community 20 - "Community 20"
 Cohesion: 0.25
 Nodes (9): Rice Dish Category, South Indian Cuisine, Bisi Bele Bath, Cashews, Lentils (Dal), Rice, Spices (Masala), Mixed Vegetables (+1 more)
 
-### Community 21 - "Alert Dialog Component"
-Cohesion: 0.22
-Nodes (8): AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter(), AlertDialogHeader(), AlertDialogOverlay, AlertDialogTitle
-
-### Community 22 - "South Indian Rice Dish"
+### Community 22 - "Community 22"
 Cohesion: 0.25
 Nodes (8): South Indian Cuisine, Bisi Bele Bath, Cashews, Lentils (Toor Dal), Rice, Mixed Vegetables, Menu Item Photo, Bowl Presentation
 
-### Community 23 - "Build & Dev Scripts"
-Cohesion: 0.25
-Nodes (8): scripts, build, dev, genkit:dev, genkit:watch, lint, start, typecheck
+### Community 23 - "Community 23"
+Cohesion: 0.12
+Nodes (15): 1. Executive Summary, 1. Monthly Subscription Plan (SaaS Model), 2. Final Buy-Out Option (Ownership Transfer), 2. Key Value Propositions, 3. Maintenance & Support Service (6 Months), 3. Pricing Models & Market Comparison, 4. Recommended Offer, **A one-time fee of ₹1,50,000 for the software license, plus a first-year-included maintenance package.** (+7 more)
 
-### Community 24 - "Select UI Component"
+### Community 24 - "Community 24"
 Cohesion: 0.25
 Nodes (7): SelectContent, SelectItem, SelectLabel, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator, SelectTrigger
 
-### Community 25 - "User Profile Page"
-Cohesion: 0.38
-Nodes (4): ProfilePage(), Avatar, AvatarFallback, AvatarImage
+### Community 25 - "Community 25"
+Cohesion: 0.28
+Nodes (6): containerVariants, itemVariants, ProfilePage(), Avatar, AvatarFallback, AvatarImage
 
-### Community 26 - "Brand Logo (Black Variant)"
+### Community 26 - "Community 26"
 Cohesion: 0.60
 Nodes (6): BNM Cafe Brand Identity, BNM Cafe Application, Coffee Cup Icon, Monochrome Black and White Color Scheme, BNM Cafe Logo (Black Variant), Bubble/Retro Typography Style
 
-### Community 27 - "Category Tabs & Scroll"
-Cohesion: 0.53
-Nodes (4): CategoryTabsProps, Category, ScrollArea, ScrollBar
+### Community 27 - "Community 27"
+Cohesion: 0.50
+Nodes (3): **App Name**: Campus Cafe Connect, Core Features:, Style Guidelines:
 
-### Community 28 - "Brand Logo (Color Variant)"
+### Community 28 - "Community 28"
 Cohesion: 0.60
 Nodes (5): BNM Cafe Brand Name, Coffee Cup Icon, Brand Color Palette (Black and Brown), BNM Cafe Logo (bnmlogoB12), Retro Bubbly Typography Style
 
-### Community 30 - "App Icon & Brand Colors"
+### Community 30 - "Community 30"
 Cohesion: 0.67
 Nodes (4): BNM Cafe App Icon, Brand Identity - Warm Orange-Pink Gradient, Coffee Cup Symbol, Rounded Square Icon Shape
 
-### Community 31 - "Package Metadata"
-Cohesion: 0.50
-Nodes (3): name, private, version
-
-### Community 32 - "Accordion Component"
+### Community 32 - "Community 32"
 Cohesion: 0.50
 Nodes (3): AccordionContent, AccordionItem, AccordionTrigger
 
-### Community 33 - "Button & Calendar"
+### Community 33 - "Community 33"
 Cohesion: 0.67
 Nodes (3): buttonVariants, Calendar(), CalendarProps
 
-### Community 35 - "PhonePe QR Payment"
+### Community 35 - "Community 35"
 Cohesion: 0.67
 Nodes (3): QR Code 1 (PhonePe Payment), Mohamed Ammaar Hussain, PhonePe Payment App
 
+### Community 54 - "Community 54"
+Cohesion: 0.40
+Nodes (4): Done in this codebase, MANUAL — do these to finish, Security Hardening — status & manual follow-ups, Verification (after applying the migration)
+
 ## Knowledge Gaps
-- **260 isolated node(s):** `PreToolUse`, `extends`, `{ createClient }`, `supabase`, `$schema` (+255 more)
+- **275 isolated node(s):** `PreToolUse`, `allow`, `extends`, `{ createClient }`, `supabase` (+270 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `Trend Indicator & Dialogs` to `Admin & Cashier Order Mgmt`, `Admin Dashboard & Layout`, `Accordion Component`, `Button & Calendar`, `App Root & Notifications`, `Analytics & Data Viz`, `Feedback Form`, `Menubar UI Component`, `Base UI Utilities`, `Carousel UI Component`, `Cashier Pending Queue`, `Dropdown Menu Component`, `Alert Dialog Component`, `Select UI Component`, `User Profile Page`, `Category Tabs & Scroll`?**
-  _High betweenness centrality (0.103) - this node is a cross-community bridge._
-- **Why does `useSupabase()` connect `Admin Dashboard & Layout` to `Admin & Cashier Order Mgmt`, `Analytics & Data Viz`, `Menu & Cashier Checkout`, `Feedback Form`, `Cashier Pending Queue`, `User Profile Page`?**
-  _High betweenness centrality (0.039) - this node is a cross-community bridge._
-- **Why does `Button` connect `Admin & Cashier Order Mgmt` to `Admin Dashboard & Layout`, `Analytics & Data Viz`, `Menu & Cashier Checkout`, `Feedback Form`, `Carousel UI Component`, `Cashier Pending Queue`, `User Profile Page`, `Category Tabs & Scroll`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `cn()` connect `Community 13` to `Community 0`, `Community 1`, `Community 32`, `Community 3`, `Community 4`, `Community 5`, `Community 33`, `Community 7`, `Community 10`, `Community 14`, `Community 15`, `Community 18`, `Community 19`, `Community 21`, `Community 24`, `Community 25`?**
+  _High betweenness centrality (0.086) - this node is a cross-community bridge._
+- **Why does `useSupabase()` connect `Community 1` to `Community 0`, `Community 3`, `Community 5`, `Community 7`, `Community 25`?**
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
+- **Why does `Button` connect `Community 0` to `Community 1`, `Community 3`, `Community 5`, `Community 7`, `Community 14`, `Community 25`?**
+  _High betweenness centrality (0.012) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `useSupabase()` (e.g. with `AppLayoutContent()` and `AdminFeedbackDashboard()`) actually correct?**
   _`useSupabase()` has 4 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `PreToolUse`, `extends`, `{ createClient }` to the rest of the system?**
-  _276 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Admin & Cashier Order Mgmt` be split into smaller, more focused modules?**
-  _Cohesion score 0.08730931515741643 - nodes in this community are weakly interconnected._
-- **Should `Admin Dashboard & Layout` be split into smaller, more focused modules?**
-  _Cohesion score 0.061072261072261075 - nodes in this community are weakly interconnected._
+- **What connects `PreToolUse`, `allow`, `extends` to the rest of the system?**
+  _291 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Community 0` be split into smaller, more focused modules?**
+  _Cohesion score 0.08146705615060046 - nodes in this community are weakly interconnected._
+- **Should `Community 1` be split into smaller, more focused modules?**
+  _Cohesion score 0.06293706293706294 - nodes in this community are weakly interconnected._

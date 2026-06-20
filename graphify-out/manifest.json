@@ -20,12 +20,12 @@
     "semantic_hash": "1bddba27dcaadf1ddd5959717236300b"
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\next.config.ts": {
-    "mtime": 1771931886.1832416,
-    "ast_hash": "cebc8a4059852b03f22215219f7ed411",
-    "semantic_hash": "cebc8a4059852b03f22215219f7ed411"
+    "mtime": 1780419865.6300337,
+    "ast_hash": "37c927b652d558a438d888e668f85062",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\package.json": {
-    "mtime": 1772017271.550038,
+    "mtime": 1780420075.950534,
     "ast_hash": "271b3056c0e014eca6c3be4aaa3f7e24",
     "semantic_hash": "271b3056c0e014eca6c3be4aaa3f7e24"
   },
@@ -90,9 +90,9 @@
     "semantic_hash": "972a5cb6d96fb2a746a81f302d7663f4"
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\(app)\\orders\\page.tsx": {
-    "mtime": 1772278017.7449348,
-    "ast_hash": "b0cf61accdfd3d2722be201c4fbb5cc3",
-    "semantic_hash": "b0cf61accdfd3d2722be201c4fbb5cc3"
+    "mtime": 1781938422.1070716,
+    "ast_hash": "cdd53a80ecf7ded4af554dcfccae4cbe",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\(app)\\privacy\\page.tsx": {
     "mtime": 1772133946.6693997,
@@ -100,14 +100,14 @@
     "semantic_hash": "746627f11c0d4b129e27b0c8d66f1ee2"
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\(app)\\profile\\feedback\\page.tsx": {
-    "mtime": 1772133410.8752997,
-    "ast_hash": "0b77622e04f37f1c3b8d24c1b125a6bc",
-    "semantic_hash": "0b77622e04f37f1c3b8d24c1b125a6bc"
+    "mtime": 1781938724.476347,
+    "ast_hash": "db3fc8b93e16f832692b47103408b8e7",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\(app)\\profile\\page.tsx": {
-    "mtime": 1772133980.068355,
-    "ast_hash": "6a0ea58c20f03a170f398b1599cd1179",
-    "semantic_hash": "6a0ea58c20f03a170f398b1599cd1179"
+    "mtime": 1781938703.1318054,
+    "ast_hash": "8d512f4822cb12487a07936b4ac09031",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\(app)\\template.tsx": {
     "mtime": 1772014321.361987,
@@ -120,9 +120,9 @@
     "semantic_hash": "cde74b255309981317109abed457488a"
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\admin\\analytics\\page.tsx": {
-    "mtime": 1776074353.4410596,
-    "ast_hash": "915766cfb9fd87c3093c19493dfca304",
-    "semantic_hash": "915766cfb9fd87c3093c19493dfca304"
+    "mtime": 1781939527.355717,
+    "ast_hash": "3ba69387e9359e2e3dbbccd34e34fc8d",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\admin\\cashier\\page.tsx": {
     "mtime": 1772014321.3629944,
@@ -130,9 +130,9 @@
     "semantic_hash": "1292ea672f0a7fd190d376abf9118977"
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\admin\\feedback\\page.tsx": {
-    "mtime": 1772133672.5506454,
-    "ast_hash": "7653566e83238f126de7506697cbd9ff",
-    "semantic_hash": "7653566e83238f126de7506697cbd9ff"
+    "mtime": 1781939430.1085913,
+    "ast_hash": "7a52a78b06218dc3551c4ceb2efd2fe7",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\admin\\layout.tsx": {
     "mtime": 1772133462.0099003,
@@ -140,14 +140,9 @@
     "semantic_hash": "1078f79c3a92b9e58f895826102b65a9"
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\admin\\page.tsx": {
-    "mtime": 1771931886.2044964,
-    "ast_hash": "c45941b94da5d5143062d237a4d3db15",
-    "semantic_hash": "c45941b94da5d5143062d237a4d3db15"
-  },
-  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\api\\migrate\\route.ts": {
-    "mtime": 1772014321.365376,
-    "ast_hash": "78fc1a1365ceb240c207683605e2218f",
-    "semantic_hash": "78fc1a1365ceb240c207683605e2218f"
+    "mtime": 1781939551.5612087,
+    "ast_hash": "b0345602546e8b43c58d56bde7fd8038",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\api\\razorpay\\route.ts": {
     "mtime": 1772040856.0361528,
@@ -155,9 +150,9 @@
     "semantic_hash": "34a75dce3509495da80e27ec7894eea5"
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\api\\razorpay\\verify\\route.ts": {
-    "mtime": 1772040895.4617045,
-    "ast_hash": "44bb5df45cdae012e7069b1f37be16e6",
-    "semantic_hash": "44bb5df45cdae012e7069b1f37be16e6"
+    "mtime": 1781937275.9105394,
+    "ast_hash": "4d372dda3ff0713b77c7a26c4fed9c3d",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\app\\layout.tsx": {
     "mtime": 1772014321.3664818,
@@ -209,11 +204,6 @@
     "ast_hash": "d4fbbe099b8a9626d9cce55cb1cd4fd4",
     "semantic_hash": "d4fbbe099b8a9626d9cce55cb1cd4fd4"
   },
-  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\components\\cashier\\CashierPendingQueue.tsx": {
-    "mtime": 1772014321.3676608,
-    "ast_hash": "0e19e6965ff89b729db5eab99e0402f4",
-    "semantic_hash": "0e19e6965ff89b729db5eab99e0402f4"
-  },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\components\\cashier\\CategoryTabs.tsx": {
     "mtime": 1771931886.212563,
     "ast_hash": "52e9875ad1166587cabdda4abfff5848",
@@ -225,19 +215,19 @@
     "semantic_hash": "05e07cead2e3897670d6f66eb711cc01"
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\components\\cashier\\OrderSidebar.tsx": {
-    "mtime": 1772014321.3691642,
-    "ast_hash": "4d7c6610f61ec09a9afb5b602df779d3",
-    "semantic_hash": "4d7c6610f61ec09a9afb5b602df779d3"
+    "mtime": 1781939468.315035,
+    "ast_hash": "37f2ddceef06a0e8cdd309eef848333c",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\components\\cashier\\PendingOrdersGrid.tsx": {
-    "mtime": 1772014321.3701768,
-    "ast_hash": "f96805462542537fc8d13dee0b73d236",
-    "semantic_hash": "f96805462542537fc8d13dee0b73d236"
+    "mtime": 1781939472.104297,
+    "ast_hash": "49e2aa477fab3acfb6dae53eee519d51",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\components\\cashier\\ReceiptTemplate.tsx": {
-    "mtime": 1771931886.214885,
-    "ast_hash": "d77ee872ff1f47da8d335ca394b0b1f2",
-    "semantic_hash": "d77ee872ff1f47da8d335ca394b0b1f2"
+    "mtime": 1781939476.9490345,
+    "ast_hash": "a2cb898945c60b5a35cbd7e17df7ec3a",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\components\\ui\\accordion.tsx": {
     "mtime": 1771931886.2155325,
@@ -470,9 +460,9 @@
     "semantic_hash": "d05699e80e1b30a02aae780124e8c6ca"
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\lib\\supabase\\provider.tsx": {
-    "mtime": 1773050930.5659125,
-    "ast_hash": "6ff6ba65a6122210ec4e18dff53dcb46",
-    "semantic_hash": "6ff6ba65a6122210ec4e18dff53dcb46"
+    "mtime": 1781936781.829324,
+    "ast_hash": "ff02c833c5751921b35325f6ee2dd9ef",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\lib\\types.ts": {
     "mtime": 1772278770.7070794,
@@ -480,9 +470,9 @@
     "semantic_hash": "88682192bd083089ae4fd01a40e5d2cd"
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\src\\lib\\utils.ts": {
-    "mtime": 1771931886.2348008,
-    "ast_hash": "1d8011eb18769078bf77502b220daa5e",
-    "semantic_hash": "1d8011eb18769078bf77502b220daa5e"
+    "mtime": 1781939392.7099254,
+    "ast_hash": "00d3628abd233544409a8fd77a3e0c4c",
+    "semantic_hash": ""
   },
   "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\supabase\\migration.sql": {
     "mtime": 1771931886.2348008,
@@ -603,5 +593,125 @@
     "mtime": 1771931886.186912,
     "ast_hash": "5a72004b3207ee55a50b2a78900f4063",
     "semantic_hash": "5a72004b3207ee55a50b2a78900f4063"
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\.claude\\settings.local.json": {
+    "mtime": 1780405917.281345,
+    "ast_hash": "62ee7760ff4336532de28ee3c7406d62",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\BNM-Cafe-Keynote-portable.html": {
+    "mtime": 1780419514.0533392,
+    "ast_hash": "af8c7c4ab3c4dfab5882149eed42054f",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\bnm-cafe-keynote.html": {
+    "mtime": 1781898164.7976375,
+    "ast_hash": "e200d11e6a0f51cc3dffcbd9cefafde3",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\investor-presentation.html": {
+    "mtime": 1780406252.6250663,
+    "ast_hash": "a4ff83201872900794a6314f5303f1e4",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\public\\demopresentation.html": {
+    "mtime": 1780419855.8340786,
+    "ast_hash": "af8c7c4ab3c4dfab5882149eed42054f",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\admin-analytics-full.png": {
+    "mtime": 1780407251.0472465,
+    "ast_hash": "86bb407219784aa686543c258d80915a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\admin-analytics.png": {
+    "mtime": 1780407249.0072727,
+    "ast_hash": "c3f7eaf616a61d753f81636777ed30b1",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\admin-cashier.png": {
+    "mtime": 1780407116.7419684,
+    "ast_hash": "2c7a89b477f05c513534b99724c2a369",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\admin-dashboard.png": {
+    "mtime": 1780407110.8252926,
+    "ast_hash": "20bb05a20a8b9f25ca5021ae1e325cbd",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\admin-feedback.png": {
+    "mtime": 1780406885.815213,
+    "ast_hash": "7eccab6bad83ec914f4f1ea7765b212c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\admin-station-hub.png": {
+    "mtime": 1780407140.1679285,
+    "ast_hash": "889c11a307cde7b49f734bb907b0c644",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\cart.png": {
+    "mtime": 1780407058.0890625,
+    "ast_hash": "2047d4f5628ce68a333b2562c28df33c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\checkout.png": {
+    "mtime": 1780407063.6693835,
+    "ast_hash": "0e617ad7da6ec0759ccaa823506ea90e",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\feedback.png": {
+    "mtime": 1780406849.8171391,
+    "ast_hash": "64f74c956f3da5419f498d2821d988eb",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\menu-active.png": {
+    "mtime": 1780407054.0554326,
+    "ast_hash": "c08df9dda1b537b322a4604fcc29bd44",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\menu-full.png": {
+    "mtime": 1780406824.9171448,
+    "ast_hash": "873205a78266d93d5d2f7199b962d481",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\menu.png": {
+    "mtime": 1780406819.4105024,
+    "ast_hash": "d067d0b84e1075f7e5593079d7719a1d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\order-ticket.png": {
+    "mtime": 1780407070.2860901,
+    "ast_hash": "91c7aaa4572f80336cff4a6bb5d1107b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\orders.png": {
+    "mtime": 1780407106.1553185,
+    "ast_hash": "5a684b6fa186778990c19ad2c1fd9a22",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\profile.png": {
+    "mtime": 1780406844.7528586,
+    "ast_hash": "0cfc5e8c5ac27b6deca50d7e4340eb85",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\station-display.png": {
+    "mtime": 1780407262.439169,
+    "ast_hash": "4f082461b542027da1668e2cc1f3bfaa",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\screenshots\\station-hub.png": {
+    "mtime": 1780407255.6188219,
+    "ast_hash": "75473c852fdf1b27569f7103f0f2408f",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\supabase\\migrations\\20260620_core_rls.sql": {
+    "mtime": 1781937352.4908934,
+    "ast_hash": "b7f561050d80b98f05237f1b04111ce3",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\Ammaar\\Desktop\\bnm\\BNM-Cafe\\SECURITY_HARDENING.md": {
+    "mtime": 1781937379.5220783,
+    "ast_hash": "cb2ecc429604d6f95da71cd205b9c1df",
+    "semantic_hash": ""
   }
 }
