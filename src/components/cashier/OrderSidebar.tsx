@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Trash2, Plus, Minus, Printer, CreditCard, Loader2, Banknote, SmartphoneNfc } from "lucide-react";
+import { formatINR } from "@/lib/utils";
 import { useState } from "react";
 
 export function OrderSidebar() {
@@ -51,7 +52,7 @@ export function OrderSidebar() {
                                 <div className="flex-grow">
                                     <div className="flex justify-between items-start">
                                         <span className="font-medium text-sm">{item.name}</span>
-                                        <span className="font-bold text-sm">₹{(item.price * item.quantity).toFixed(2)}</span>
+                                        <span className="font-bold text-sm">{formatINR(item.price * item.quantity)}</span>
                                     </div>
                                     <div className="flex items-center gap-2 mt-1">
                                         <Button
@@ -96,7 +97,7 @@ export function OrderSidebar() {
                     </div>
                     <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
-                        <span>₹{totalPrice.toFixed(2)}</span>
+                        <span>{formatINR(totalPrice)}</span>
                     </div>
                 </div>
 

@@ -31,11 +31,23 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { syncOrderStatus } from "@/lib/orderSync";
 import type {
   RealtimePostgresChangesPayload,
   RealtimeChannel,
+  SupabaseClient,
 } from "@supabase/supabase-js";
 
 /* ---------------- SAFE DATE ---------------- */
@@ -98,8 +110,8 @@ function KOTCard({
       <CardContent>
         {items.length > 0 ? (
           <ul className="space-y-1">
-            {items.map((item) => (
-              <li key={item.uuid}>
+            {items.map((item, idx) => (
+              <li key={item.id ?? `${item.menu_item_id ?? item.name}-${idx}`}>
                 {item.quantity} × {item.name}
               </li>
             ))}
@@ -125,14 +137,31 @@ function KOTCard({
 
         {order.status === "PENDING" && (
           <div className="flex gap-2 w-full">
-            <Button
-              variant="destructive"
-              className="w-full"
-              size="sm"
-              onClick={() => onUpdateStatus(order.id, "CANCELLED")}
-            >
-              Cancel
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="w-full" size="sm">
+                  Cancel
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cancel order #{order.display_order_id}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This marks the order as cancelled and removes it from the live
+                    queue. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep order</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => onUpdateStatus(order.id, "CANCELLED")}
+                  >
+                    Cancel order
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button
               className="w-full bg-green-600 hover:bg-green-700"
               size="sm"
@@ -159,7 +188,7 @@ function KOTCard({
 
 /* ---------------- ADMIN DASHBOARD ---------------- */
 
-function AdminDashboard({ supabase }: { supabase: any }) {
+function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();

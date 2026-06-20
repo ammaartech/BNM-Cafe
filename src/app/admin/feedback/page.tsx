@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Download, Loader2, MessageSquare, Search } from "lucide-react";
 import type { CustomerFeedback } from "@/lib/types";
 
+import { csvSafe } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,13 +58,15 @@ export default function AdminFeedbackDashboard() {
         const csvContent = [
             headers.join(","),
             ...filteredFeedbacks.map((fb) => {
+                // csvSafe neutralizes formula injection; then escape quotes and wrap.
+                const cell = (v: string) => `"${csvSafe(v).replace(/"/g, '""')}"`;
                 return [
-                    `"${format(new Date(fb.created_at), "yyyy-MM-dd HH:mm")}"`,
-                    `"${fb.name || "N/A"}"`,
-                    `"${fb.email}"`,
-                    `"${fb.phone}"`,
-                    `"${fb.order_id || "N/A"}"`,
-                    `"${fb.body.replace(/"/g, '""')}"`, // Escape quotes in body
+                    cell(format(new Date(fb.created_at), "yyyy-MM-dd HH:mm")),
+                    cell(fb.name || "N/A"),
+                    cell(fb.email),
+                    cell(fb.phone),
+                    cell(fb.order_id || "N/A"),
+                    cell(fb.body),
                 ].join(",");
             }),
         ].join("\n");

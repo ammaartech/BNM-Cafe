@@ -4,7 +4,7 @@ import { useSupabase } from "@/lib/supabase/provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
     IndianRupee, ShoppingCart, Users, AlertCircle, Download,
-    TrendingUp, TrendingDown, Package, LogIn, LogOut, Loader2, Calendar,
+    TrendingUp, TrendingDown, Package, LogOut, Loader2, Calendar,
     Star, AlertTriangle, Clock
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -29,9 +29,10 @@ import {
 } from "recharts";
 import { format, subDays, startOfDay, endOfDay, isWithinInterval, isToday, isYesterday } from 'date-fns';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { Input } from "@/components/ui/input";
+import { AdminLogin } from "@/components/admin/AdminLogin";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { csvSafe, formatINR } from "@/lib/utils";
 
 type TimeRange = 'today' | 'yesterday' | '7days' | '30days' | 'all';
 
@@ -79,7 +80,7 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', '#f59e0b', '#10b981
 function AnalyticsSkeleton() {
     return (
         <div className="space-y-6">
-            <div className="flex gap-2 mb-6 overlow-x-auto pb-2">
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
                 {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-10 w-24 rounded-full" />)}
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -415,7 +416,8 @@ function AdminAnalyticsPage() {
     const downloadCSV = () => {
         if (!dashboardData?.topProducts) return;
         const headers = ["Product ID", "Product Name", "Units Sold", "Total Revenue (INR)"];
-        const rows = dashboardData.topProducts.map(p => [p.id, `"${p.name.replace(/"/g, '""')}"`, p.unitsSold, (p.revenue || 0).toFixed(2)]);
+        const cell = (v: string) => `"${csvSafe(v).replace(/"/g, '""')}"`;
+        const rows = dashboardData.topProducts.map(p => [cell(p.id), cell(p.name), p.unitsSold, (p.revenue || 0).toFixed(2)]);
         let csvContent = headers.join(",") + "\r\n" + rows.map(r => r.join(",")).join("\r\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
@@ -493,7 +495,7 @@ function AdminAnalyticsPage() {
                                 <IndianRupee className="h-4 w-4 text-primary" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold tracking-tight">₹{dashboardData.totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                                <div className="text-3xl font-bold tracking-tight">{formatINR(dashboardData.totalRevenue, { decimals: 0 })}</div>
                                 {timeRange !== 'all' ? (
                                     <TrendIndicator value={dashboardData.revenueGrowth} label={`vs prev period`} />
                                 ) : <div className="text-xs text-muted-foreground mt-2">Lifetime total</div>}
@@ -508,7 +510,7 @@ function AdminAnalyticsPage() {
                                 <TrendingUp className="h-4 w-4 text-emerald-500" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">₹{dashboardData.profitEstimation.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                                <div className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">{formatINR(dashboardData.profitEstimation, { decimals: 0 })}</div>
                                 {timeRange !== 'all' && (
                                     <TrendIndicator value={dashboardData.revenueGrowth} label={`vs prev period`} />
                                 )}
@@ -545,7 +547,7 @@ function AdminAnalyticsPage() {
                                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold tracking-tight">₹{dashboardData.aov.toFixed(0)}</div>
+                                <div className="text-3xl font-bold tracking-tight">{formatINR(dashboardData.aov, { decimals: 0 })}</div>
                                 {timeRange !== 'all' && (
                                     <TrendIndicator value={dashboardData.aovGrowth} label={`vs prev period`} />
                                 )}
@@ -831,7 +833,7 @@ function AdminAnalyticsPage() {
                                             <TableRow key={product.id}>
                                                 <TableCell className="font-medium">{product.name}</TableCell>
                                                 <TableCell className="text-right">{product.unitsSold}</TableCell>
-                                                <TableCell className="text-right font-semibold">₹{(product.revenue || 0).toFixed(2)}</TableCell>
+                                                <TableCell className="text-right font-semibold">{formatINR(product.revenue)}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -869,7 +871,7 @@ function AdminAnalyticsPage() {
                                                         {order.payment_status === 'PAID' ? 'Online' : 'Counter'}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-right font-bold">₹{(order.total_amount).toFixed(2)}</TableCell>
+                                                <TableCell className="text-right font-bold">{formatINR(order.total_amount)}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -879,49 +881,6 @@ function AdminAnalyticsPage() {
                     </div>
                 </>
             )}
-        </div>
-    );
-}
-
-// ... Authentication wrappers remain mostly unchanged below ...
-
-function AdminLoginPage() {
-    const { supabase } = useSupabase();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError(null);
-        setIsLoading(true);
-        if (!supabase) return;
-
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) setError(error.message);
-        setIsLoading(false);
-    };
-
-    return (
-        <div className="flex items-center justify-center h-full w-full">
-            <Card className="w-full max-w-sm border-0 shadow-xl ring-1 ring-border/50">
-                <CardHeader>
-                    <CardTitle className="text-2xl text-center">Admin Access</CardTitle>
-                    <CardDescription className="text-center">Sign in to view dashboard metrics</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleLogin} className="space-y-4">
-                        <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-12 bg-muted/20" />
-                        <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-12 bg-muted/20" />
-                        {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
-                        <Button type="submit" className="w-full h-12 text-md" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
-                            {isLoading ? 'Authenticating...' : 'View Dashboard'}
-                        </Button>
-                    </form>
-                </CardContent>
-            </Card>
         </div>
     );
 }
@@ -957,7 +916,7 @@ export default function AnalyticsPageContainer() {
                             <Button variant="outline" onClick={handleLogout} className="w-full h-12"><LogOut className="mr-2 h-5 w-5" /> Logout</Button>
                         </CardContent>
                     </Card>
-                ) : <AdminLoginPage />}
+                ) : <AdminLogin />}
             </div>
         );
     }

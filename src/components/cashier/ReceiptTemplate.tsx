@@ -1,6 +1,7 @@
 "use client";
 
 import { useCashier } from "@/context/CashierContext";
+import { formatINR } from "@/lib/utils";
 import { format } from "date-fns";
 
 export function ReceiptTemplate() {
@@ -39,7 +40,7 @@ export function ReceiptTemplate() {
                         <tr key={item.id} className="border-b border-gray-100">
                             <td className="py-2">{item.name}</td>
                             <td className="py-2 text-center">{item.quantity}</td>
-                            <td className="py-2 text-right">₹{(item.price * item.quantity).toFixed(2)}</td>
+                            <td className="py-2 text-right">{formatINR(item.price * item.quantity)}</td>
                         </tr>
                     ))}
                 </tbody>
@@ -47,7 +48,7 @@ export function ReceiptTemplate() {
 
             <div className="flex justify-end mb-8 pt-2">
                 <div className="text-right">
-                    <div className="text-2xl font-bold">Total: ₹{totalPrice.toFixed(2)}</div>
+                    <div className="text-2xl font-bold">Total: {formatINR(totalPrice)}</div>
                     <div className="text-xs text-gray-400 mt-1">
                         (Inclusive of all taxes)
                     </div>

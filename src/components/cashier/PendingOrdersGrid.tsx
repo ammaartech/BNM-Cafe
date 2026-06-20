@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Loader2, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { formatINR } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -141,7 +142,7 @@ export function PendingOrdersGrid() {
                                 <Clock className="h-3 w-3" />
                                 {formatDistanceToNow(new Date(order.order_date), { addSuffix: true })}
                             </span>
-                            <span className="font-bold text-lg">₹{order.total_amount.toFixed(2)}</span>
+                            <span className="font-bold text-lg">{formatINR(order.total_amount)}</span>
                         </div>
 
                         {approvingIds.has(order.id) ? (
