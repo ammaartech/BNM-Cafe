@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import Razorpay from "razorpay";
 import { createClient } from "@supabase/supabase-js";
-
-const razorpay = new Razorpay({
-    key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-    key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
+import { getRazorpay } from "@/lib/razorpay";
 
 export async function POST(req: Request) {
     try {
@@ -28,6 +23,7 @@ export async function POST(req: Request) {
         }
 
         // Fetch Razorpay order to get the receipt (which is our Supabase order ID)
+        const razorpay = getRazorpay();
         const order = await razorpay.orders.fetch(razorpay_order_id);
         const supabaseOrderId = order.receipt;
 

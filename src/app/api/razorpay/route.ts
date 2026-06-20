@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
-import Razorpay from "razorpay";
-
-const razorpay = new Razorpay({
-    key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-    key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
+import { getRazorpay } from "@/lib/razorpay";
 
 export async function POST(req: Request) {
     try {
@@ -21,6 +16,7 @@ export async function POST(req: Request) {
             receipt: receipt || `receipt_${Date.now()}`,
         };
 
+        const razorpay = getRazorpay();
         const order = await razorpay.orders.create(options);
 
         return NextResponse.json({ order }, { status: 200 });
