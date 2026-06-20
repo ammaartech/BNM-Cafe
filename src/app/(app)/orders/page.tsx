@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Package, ChevronRight, AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
 
@@ -25,7 +24,7 @@ const statusDisplayMap: { [key in OrderStatus]?: string } = {
 
 function OrdersSkeleton() {
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 px-2 pt-4 pb-4">
             {[...Array(3)].map((_, i) => (
                 <Card key={i}>
                     <CardContent className="p-4">
@@ -48,7 +47,6 @@ function OrdersSkeleton() {
 
 export default function OrdersPage() {
     const { user, supabase } = useSupabase();
-    const router = useRouter();
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -141,10 +139,12 @@ export default function OrdersPage() {
     }
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex items-center gap-4 mb-6">
-                <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                    <ArrowLeft />
+        <div className="flex flex-col h-full px-2 pt-4 pb-4">
+            <div className="flex items-center gap-4 mb-4">
+                <Button variant="ghost" size="icon" asChild>
+                    <Link href="/menu">
+                        <ArrowLeft />
+                    </Link>
                 </Button>
                 <h1 className="text-2xl font-bold">My Orders</h1>
             </div>

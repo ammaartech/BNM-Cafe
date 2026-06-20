@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MessageSquare, Loader2, Calendar } from "lucide-react";
+import { ArrowLeft, MessageSquare, Loader2, Calendar, MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import type { CustomerFeedback } from "@/lib/types";
@@ -63,14 +63,23 @@ export default function MyFeedbackPage() {
             </div>
 
             <div className="max-w-md mx-auto px-4 sm:px-6 pt-6">
+                {/* Create new feedback */}
+                <Button
+                    onClick={() => router.push("/feedback")}
+                    className="w-full bg-[#154b23] hover:bg-[#0e3318] text-white font-bold h-14 rounded-2xl shadow-md shadow-[#154b23]/20 transition-all active:scale-[0.98] mb-6"
+                >
+                    <MessageSquarePlus className="mr-2 h-5 w-5" />
+                    Write New Feedback
+                </Button>
+
                 {feedbacks.length === 0 ? (
-                    <div className="text-center mt-20 flex flex-col items-center">
+                    <div className="text-center mt-12 flex flex-col items-center">
                         <div className="bg-white shadow-sm w-16 h-16 rounded-full flex items-center justify-center mb-6 border border-gray-100">
                             <MessageSquare className="h-8 w-8 text-muted-foreground opacity-50" />
                         </div>
                         <h2 className="text-lg font-semibold mb-2 text-[#1a1c1e]">No feedback yet</h2>
                         <p className="text-sm text-muted-foreground/80 max-w-[250px]">
-                            You haven't submitted any feedback yet.
+                            Tap “Write New Feedback” above to share your thoughts with us.
                         </p>
                     </div>
                 ) : (
