@@ -25,6 +25,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus';
 import { formatDistanceToNow } from 'date-fns';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -270,6 +271,9 @@ export default function StationPage() {
     };
 
   }, [supabase, station?.id, fetchData]);
+
+  // Recover from realtime events missed while the tab was in the background.
+  useRefetchOnFocus(() => fetchData(false));
 
   const updateStatus = async (
     osId: string,

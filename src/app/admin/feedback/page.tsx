@@ -7,6 +7,9 @@ import { Download, Loader2, MessageSquare, Search } from "lucide-react";
 import type { CustomerFeedback } from "@/lib/types";
 
 import { csvSafe } from "@/lib/utils";
+import { AdminLogin } from "@/components/admin/AdminLogin";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,12 +23,16 @@ import {
 } from "@/components/ui/table";
 
 export default function AdminFeedbackDashboard() {
-    const { supabase } = useSupabase();
+    const { supabase, user, userProfile, isUserLoading } = useSupabase();
     const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
+    const isAdmin = !!user && !user.is_anonymous && userProfile?.role === "admin";
+
     useEffect(() => {
+        if (!isAdmin) return;
+
         async function loadFeedbacks() {
             const { data, error } = await supabase
                 .from("customer_feedbacks")
@@ -38,7 +45,39 @@ export default function AdminFeedbackDashboard() {
             setIsLoading(false);
         }
         loadFeedbacks();
-    }, [supabase]);
+    }, [supabase, isAdmin]);
+
+    // --- AUTH GUARD ---
+    if (isUserLoading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    if (!user || user.is_anonymous) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4">
+                <AdminLogin />
+            </div>
+        );
+    }
+
+    if (!isAdmin) {
+        return (
+            <div className="flex min-h-screen items-center justify-center p-4">
+                <Alert variant="destructive" className="max-w-md">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Access denied</AlertTitle>
+                    <AlertDescription>
+                        You do not have permission to view customer feedback.
+                    </AlertDescription>
+                </Alert>
+            </div>
+        );
+    }
+    // --- END AUTH GUARD ---
 
     const filteredFeedbacks = feedbacks.filter((fb) => {
         const searchLower = searchQuery.toLowerCase();

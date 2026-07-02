@@ -11,6 +11,7 @@ import type {
 } from "@/lib/types";
 import { useSupabase } from "@/lib/supabase/provider";
 import { useToast } from "@/hooks/use-toast";
+import { useRefetchOnFocus } from "@/hooks/use-refetch-on-focus";
 import { useOrderStatus } from "@/context/OrderStatusContext";
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { format } from "date-fns";
@@ -276,6 +277,12 @@ export default function OrderTicketPage() {
       supabase.removeChannel(stationChannel);
     };
   }, [orderId, supabase, user, fetchOrder, fetchStationStatuses]);
+
+  // Recover from realtime events missed while the tab was in the background.
+  useRefetchOnFocus(() => {
+    fetchOrder();
+    fetchStationStatuses();
+  });
 
 
   /* ---------------- UI RENDERING ---------------- */

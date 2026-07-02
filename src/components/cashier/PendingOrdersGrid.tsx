@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
 import { useToast } from "@/hooks/use-toast";
+import { useRefetchOnFocus } from "@/hooks/use-refetch-on-focus";
 import { Button } from "@/components/ui/button";
 import { Loader2, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -71,6 +72,9 @@ export function PendingOrdersGrid() {
             supabase.removeChannel(channel);
         };
     }, [supabase, fetchPendingOrders]);
+
+    // Recover from realtime events missed while the tab was in the background.
+    useRefetchOnFocus(fetchPendingOrders);
 
     const handleApprove = async (orderId: string, displayId: string, paymentMethod: "CASH" | "UPI") => {
         if (!supabase) return;

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useRefetchOnFocus } from "@/hooks/use-refetch-on-focus";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/lib/supabase/provider";
 import { categories } from "@/lib/data";
@@ -60,16 +61,17 @@ function CashierPageContent() {
     }, [supabase]);
 
     // --- FETCH PENDING COUNT ---
+    const fetchCount = useCallback(async () => {
+        if (!supabase) return;
+        const { count } = await supabase
+            .from("orders")
+            .select("*", { count: 'exact', head: true })
+            .eq("payment_status", "PENDING");
+        setPendingCount(count || 0);
+    }, [supabase]);
+
     useEffect(() => {
         if (!supabase) return;
-
-        async function fetchCount() {
-            const { count } = await supabase
-                .from("orders")
-                .select("*", { count: 'exact', head: true })
-                .eq("payment_status", "PENDING");
-            setPendingCount(count || 0);
-        }
 
         fetchCount();
 
@@ -79,7 +81,10 @@ function CashierPageContent() {
             }).subscribe();
 
         return () => { supabase.removeChannel(channel); }
-    }, [supabase]);
+    }, [supabase, fetchCount]);
+
+    // Recover from realtime events missed while the tab was in the background.
+    useRefetchOnFocus(fetchCount);
 
 
     // --- AUTH GUARD RENDER ---

@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useRefetchOnFocus } from "@/hooks/use-refetch-on-focus";
 import { useSupabase } from "@/lib/supabase/provider";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -228,6 +229,9 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
       supabase.removeChannel(channel);
     };
   }, [fetchOrders, supabase]);
+
+  // Recover from realtime events missed while the tab was in the background.
+  useRefetchOnFocus(fetchOrders);
 
   const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
     const { error } = await supabase

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, LogIn, HardHat, Loader2, LogOut } from 'lucide-react';
+import { AlertCircle, ArrowLeft, LogIn, HardHat, Loader2, LogOut } from 'lucide-react';
 import { useSupabase } from '@/lib/supabase/provider';
 import type { Station } from '@/lib/types';
 import Link from 'next/link';
@@ -157,7 +157,15 @@ export default function StationHomePage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 relative">
+      <div className="absolute top-4 left-4">
+        <Button variant="outline" asChild>
+          <Link href="/admin">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Admin
+          </Link>
+        </Button>
+      </div>
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold tracking-tight">Select a Station</h1>
         <p className="text-muted-foreground mt-2">Choose which station you are operating.</p>

@@ -1,16 +1,16 @@
-# Graph Report - BNM-Cafe  (2026-06-20)
+# Graph Report - BNM-Cafe  (2026-07-02)
 
 ## Corpus Check
-- 108 files · ~497,834 words
+- 111 files · ~500,917 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 647 nodes · 1288 edges · 52 communities (40 shown, 12 thin omitted)
+- 659 nodes · 1325 edges · 52 communities (41 shown, 11 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 64 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3f940a42`
+- Built from commit: `4681f11d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -93,35 +93,35 @@
 - **Core Features of Campus Cafe Connect App** — concept_user_authentication, concept_menu_display, concept_cart_management, concept_order_history, concept_realtime_inventory [EXTRACTED 1.00]
 - **Admin Capabilities of Campus Cafe Connect** — concept_admin_analytics, concept_realtime_order_mgmt, concept_csv_export [EXTRACTED 1.00]
 
-## Communities (52 total, 12 thin omitted)
+## Communities (52 total, 11 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.08
-Nodes (47): AdminLogin(), AdminPage(), statusDisplayMap, syncOrderStatus(), placeholderImages, Order, OrderStationStatus, OrderStatus (+39 more)
+Cohesion: 0.07
+Nodes (49): MenuGrid(), MenuGridProps, PendingOrder, MenuItemCardProps, MyFeedbackPage(), categories, menuItems, orders (+41 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.06
-Nodes (47): AdminLayout(), sidebarNavItems, AdminDashboard(), AdminLoginPage(), AnalyticsPageContainer(), BottomNavBar(), AppLayoutContent(), CartSuccessDialog() (+39 more)
+Nodes (46): AdminLayout(), sidebarNavItems, AdminDashboard(), AdminPage(), AdminLoginPage(), AnalyticsPageContainer(), BottomNavBar(), AppLayoutContent() (+38 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.04
 Nodes (46): dependencies, class-variance-authority, clsx, date-fns, dotenv, embla-carousel-react, framer-motion, genkit (+38 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.09
-Nodes (28): AnalyticsData, COLORS, RawOrder, TimeRange, TooltipExplainer(), TrendIndicator(), TrendIndicatorProps, OrderItem (+20 more)
+Cohesion: 0.06
+Nodes (41): AdminLogin(), AdminAnalyticsPage(), AnalyticsData, COLORS, RawOrder, TimeRange, TooltipExplainer(), TrendIndicator() (+33 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.09
 Nodes (26): inter, RootLayoutContent(), Action, ActionType, actionTypes, addToRemoveQueue(), dispatch(), genId() (+18 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.10
-Nodes (26): AdminAnalyticsPage(), CategoryTabs(), CategoryTabsProps, MenuGrid(), MenuGridProps, OrderSidebar(), CashierPageContent(), PendingOrder (+18 more)
+Cohesion: 0.25
+Nodes (8): scripts, build, dev, genkit:dev, genkit:watch, lint, start, typecheck
 
 ### Community 6 - "Community 6"
-Cohesion: 0.10
-Nodes (26): Firebase App Hosting Configuration, Campus Cafe Connect App Blueprint, Graphify Knowledge Graph Instructions, Admin Sales Analytics Dashboard, Annual Subscription SaaS Model, Final Buy-Out Ownership Transfer, Campus Cafe Connect Web Application, Cart Management (+18 more)
+Cohesion: 0.07
+Nodes (34): Firebase App Hosting Configuration, Campus Cafe Connect App Blueprint, Graphify Knowledge Graph Instructions, Admin Sales Analytics Dashboard, Annual Subscription SaaS Model, Final Buy-Out Ownership Transfer, Campus Cafe Connect Web Application, Cart Management (+26 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.14
@@ -148,32 +148,32 @@ Cohesion: 0.19
 Nodes (15): Cafe Menu Item, Cardamom, Cinnamon, Cloves, Hot Beverage, Chai Image, Masala Chai, Milk Tea (+7 more)
 
 ### Community 13 - "Community 13"
-Cohesion: 0.14
-Nodes (9): KOTCard(), safeFormatDistanceToNow(), cn(), KOTCard(), Checkbox, PopoverContent, Progress, Slider (+1 more)
+Cohesion: 0.12
+Nodes (14): cn(), KOTCard(), Checkbox, PopoverContent, SheetContent, SheetContentProps, SheetDescription, SheetFooter() (+6 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.14
 Nodes (12): Carousel, CarouselApi, CarouselContent, CarouselContext, CarouselContextProps, CarouselItem, CarouselNext, CarouselOptions (+4 more)
 
 ### Community 15 - "Community 15"
-Cohesion: 0.22
-Nodes (8): SheetContent, SheetContentProps, SheetDescription, SheetFooter(), SheetHeader(), SheetOverlay, SheetTitle, sheetVariants
+Cohesion: 0.50
+Nodes (3): name, private, version
 
 ### Community 16 - "Community 16"
 Cohesion: 0.20
 Nodes (11): Chaat Category, Indian Street Food Cuisine, Masala Puri, Masala Puri Image, Green Curry / Masala Gravy, Spiced Masala Gravy, Diced Onion, Puri (Fried Bread) (+3 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.09
-Nodes (21): devDependencies, eslint, eslint-config-next, genkit-cli, postcss, tailwindcss, @types/node, @types/react (+13 more)
+Cohesion: 0.20
+Nodes (10): devDependencies, eslint, eslint-config-next, genkit-cli, postcss, tailwindcss, @types/node, @types/react (+2 more)
 
 ### Community 18 - "Community 18"
 Cohesion: 0.20
 Nodes (9): DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut(), DropdownMenuSubContent (+1 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.29
-Nodes (6): DialogContent, DialogDescription, DialogFooter(), DialogHeader(), DialogOverlay, DialogTitle
+Cohesion: 0.13
+Nodes (21): KOTCard(), safeFormatDistanceToNow(), statusDisplayMap, AuthForm(), AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription (+13 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.25
@@ -223,29 +223,33 @@ Nodes (3): buttonVariants, Calendar(), CalendarProps
 Cohesion: 0.67
 Nodes (3): QR Code 1 (PhonePe Payment), Mohamed Ammaar Hussain, PhonePe Payment App
 
+### Community 36 - "Community 36"
+Cohesion: 0.39
+Nodes (5): getRazorpay(), POST(), razorpay, POST(), razorpay
+
 ### Community 54 - "Community 54"
 Cohesion: 0.40
 Nodes (4): Done in this codebase, MANUAL — do these to finish, Security Hardening — status & manual follow-ups, Verification (after applying the migration)
 
 ## Knowledge Gaps
-- **275 isolated node(s):** `PreToolUse`, `allow`, `extends`, `{ createClient }`, `supabase` (+270 more)
+- **281 isolated node(s):** `PreToolUse`, `allow`, `extends`, `{ createClient }`, `supabase` (+276 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `Community 13` to `Community 0`, `Community 1`, `Community 32`, `Community 3`, `Community 4`, `Community 5`, `Community 33`, `Community 7`, `Community 10`, `Community 14`, `Community 15`, `Community 18`, `Community 19`, `Community 21`, `Community 24`, `Community 25`?**
-  _High betweenness centrality (0.086) - this node is a cross-community bridge._
-- **Why does `useSupabase()` connect `Community 1` to `Community 0`, `Community 3`, `Community 5`, `Community 7`, `Community 25`?**
-  _High betweenness centrality (0.033) - this node is a cross-community bridge._
-- **Why does `Button` connect `Community 0` to `Community 1`, `Community 3`, `Community 5`, `Community 7`, `Community 14`, `Community 25`?**
+- **Why does `cn()` connect `Community 13` to `Community 0`, `Community 1`, `Community 32`, `Community 3`, `Community 4`, `Community 33`, `Community 37`, `Community 7`, `Community 10`, `Community 14`, `Community 18`, `Community 19`, `Community 21`, `Community 24`, `Community 25`?**
+  _High betweenness centrality (0.084) - this node is a cross-community bridge._
+- **Why does `useSupabase()` connect `Community 1` to `Community 0`, `Community 3`, `Community 7`, `Community 19`, `Community 25`?**
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+- **Why does `Button` connect `Community 0` to `Community 1`, `Community 3`, `Community 7`, `Community 14`, `Community 19`, `Community 25`?**
   _High betweenness centrality (0.012) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `useSupabase()` (e.g. with `AppLayoutContent()` and `AdminFeedbackDashboard()`) actually correct?**
   _`useSupabase()` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `PreToolUse`, `allow`, `extends` to the rest of the system?**
-  _291 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _297 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.08146705615060046 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07405515832482125 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.06293706293706294 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.058445353594389245 - nodes in this community are weakly interconnected._

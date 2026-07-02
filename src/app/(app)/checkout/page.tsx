@@ -97,11 +97,12 @@ export default function CheckoutPage() {
                 throw new Error("Could not create order");
             }
 
-            // 2. Create Razorpay order linking to our internal order
+            // 2. Create Razorpay order linking to our internal order.
+            // The server derives the amount from the order row itself.
             const res = await fetch("/api/razorpay", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ amount: finalTotal, receipt: orderId }),
+                body: JSON.stringify({ receipt: orderId }),
             });
             const data = await res.json();
 

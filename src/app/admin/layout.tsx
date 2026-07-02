@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
+    ClipboardList,
     LayoutDashboard,
     ShoppingCart,
     Store,
@@ -15,6 +16,11 @@ import { useSupabase } from "@/lib/supabase/provider";
 import { Button } from "@/components/ui/button";
 
 const sidebarNavItems = [
+    {
+        title: "Live Orders (KOT)",
+        href: "/admin",
+        icon: ClipboardList,
+    },
     {
         title: "Analytics Dashboard",
         href: "/admin/analytics",
