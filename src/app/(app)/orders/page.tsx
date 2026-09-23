@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
+import useSWR from "swr";
 import Link from "next/link";
 import { useSupabase } from "@/lib/supabase/provider";
 import type { Order, OrderStatus } from "@/lib/types";
@@ -45,86 +46,72 @@ function OrdersSkeleton() {
     );
 }
 
+const ITEMS_PER_PAGE = 7;
+
+function formatOrders(data: any[]): Order[] {
+    return data.map((d: any) => ({
+        ...d,
+        orderDate: d.order_date,
+        totalAmount: d.total_amount,
+        userName: d.user_name,
+        display_order_id: d.display_order_id,
+        items: [], // Items are not needed for this list view
+    }));
+}
+
 export default function OrdersPage() {
     const { user, supabase } = useSupabase();
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    // Pages beyond the first, appended via "Load More"
+    const [extraOrders, setExtraOrders] = useState<Order[]>([]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(0);
-    const [hasMore, setHasMore] = useState(true);
 
-    const ITEMS_PER_PAGE = 7;
-
-    const fetchOrders = useCallback(async (pageIndex: number) => {
-        if (!user) {
-            setIsLoading(false);
-            return;
-        }
-
-        if (pageIndex === 0) {
-            setIsLoading(true);
-        } else {
-            setIsLoadingMore(true);
-        }
-        setError(null);
-
+    const fetchPage = useCallback(async (pageIndex: number) => {
         const from = pageIndex * ITEMS_PER_PAGE;
         const to = from + ITEMS_PER_PAGE - 1;
 
         const { data, error, count } = await supabase
             .from('orders')
             .select('*', { count: 'exact' })
-            .eq('user_id', user.id)
+            .eq('user_id', user!.id)
             .order('order_date', { ascending: false })
             .range(from, to);
 
-        if (error) {
-            console.error("Error fetching orders:", error);
-            setError("Failed to load your orders. Please try again.");
-        } else {
-            const formattedOrders: Order[] = data.map((d: any) => ({
-                ...d,
-                orderDate: d.order_date,
-                totalAmount: d.total_amount,
-                userName: d.user_name,
-                display_order_id: d.display_order_id,
-                items: [], // Items are not needed for this list view
-            }));
-
-            if (pageIndex === 0) {
-                setOrders(formattedOrders);
-            } else {
-                setOrders(prev => [...prev, ...formattedOrders]);
-            }
-
-            if (count !== null) {
-                setHasMore(from + data.length < count);
-            } else {
-                setHasMore(data.length === ITEMS_PER_PAGE);
-            }
-        }
-
-        setIsLoading(false);
-        setIsLoadingMore(false);
+        if (error) throw error;
+        return { orders: formatOrders(data), count };
     }, [user, supabase]);
 
-    useEffect(() => {
-        if (user) {
-            fetchOrders(0);
-            setPage(0);
-        } else {
-            setIsLoading(false);
-        }
-    }, [user, fetchOrders]);
+    const { data: firstPage, isLoading, error } = useSWR(
+        user ? ['orders', user.id] : null,
+        () => fetchPage(0),
+        { revalidateOnFocus: true }
+    );
 
-    const handleLoadMore = () => {
+    // Dedupe in case a new order shifts pagination between fetches
+    const firstPageOrders = firstPage?.orders ?? [];
+    const firstPageIds = new Set(firstPageOrders.map(o => o.id));
+    const orders = [...firstPageOrders, ...extraOrders.filter(o => !firstPageIds.has(o.id))];
+
+    const totalCount = firstPage?.count ?? null;
+    const hasMore = totalCount !== null
+        ? orders.length < totalCount
+        : firstPageOrders.length === ITEMS_PER_PAGE;
+
+    const handleLoadMore = async () => {
         const nextPage = page + 1;
-        setPage(nextPage);
-        fetchOrders(nextPage);
+        setIsLoadingMore(true);
+        try {
+            const { orders: more } = await fetchPage(nextPage);
+            setExtraOrders(prev => [...prev, ...more]);
+            setPage(nextPage);
+        } catch (err) {
+            console.error("Error fetching more orders:", err);
+        } finally {
+            setIsLoadingMore(false);
+        }
     };
 
-    if (isLoading) {
+    if (user && isLoading && !firstPage) {
         return <OrdersSkeleton />;
     }
 
@@ -133,7 +120,7 @@ export default function OrdersPage() {
             <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>Failed to load your orders. Please try again.</AlertDescription>
             </Alert>
         );
     }
@@ -163,9 +150,9 @@ export default function OrdersPage() {
                     {orders.map((order, index) => (
                         <motion.div
                             key={order.id}
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: (index % ITEMS_PER_PAGE) * 0.1 }}
+                            transition={{ duration: 0.2, ease: "easeOut", delay: (index % ITEMS_PER_PAGE) * 0.04 }}
                         >
                             <Link href={`/orders/${order.id}`} className="block">
                                 <Card className="hover:bg-muted transition-colors">

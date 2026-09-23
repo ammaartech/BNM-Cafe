@@ -145,7 +145,7 @@ function AuthForm() {
             visible: { opacity: 1, y: 0 }
           }}
         >
-          <Image src="/bnmlogoB.png" alt="B.N.M Cafe Logo" width={150} height={150} priority className="mb-4" />
+          <Image src="/bnmlogoB.png" alt="B.N.M Cafe Logo" width={150} height={150} priority className="mb-4 dark:brightness-0 dark:invert" />
           <div className="h-5 w-fit mx-auto mt-2">
             <div className="typewriter-container">
               <p className="typewriter-text text-muted-foreground">Your campus cafe companion.</p>

@@ -315,7 +315,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
         const newCartItem: CartItem = { ...item, quantity: quantity };
         dispatch({ type: "ADD_ITEM", payload: newCartItem });
-        setAddedItemPopup(item);
+        // New object identity so re-adding the same item resets the popup's dismiss timer
+        setAddedItemPopup({ ...item });
         playAddToCartSound();
       }
     } catch (err: any) {

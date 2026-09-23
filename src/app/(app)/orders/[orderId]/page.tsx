@@ -309,7 +309,7 @@ export default function OrderTicketPage() {
         <CardContent className="p-0">
           <div className="text-center p-8 border-b border-muted/60 rounded-t-2xl">
             <p className="text-sm font-semibold tracking-wider text-muted-foreground uppercase mb-2">Order Number</p>
-            <h2 className="text-7xl font-extrabold tracking-tighter text-[#154b23] flex justify-center">
+            <h2 className="text-7xl font-extrabold tracking-tighter text-primary flex justify-center">
               {order.display_order_id?.split("").map((char, i) => (
                 <SlotChar key={i} char={char} index={i} />
               ))}
@@ -319,7 +319,7 @@ export default function OrderTicketPage() {
           </div>
 
           {order.status === 'DELIVERED' && (
-            <div className="flex items-center justify-center gap-3 p-4 text-lg font-bold bg-green-600 text-primary-foreground shadow-inner">
+            <div className="flex items-center justify-center gap-3 p-4 text-lg font-bold bg-green-600 text-white shadow-inner">
               <CheckCircle2 className="h-5 w-5" />
               <span>Delivered</span>
             </div>
@@ -374,14 +374,14 @@ export default function OrderTicketPage() {
             </div>
             <div className="flex justify-between font-extrabold text-2xl pt-2">
               <span className="text-foreground">Total</span>
-              <span className="text-[#154b23]">₹{order.totalAmount.toFixed(2)}</span>
+              <span className="text-primary">₹{order.totalAmount.toFixed(2)}</span>
             </div>
           </div>
         </CardContent>
 
         <CardFooter className="flex-col gap-3 border-t p-6 pb-6">
           <Button
-            className="w-full bg-[#154b23] hover:bg-[#0e3318]"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => router.push(`/feedback?orderId=${orderId}`)}
           >
             <MessageSquare className="h-4 w-4 mr-2" />

@@ -57,6 +57,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
                 src={itemImage.imageUrl}
                 alt={item.name}
                 fill
+                sizes="(max-width: 448px) 50vw, 224px"
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                 data-ai-hint={itemImage.imageHint}
               />
@@ -187,7 +188,7 @@ function MenuPageContent() {
             <div className="w-10"></div> // Placeholder for spacing
           )}
           <div className="flex justify-center">
-            <Image src="/bnmlogoB12.png" alt="B.N.M Cafe Logo" width={140} height={40} priority />
+            <Image src="/bnmlogoB12.png" alt="B.N.M Cafe Logo" width={140} height={40} priority className="dark:brightness-0 dark:invert" />
           </div>
           {user && !user.is_anonymous ? (
             <Button variant="ghost" size="icon" asChild className="text-muted-foreground">
@@ -301,7 +302,7 @@ function MenuPageContent() {
               hidden: { opacity: 0 },
               visible: {
                 opacity: 1,
-                transition: { staggerChildren: 0.1 }
+                transition: { staggerChildren: 0.04 }
               }
             }}
           >

@@ -8,13 +8,14 @@ import { useUserPreferences, UserPreferencesProvider } from "@/context/UserPrefe
 import BottomNavBar from "./BottomNavBar";
 import { useSupabase } from "@/lib/supabase/provider";
 import { OrderStatusProvider, useOrderStatus } from "@/context/OrderStatusContext";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 function CartSuccessDialog() {
     const { addedItemPopup, setAddedItemPopup } = useCart();
+    const shouldReduceMotion = useReducedMotion();
 
     useEffect(() => {
         if (addedItemPopup) {
@@ -28,19 +29,26 @@ function CartSuccessDialog() {
     const itemImage = addedItemPopup ? PlaceHolderImages.find((img) => img.id === addedItemPopup.image) : null;
 
     return (
-        <div className="fixed top-4 left-0 right-0 z-[100] flex justify-center pointer-events-none px-4">
+        <div className="fixed left-0 right-0 top-[max(1rem,env(safe-area-inset-top))] z-[100] flex justify-center pointer-events-none px-4">
             <AnimatePresence>
                 {addedItemPopup && (
                     <motion.div
-                        initial={{ opacity: 0, y: -50, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                        role="status"
+                        aria-live="polite"
+                        initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -50, scale: 0.9 }}
+                        animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+                        exit={
+                            shouldReduceMotion
+                                ? { opacity: 0, transition: { duration: 0.15, ease: "easeIn" } }
+                                : { opacity: 0, y: -20, scale: 0.95, transition: { duration: 0.2, ease: "easeIn" } }
+                        }
                         transition={{
                             type: "spring",
                             stiffness: 400,
                             damping: 25
                         }}
-                        className="bg-card border shadow-lg rounded-2xl p-3 flex items-center gap-3 w-full max-w-sm pointer-events-auto"
+                        onClick={() => setAddedItemPopup(null)}
+                        className="bg-card border shadow-lg rounded-2xl p-3 pr-4 flex items-center gap-3 w-full max-w-sm pointer-events-auto cursor-pointer"
                     >
                         <div className="h-12 w-12 rounded-xl overflow-hidden bg-muted flex-shrink-0 relative">
                             {itemImage ? (
@@ -59,14 +67,14 @@ function CartSuccessDialog() {
                             )}
                         </div>
                         <div className="flex-grow min-w-0">
-                            <p className="text-sm font-semibold flex items-center gap-1.5 truncate">
-                                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                                Added to Cart
+                            <p className="text-xs font-medium text-muted-foreground leading-tight">
+                                Added to cart
                             </p>
-                            <p className="text-xs text-muted-foreground truncate">
+                            <p className="text-sm font-semibold leading-snug truncate mt-0.5">
                                 {addedItemPopup.name}
                             </p>
                         </div>
+                        <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
                     </motion.div>
                 )}
             </AnimatePresence>

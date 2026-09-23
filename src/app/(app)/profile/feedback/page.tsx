@@ -39,26 +39,26 @@ export default function MyFeedbackPage() {
 
     if (isUserLoading || isLoading) {
         return (
-            <div className="flex flex-col h-full min-h-screen bg-[#f8f9fa] px-4 sm:px-0 max-w-md mx-auto items-center justify-center">
+            <div className="flex flex-col h-full min-h-screen bg-background px-4 sm:px-0 max-w-md mx-auto items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#f8f9fa] pb-24">
+        <div className="min-h-screen bg-background pb-24">
             {/* Clean Header */}
-            <div className="sticky top-0 bg-[#f8f9fa] z-10 px-4 py-4 sm:px-6">
+            <div className="sticky top-0 bg-background z-10 px-4 py-4 sm:px-6">
                 <div className="max-w-md mx-auto flex items-center justify-center relative">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => router.back()}
-                        className="absolute left-0 rounded-full hover:bg-black/5"
+                        className="absolute left-0 rounded-full hover:bg-foreground/5"
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <h1 className="text-2xl font-extrabold tracking-tight text-[#1a1c1e]">My Feedback</h1>
+                    <h1 className="text-2xl font-extrabold tracking-tight text-foreground">My Feedback</h1>
                 </div>
             </div>
 
@@ -66,7 +66,7 @@ export default function MyFeedbackPage() {
                 {/* Create new feedback */}
                 <Button
                     onClick={() => router.push("/feedback")}
-                    className="w-full bg-[#154b23] hover:bg-[#0e3318] text-white font-bold h-14 rounded-2xl shadow-md shadow-[#154b23]/20 transition-all active:scale-[0.98] mb-6"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-14 rounded-2xl shadow-md shadow-primary/20 transition-all active:scale-[0.98] mb-6"
                 >
                     <MessageSquarePlus className="mr-2 h-5 w-5" />
                     Write New Feedback
@@ -74,10 +74,10 @@ export default function MyFeedbackPage() {
 
                 {feedbacks.length === 0 ? (
                     <div className="text-center mt-12 flex flex-col items-center">
-                        <div className="bg-white shadow-sm w-16 h-16 rounded-full flex items-center justify-center mb-6 border border-gray-100">
+                        <div className="bg-card shadow-sm w-16 h-16 rounded-full flex items-center justify-center mb-6 border">
                             <MessageSquare className="h-8 w-8 text-muted-foreground opacity-50" />
                         </div>
-                        <h2 className="text-lg font-semibold mb-2 text-[#1a1c1e]">No feedback yet</h2>
+                        <h2 className="text-lg font-semibold mb-2 text-foreground">No feedback yet</h2>
                         <p className="text-sm text-muted-foreground/80 max-w-[250px]">
                             Tap “Write New Feedback” above to share your thoughts with us.
                         </p>
@@ -87,7 +87,7 @@ export default function MyFeedbackPage() {
                         {feedbacks.map((fb) => (
                             <div
                                 key={fb.id}
-                                className="bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgb(0,0,0,0.04)] border border-gray-100"
+                                className="bg-card rounded-2xl p-5 shadow-[0_2px_8px_rgb(0,0,0,0.04)] border"
                             >
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="flex items-center text-xs font-semibold text-muted-foreground">
@@ -95,12 +95,12 @@ export default function MyFeedbackPage() {
                                         {format(new Date(fb.created_at), "MMM dd, yyyy")}
                                     </div>
                                     {fb.order_id && (
-                                        <div className="bg-[#f3f4f6] text-[#4b5563] text-xs font-semibold px-2.5 py-1 rounded-full">
+                                        <div className="bg-muted text-muted-foreground text-xs font-semibold px-2.5 py-1 rounded-full">
                                             Order {fb.order_id.substring(0, 8)}
                                         </div>
                                     )}
                                 </div>
-                                <p className="text-[#1a1c1e] text-[15px] font-medium leading-relaxed">
+                                <p className="text-foreground text-[15px] font-medium leading-relaxed">
                                     "{fb.body}"
                                 </p>
                             </div>

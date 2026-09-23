@@ -8,6 +8,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { SupabaseProvider } from "@/lib/supabase/provider";
 import { usePathname } from "next/navigation";
+import { ThemeProvider } from "next-themes";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({
@@ -38,22 +39,38 @@ function RootLayoutContent({
     return 'max-w-md shadow-2xl';
   }
 
+  // Staff (KOT) screens stay dark; admin and station keep their current light
+  // look. Customer pages follow the user's choice from Profile > Appearance.
+  const forcedTheme = isStaffPage
+    ? 'dark'
+    : (isAdminPage || isStationPage)
+      ? 'light'
+      : undefined;
+
   return (
-    <html lang="en" className={cn(isStaffPage && 'dark')} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <title>B.N.M Cafe</title>
         <meta name="description" content="Your university cafe companion" />
       </head>
       <body className={`font-sans antialiased ${inter.variable}`}>
-        <div className={cn(
-          "mx-auto bg-background min-h-dvh flex flex-col",
-          layoutClass()
-        )}>
-          <SupabaseProvider>
-            {children}
-          </SupabaseProvider>
-          <Toaster />
-        </div>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          forcedTheme={forcedTheme}
+          disableTransitionOnChange
+        >
+          <div className={cn(
+            "mx-auto bg-background min-h-dvh flex flex-col",
+            layoutClass()
+          )}>
+            <SupabaseProvider>
+              {children}
+            </SupabaseProvider>
+            <Toaster />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

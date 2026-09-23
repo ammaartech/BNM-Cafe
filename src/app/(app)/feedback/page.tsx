@@ -76,7 +76,7 @@ function FeedbackFormContent() {
             toast({
                 title: "Thank you!",
                 description: "Your feedback has been successfully submitted.",
-                className: "bg-[#154b23] text-white border-[#154b23]",
+                className: "bg-primary text-primary-foreground border-primary",
             });
             if (orderId) {
                 router.push(`/orders/${orderId}`);
@@ -103,11 +103,11 @@ function FeedbackFormContent() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50/50 pb-24">
+        <div className="min-h-screen bg-background pb-24">
             {/* Header */}
-            <div className="sticky top-0 bg-slate-50/80 backdrop-blur-xl z-10 px-4 py-4 sm:px-6 shadow-sm border-b border-muted">
+            <div className="sticky top-0 bg-background/80 backdrop-blur-xl z-10 px-4 py-4 sm:px-6 shadow-sm border-b border-muted">
                 <div className="max-w-md mx-auto flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0 rounded-full hover:bg-slate-200/50">
+                    <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0 rounded-full hover:bg-foreground/5">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                     <h1 className="text-xl font-bold tracking-tight text-foreground">Write a Review</h1>
@@ -122,7 +122,7 @@ function FeedbackFormContent() {
                         </h2>
                         <p className="text-muted-foreground text-base">
                             Your thoughts help us improve our service and make your next experience even better.
-                            {orderId && <span className="block mt-1 font-medium text-[#154b23]">Re: Order {orderId.substring(0, 8).toUpperCase()}</span>}
+                            {orderId && <span className="block mt-1 font-medium text-primary">Re: Order {orderId.substring(0, 8).toUpperCase()}</span>}
                         </p>
                     </motion.div>
 
@@ -139,7 +139,7 @@ function FeedbackFormContent() {
                                             <FormControl>
                                                 <Input
                                                     placeholder="Your Name"
-                                                    className="h-14 px-4 bg-white border-muted/60 rounded-xl shadow-sm focus-visible:ring-1 focus-visible:ring-[#154b23] focus-visible:border-[#154b23] transition-all text-base"
+                                                    className="h-14 px-4 bg-card border-muted/60 rounded-xl shadow-sm focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all text-base"
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -156,7 +156,7 @@ function FeedbackFormContent() {
                                             <FormControl>
                                                 <Input
                                                     placeholder="+91 98765 43210"
-                                                    className="h-14 px-4 bg-white border-muted/60 rounded-xl shadow-sm focus-visible:ring-1 focus-visible:ring-[#154b23] focus-visible:border-[#154b23] transition-all text-base"
+                                                    className="h-14 px-4 bg-card border-muted/60 rounded-xl shadow-sm focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all text-base"
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -174,7 +174,7 @@ function FeedbackFormContent() {
                                                 <Input
                                                     placeholder="you@example.com"
                                                     type="email"
-                                                    className="h-14 px-4 bg-white border-muted/60 rounded-xl shadow-sm focus-visible:ring-1 focus-visible:ring-[#154b23] focus-visible:border-[#154b23] transition-all text-base"
+                                                    className="h-14 px-4 bg-card border-muted/60 rounded-xl shadow-sm focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all text-base"
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -193,7 +193,7 @@ function FeedbackFormContent() {
                                                 <FormControl>
                                                     <Textarea
                                                         placeholder="Tell us what you loved or what we can improve..."
-                                                        className="resize-none min-h-[160px] p-4 bg-white border-muted/60 rounded-xl shadow-sm focus-visible:ring-1 focus-visible:ring-[#154b23] focus-visible:border-[#154b23] transition-all text-base"
+                                                        className="resize-none min-h-[160px] p-4 bg-card border-muted/60 rounded-xl shadow-sm focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all text-base"
                                                         {...field}
                                                     />
                                                 </FormControl>
@@ -207,7 +207,7 @@ function FeedbackFormContent() {
                             <motion.div variants={itemVariants} className="pt-4 pb-8">
                                 <Button
                                     type="submit"
-                                    className="w-full bg-[#154b23] hover:bg-[#0e3318] text-white font-bold h-14 rounded-xl shadow-md transition-all active:scale-[0.98]"
+                                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-14 rounded-xl shadow-md transition-all active:scale-[0.98]"
                                     disabled={isSubmitting}
                                 >
                                     <AnimatePresence mode="popLayout">
