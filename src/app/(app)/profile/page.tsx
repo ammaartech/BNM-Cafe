@@ -15,10 +15,12 @@ import {
     ArrowLeft,
     ChevronRight,
     Moon,
+    Compass,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
+import { useTour } from '@/components/tour/TourProvider';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -63,6 +65,7 @@ function ProfileSkeleton() {
 export default function ProfilePage() {
     const { user, userProfile, supabase, isUserLoading } = useSupabase();
     const router = useRouter();
+    const { startTour } = useTour();
     const { theme, setTheme } = useTheme();
     // useTheme() is undefined until hydration completes; render the switch
     // neutral until then to avoid a hydration mismatch.
@@ -179,7 +182,7 @@ export default function ProfilePage() {
                     <p className="text-xs font-bold text-muted-foreground/70 uppercase tracking-wider px-1 mb-2">
                         Activity
                     </p>
-                    <div className="bg-card rounded-2xl shadow-[0_2px_8px_rgb(0,0,0,0.04)] border overflow-hidden">
+                    <div className="bg-card rounded-2xl shadow-[0_2px_8px_rgb(0,0,0,0.04)] border divide-y divide-border overflow-hidden">
                         <button
                             type="button"
                             onClick={() => router.push('/profile/feedback')}
@@ -191,6 +194,21 @@ export default function ProfilePage() {
                             <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-foreground">My Feedback</p>
                                 <p className="text-sm text-muted-foreground">View and add your feedback</p>
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-muted-foreground/40" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => startTour('customer')}
+                            data-tour="profile-tour"
+                            className="w-full flex items-center gap-4 p-4 text-left transition-colors hover:bg-foreground/[0.03] active:bg-foreground/[0.06]"
+                        >
+                            <span className="h-10 w-10 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                                <Compass className="h-5 w-5" />
+                            </span>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-foreground">App Tour</p>
+                                <p className="text-sm text-muted-foreground">Replay the guided walkthrough</p>
                             </div>
                             <ChevronRight className="h-5 w-5 text-muted-foreground/40" />
                         </button>

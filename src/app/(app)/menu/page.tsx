@@ -48,7 +48,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
   }
 
   return (
-    <Card className="overflow-hidden h-full flex flex-col text-left">
+    <Card className="overflow-hidden h-full flex flex-col text-left" data-tour="menu-item">
       <div className="relative group">
         <Link href={`/menu/${item.category}/${item.id}`} className="block relative">
           <div className="relative aspect-square w-full">
@@ -70,6 +70,7 @@ function MenuItemGridCard({ item }: { item: MenuItem }) {
             variant="ghost"
             className="h-9 w-9 rounded-full bg-card/60 hover:bg-card/80 text-white"
             onClick={handleFavoriteClick}
+            data-tour="menu-favorite"
           >
             <Heart className={cn(
               "h-5 w-5 transition-all duration-200 ease-in-out",
@@ -207,6 +208,7 @@ function MenuPageContent() {
             variant="ghost"
             size="icon"
             className="text-muted-foreground absolute left-0 top-1/2 -translate-y-1/2 z-20"
+            data-tour="menu-search"
             onClick={() => {
               if (isSearchOpen) {
                 setSearchQuery('');
@@ -267,7 +269,7 @@ function MenuPageContent() {
         </div>
       </header>
 
-      <div className="overflow-x-auto py-2 no-scrollbar px-2">
+      <div className="overflow-x-auto py-2 no-scrollbar px-2" data-tour="menu-filters">
         <div className="flex gap-2">
           <Button variant={activeFilter === 'all' ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => handleFilterClick('all')}>All</Button>
           <Button variant={activeFilter === 'favorites' ? 'default' : 'secondary'} className="rounded-full whitespace-nowrap" onClick={() => handleFilterClick('favorites')}>Favorites</Button>

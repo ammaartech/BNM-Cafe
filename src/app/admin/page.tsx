@@ -295,7 +295,7 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
 
   return (
     <Tabs defaultValue="live">
-      <TabsList className="grid w-full grid-cols-3 mb-4">
+      <TabsList className="grid w-full grid-cols-3 mb-4" data-tour="admin-kot-tabs">
         <TabsTrigger value="live">Live KOT</TabsTrigger>
         <TabsTrigger value="delivered">Completed</TabsTrigger>
         <TabsTrigger value="all">All Orders</TabsTrigger>

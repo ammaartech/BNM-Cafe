@@ -161,6 +161,7 @@ export default function MenuItemDetailPage() {
           className="w-full h-14 text-lg font-bold rounded-full"
           onClick={handleAddToCart}
           disabled={isOutOfStock}
+          data-tour="item-add"
         >
           Add to Cart
         </Button>

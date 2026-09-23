@@ -146,7 +146,7 @@ export default function OrdersPage() {
                     </Button>
                 </div>
             ) : (
-                <div className="space-y-4 flex-grow">
+                <div className="space-y-4 flex-grow" data-tour="orders-list">
                     {orders.map((order, index) => (
                         <motion.div
                             key={order.id}

@@ -170,7 +170,7 @@ export default function StationHomePage() {
         <h1 className="text-4xl font-bold tracking-tight">Select a Station</h1>
         <p className="text-muted-foreground mt-2">Choose which station you are operating.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl" data-tour="station-list">
         {stations.map(station => (
             <Link key={station.id} href={`/station/${station.code}`}>
                 <Card className="text-center hover:bg-muted/50 transition-colors cursor-pointer h-full">

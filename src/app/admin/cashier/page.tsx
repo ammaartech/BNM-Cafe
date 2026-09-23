@@ -201,6 +201,7 @@ function CashierPageContent() {
                         onClick={() => setSelectedCategory("pending")}
                         className="rounded-full relative shrink-0 whitespace-nowrap bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200 hover:text-orange-900 data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:border-orange-600 data-[state=active]:hover:bg-orange-700 h-10 px-6 font-semibold"
                         data-state={selectedCategory === "pending" ? "active" : "inactive"}
+                        data-tour="cashier-pending"
                     >
                         Pending Payments
                         {pendingCount > 0 && (
@@ -211,7 +212,7 @@ function CashierPageContent() {
                     </Button>
                 </div>
 
-                <div className="flex-grow overflow-y-auto bg-muted/10">
+                <div className="flex-grow overflow-y-auto bg-muted/10" data-tour="cashier-menu">
                     {selectedCategory === "pending" ? (
                         <PendingOrdersGrid />
                     ) : loading ? (
@@ -225,7 +226,7 @@ function CashierPageContent() {
             </div>
 
             {/* RIGHT SIDE: ORDER SIDEBAR */}
-            <div className="w-[400px] h-full flex-shrink-0 shadow-xl z-20">
+            <div className="w-[400px] h-full flex-shrink-0 shadow-xl z-20" data-tour="cashier-bill">
                 <OrderSidebar />
             </div>
 

@@ -18,7 +18,7 @@ export default function BottomNavBar() {
         { href: '/menu', icon: Home, label: 'Home' },
         { href: '/orders', icon: ClipboardList, label: 'My Orders' },
         { href: '/menu?filter=favorites', icon: Heart, label: 'Favorites' },
-        { href: '/cart', icon: ShoppingCart, label: 'Cart' },
+        { href: '/cart', icon: ShoppingCart, label: 'Cart', tour: 'nav-cart' },
     ];
     
     const noNavPages = ['/admin', '/profile'];
@@ -42,7 +42,7 @@ export default function BottomNavBar() {
                     const shouldFill = isActive && (item.label === 'Favorites' || item.label === 'Cart');
 
                     return (
-                        <Link href={item.href} key={item.href} className="relative">
+                        <Link href={item.href} key={item.href} className="relative" data-tour={item.tour}>
                              <div className={cn('flex flex-col items-center gap-1', isActive ? 'text-primary' : 'text-muted-foreground')}>
                                 <Icon className={cn(
                                     "h-6 w-6",

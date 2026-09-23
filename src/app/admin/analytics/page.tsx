@@ -923,7 +923,7 @@ export default function AnalyticsPageContainer() {
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 bg-background/50 min-h-screen flex flex-col">
-            <header className="mb-8 flex justify-between items-center bg-card p-4 rounded-xl shadow-sm border">
+            <header className="mb-8 flex justify-between items-center bg-card p-4 rounded-xl shadow-sm border" data-tour="analytics-header">
                 <div className="flex items-center gap-3">
                     <div className="bg-primary/10 p-2 rounded-lg"><TrendingUp className="h-6 w-6 text-primary" /></div>
                     <div>

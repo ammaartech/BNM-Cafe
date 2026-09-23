@@ -307,7 +307,7 @@ export default function OrderTicketPage() {
       <Card className="max-w-md mx-auto shadow-lg rounded-2xl">
         {/* ... Card content remains the same ... */}
         <CardContent className="p-0">
-          <div className="text-center p-8 border-b border-muted/60 rounded-t-2xl">
+          <div className="text-center p-8 border-b border-muted/60 rounded-t-2xl" data-tour="order-number">
             <p className="text-sm font-semibold tracking-wider text-muted-foreground uppercase mb-2">Order Number</p>
             <h2 className="text-7xl font-extrabold tracking-tighter text-primary flex justify-center">
               {order.display_order_id?.split("").map((char, i) => (

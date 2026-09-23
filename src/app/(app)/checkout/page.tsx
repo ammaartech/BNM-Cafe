@@ -278,7 +278,7 @@ export default function CheckoutPage() {
                         </CardContent>
                     </Card>
 
-                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-4" data-tour="checkout-pay">
                         <Button
                             className="w-full sm:w-1/2 h-14 text-lg font-bold bg-secondary hover:bg-secondary/80 text-secondary-foreground"
                             onClick={handlePayAtCounter}

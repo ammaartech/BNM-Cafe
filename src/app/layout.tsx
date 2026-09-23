@@ -7,6 +7,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { SupabaseProvider } from "@/lib/supabase/provider";
+import { TourProvider } from "@/components/tour/TourProvider";
 import { usePathname } from "next/navigation";
 import { ThemeProvider } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -66,7 +67,9 @@ function RootLayoutContent({
             layoutClass()
           )}>
             <SupabaseProvider>
-              {children}
+              <TourProvider>
+                {children}
+              </TourProvider>
             </SupabaseProvider>
             <Toaster />
           </div>

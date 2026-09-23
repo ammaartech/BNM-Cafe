@@ -55,7 +55,7 @@ export default function CartPage() {
                         }
                     }}
                 >
-                    <div className="flex-grow space-y-4">
+                    <div className="flex-grow space-y-4" data-tour="cart-items">
                         <AnimatePresence mode="popLayout">
                             {state.items.map((item) => {
                                 const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
@@ -133,7 +133,7 @@ export default function CartPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                        <Button className="w-full h-14 text-lg font-bold" onClick={handleCheckout}>
+                        <Button className="w-full h-14 text-lg font-bold" onClick={handleCheckout} data-tour="cart-checkout">
                             Checkout
                         </Button>
                     </motion.div>

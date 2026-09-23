@@ -10,10 +10,12 @@ import {
     Store,
     LogOut,
     UtensilsCrossed,
-    MessageSquare
+    MessageSquare,
+    Compass
 } from "lucide-react";
 import { useSupabase } from "@/lib/supabase/provider";
 import { Button } from "@/components/ui/button";
+import { useTour } from "@/components/tour/TourProvider";
 
 const sidebarNavItems = [
     {
@@ -46,6 +48,7 @@ const sidebarNavItems = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const { supabase, isUserLoading, user, userProfile } = useSupabase();
+    const { startTour } = useTour();
 
     const handleLogout = async () => {
         if (supabase) {
@@ -66,7 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <UtensilsCrossed className="h-6 w-6 text-primary mr-2" />
                     <span className="text-lg font-bold tracking-tight">BNM Admin</span>
                 </div>
-                <nav className="flex-1 space-y-1 p-4">
+                <nav className="flex-1 space-y-1 p-4" data-tour="admin-nav">
                     {sidebarNavItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin');
@@ -93,6 +96,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <p className="text-sm font-medium leading-none">{userProfile?.name || 'Admin User'}</p>
                         <p className="text-xs text-muted-foreground mt-1">{user.email}</p>
                     </div>
+                    <Button variant="ghost" className="w-full justify-start text-muted-foreground mb-2" onClick={() => startTour('staff')}>
+                        <Compass className="mr-2 h-4 w-4" />
+                        Take the staff tour
+                    </Button>
                     <Button variant="outline" className="w-full justify-start text-muted-foreground" onClick={handleLogout}>
                         <LogOut className="mr-2 h-4 w-4" />
                         Log out
@@ -104,7 +111,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex h-14 items-center border-b px-4 md:hidden bg-card sticky top-0 z-50">
                 <UtensilsCrossed className="h-5 w-5 text-primary mr-2" />
                 <span className="font-bold">BNM Admin</span>
-                <div className="ml-auto flex gap-2">
+                <div className="ml-auto flex gap-2" data-tour="admin-nav">
                     {sidebarNavItems.map((item) => (
                         <Link key={item.href} href={item.href} className={cn("p-2 rounded-md", pathname === item.href ? "bg-primary/10 text-primary" : "text-muted-foreground")}>
                             <item.icon className="h-5 w-5" />

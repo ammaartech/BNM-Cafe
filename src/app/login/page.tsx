@@ -9,15 +9,18 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, LogIn, UserPlus, CheckCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, LogIn, UserPlus, CheckCircle, Loader2, Compass, Sparkles } from 'lucide-react';
 import { useSupabase } from '@/lib/supabase/provider';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
+import { DEMO_ACCOUNT } from '@/lib/demo';
+import { useTour } from '@/components/tour/TourProvider';
 
 function AuthForm() {
   const router = useRouter();
   const { user, isUserLoading } = useSupabase();
+  const { startTour } = useTour();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,6 +66,18 @@ function AuthForm() {
       setError(error.message);
     }
     // On success, the SupabaseProvider's useEffect will handle the redirect.
+    setIsLoading(false);
+  };
+
+  const handleDemoLogin = async () => {
+    if (!DEMO_ACCOUNT) return;
+    setIsLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.signInWithPassword(DEMO_ACCOUNT);
+    if (error) {
+      setActiveTab('login');
+      setError(`Demo sign-in failed: ${error.message}`);
+    }
     setIsLoading(false);
   };
 
@@ -159,7 +174,7 @@ function AuthForm() {
             visible: { opacity: 1, y: 0 }
           }}
         >
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" data-tour="auth-card">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -251,6 +266,21 @@ function AuthForm() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {DEMO_ACCOUNT && (
+            <div data-tour="demo-login" className="mt-4 rounded-lg border border-dashed bg-card p-4 text-center">
+              <p className="text-sm text-muted-foreground">Just exploring? Skip the sign-up.</p>
+              <Button variant="secondary" className="mt-3 w-full h-12 text-base" onClick={handleDemoLogin} disabled={isLoading}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Use demo account
+              </Button>
+            </div>
+          )}
+
+          <Button variant="link" className="mt-2 w-full text-muted-foreground" onClick={() => startTour('customer')}>
+            <Compass className="mr-2 h-4 w-4" />
+            Take a guided tour
+          </Button>
         </motion.div>
       </motion.div>
     </div>

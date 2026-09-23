@@ -22,6 +22,20 @@ per-station kitchen displays, and an admin dashboard with analytics.
 | `/station`, `/station/[code]` | Kitchen | Per-station order tickets (KOT), mark items ready |
 | `/admin`, `/admin/analytics` | Admin | Order management, sales analytics, feedback |
 
+## Try it
+
+Open the live site and a guided tour starts on your first visit. It walks you through the
+customer flow step by step: sign in, browse, add to cart, check out, and track the order live.
+
+- Replay it any time: **Profile → App Tour**, or **Take a guided tour** on the login page.
+- Link straight to it: `/login?tour=customer`. Staff can use `/admin?tour=staff` for the
+  cashier, station, and analytics tour (needs an admin account).
+- To skip sign-up, set the optional `NEXT_PUBLIC_DEMO_EMAIL` / `NEXT_PUBLIC_DEMO_PASSWORD`.
+  The login page then shows a **Use demo account** button (see below).
+
+Tour steps live in `src/components/tour/tour-steps.ts`. Each one points at an element
+tagged with `data-tour="..."`.
+
 ## Getting started
 
 **Prerequisites:** Node.js 18+, a Supabase project, a Razorpay account.
@@ -47,6 +61,7 @@ See `.env.example`. `.env` is gitignored — never commit secrets.
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase project + public key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only; required by the Razorpay payment callback |
 | `NEXT_PUBLIC_RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Razorpay keys (secret is server-only) |
+| `NEXT_PUBLIC_DEMO_EMAIL` / `NEXT_PUBLIC_DEMO_PASSWORD` | Optional. Public demo login. Use a dedicated **customer-role** account, because these ship to the browser |
 
 ## Scripts
 
