@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, LogIn, UserPlus, CheckCircle, Loader2, Compass, Sparkles } from 'lucide-react';
+import { AlertCircle, LogIn, UserPlus, CheckCircle, Loader2, Sparkles } from 'lucide-react';
 import { useSupabase } from '@/lib/supabase/provider';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -27,6 +26,7 @@ function AuthForm() {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
 
@@ -69,16 +69,25 @@ function AuthForm() {
     setIsLoading(false);
   };
 
-  const handleDemoLogin = async () => {
-    if (!DEMO_ACCOUNT) return;
-    setIsLoading(true);
+  // "Want to test?": sign in with the shared demo account, then walk the
+  // visitor through the app. Without a demo account configured, the tour
+  // still runs and asks them to sign up at its sign-in step.
+  const handleTryDemo = async () => {
+    if (!DEMO_ACCOUNT) {
+      startTour('customer');
+      return;
+    }
+    setIsDemoLoading(true);
     setError(null);
     const { error } = await supabase.auth.signInWithPassword(DEMO_ACCOUNT);
+    setIsDemoLoading(false);
     if (error) {
       setActiveTab('login');
       setError(`Demo sign-in failed: ${error.message}`);
+      return;
     }
-    setIsLoading(false);
+    // Signed in: the provider redirects to the menu, where the tour opens.
+    startTour('customer');
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -106,23 +115,13 @@ function AuthForm() {
         return;
       }
 
-      // Also create a profile in the 'users' table
-      const { error: profileError } = await supabase.from('users').insert({
-        id: data.user.id,
-        name: name,
-        email: email,
-        role: 'customer',
-      });
-
-      if (profileError) {
-        setError(profileError.message);
-      } else {
-        setShowVerificationDialog(true);
-        setName('');
-        setEmail('');
-        setPassword('');
-        setActiveTab('login');
-      }
+      // The profile row in `users` is created by the on_auth_user_created
+      // trigger, from the name passed in `options.data` above.
+      setShowVerificationDialog(true);
+      setName('');
+      setEmail('');
+      setPassword('');
+      setActiveTab('login');
     }
     setIsLoading(false);
   };
@@ -267,20 +266,30 @@ function AuthForm() {
             </TabsContent>
           </Tabs>
 
-          {DEMO_ACCOUNT && (
-            <div data-tour="demo-login" className="mt-4 rounded-lg border border-dashed bg-card p-4 text-center">
-              <p className="text-sm text-muted-foreground">Just exploring? Skip the sign-up.</p>
-              <Button variant="secondary" className="mt-3 w-full h-12 text-base" onClick={handleDemoLogin} disabled={isLoading}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Use demo account
-              </Button>
-            </div>
-          )}
-
-          <Button variant="link" className="mt-2 w-full text-muted-foreground" onClick={() => startTour('customer')}>
-            <Compass className="mr-2 h-4 w-4" />
-            Take a guided tour
-          </Button>
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              data-tour="demo-login"
+              onClick={handleTryDemo}
+              disabled={isLoading || isDemoLoading}
+              className="group inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-60"
+            >
+              {isDemoLoading ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Opening the demo…
+                </>
+              ) : (
+                <>
+                  Want to test?
+                  <span className="inline-flex items-center gap-1 font-semibold text-primary underline-offset-4 group-hover:underline">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Take the guided demo
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
         </motion.div>
       </motion.div>
     </div>

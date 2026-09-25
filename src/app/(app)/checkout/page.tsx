@@ -1,22 +1,20 @@
-
 "use client";
 
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, CreditCard, Loader2, ArrowLeft, QrCode } from "lucide-react";
+import { AlertCircle, CreditCard, Loader2, ArrowLeft, Clock } from "lucide-react";
 import Image from "next/image";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { getItemImage } from "@/lib/placeholder-images";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useSupabase } from "@/lib/supabase/provider";
 import Script from "next/script";
 import { useToast } from "@/hooks/use-toast";
-import { Clock } from "lucide-react";
 import { motion } from "framer-motion";
 
 function CheckoutSkeleton() {
@@ -70,8 +68,7 @@ function CheckoutSkeleton() {
 }
 
 export default function CheckoutPage() {
-    const { userProfile, user } = useSupabase();
-    const { isUserLoading } = useSupabase();
+    const { userProfile, user, isUserLoading } = useSupabase();
     const router = useRouter();
     const { toast } = useToast();
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -187,7 +184,8 @@ export default function CheckoutPage() {
 
     return (
         <div className="flex flex-col h-full p-4">
-            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+            {/* Loaded as soon as checkout opens, so it is ready before "Pay online" is tapped. */}
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
             <div className="flex items-center gap-4 mb-2">
                 <Button variant="ghost" size="icon" asChild>
                     <Link href="/cart">
@@ -223,7 +221,7 @@ export default function CheckoutPage() {
                         <CardContent className="p-0">
                             <ul className="divide-y">
                                 {state.items.map(item => {
-                                    const itemImage = PlaceHolderImages.find(img => img.id === item.image);
+                                    const itemImage = getItemImage(item.image);
                                     return (
                                         <li key={item.id} className="flex items-center gap-4 p-6">
                                             {itemImage && (

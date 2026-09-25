@@ -1,10 +1,10 @@
-
 "use client";
 
 import { useState, useCallback } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import { useSupabase } from "@/lib/supabase/provider";
+import { useRealtime } from "@/lib/supabase/realtime";
 import type { Order, OrderStatus } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,7 +50,8 @@ const ITEMS_PER_PAGE = 7;
 
 function formatOrders(data: any[]): Order[] {
     return data.map((d: any) => ({
-        ...d,
+        id: d.id,
+        status: d.status,
         orderDate: d.order_date,
         totalAmount: d.total_amount,
         userName: d.user_name,
@@ -72,7 +73,7 @@ export default function OrdersPage() {
 
         const { data, error, count } = await supabase
             .from('orders')
-            .select('*', { count: 'exact' })
+            .select('id, display_order_id, user_name, order_date, total_amount, status', { count: 'exact' })
             .eq('user_id', user!.id)
             .order('order_date', { ascending: false })
             .range(from, to);
@@ -81,10 +82,16 @@ export default function OrdersPage() {
         return { orders: formatOrders(data), count };
     }, [user, supabase]);
 
-    const { data: firstPage, isLoading, error } = useSWR(
+    const { data: firstPage, isLoading, error, mutate } = useSWR(
         user ? ['orders', user.id] : null,
-        () => fetchPage(0),
-        { revalidateOnFocus: true }
+        () => fetchPage(0)
+    );
+
+    // Status badges update live as the kitchen works through each order.
+    useRealtime(
+        'my-orders',
+        user ? [{ table: 'orders', filter: `user_id=eq.${user.id}` }] : null,
+        () => mutate()
     );
 
     // Dedupe in case a new order shifts pagination between fetches

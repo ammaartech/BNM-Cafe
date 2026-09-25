@@ -1,7 +1,3 @@
-
-
-import type { LucideIcon } from "lucide-react";
-
 export interface MenuItem {
   id: string;
   uuid: string;
@@ -18,9 +14,6 @@ export interface MenuItem {
 export interface Category {
   id: "south-indian" | "north-indian" | "refreshments" | "chats";
   name: string;
-  description: string;
-  image: string;
-  icon: LucideIcon;
 }
 
 export interface OrderItem {
@@ -46,9 +39,6 @@ export interface Order {
   status: OrderStatus;
   items: OrderItem[];
   pickup_notified_at?: string | null;
-  // Legacy fields for old static data
-  date?: string;
-  total?: number;
 }
 
 

@@ -1,8 +1,7 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -75,40 +74,26 @@ function StationLoginPage() {
 }
 
 export default function StationHomePage() {
-  const router = useRouter();
   const { user, userProfile, isUserLoading, supabase } = useSupabase();
-  const [stations, setStations] = useState<Station[]>([]);
-  const [isFetchingStations, setIsFetchingStations] = useState(true);
+  const isAdmin = !!user && !user.is_anonymous && userProfile?.role === 'admin';
+
+  const { data: stations = [], isLoading: isFetchingStations } = useSWR(
+    isAdmin ? ['stations'] : null,
+    async () => {
+      const { data, error } = await supabase
+        .from('stations')
+        .select('*')
+        .eq('active', true);
+      if (error) throw error;
+      return (data ?? []) as Station[];
+    }
+  );
 
   const handleLogout = async () => {
     if (supabase) {
         await supabase.auth.signOut();
     }
   }
-
-  useEffect(() => {
-    async function fetchStations() {
-        if (!supabase) return;
-        setIsFetchingStations(true);
-        const { data, error } = await supabase
-            .from('stations')
-            .select('*')
-            .eq('active', true);
-        
-        if (error) {
-            console.error("Error fetching stations", error);
-            setStations([]);
-        } else {
-            setStations(data as Station[]);
-        }
-        setIsFetchingStations(false);
-    }
-    
-    if (user && !user.is_anonymous && userProfile?.role === 'admin') {
-      fetchStations();
-    }
-  }, [user, userProfile, supabase]);
-
 
   if (isUserLoading) {
     return (
@@ -118,9 +103,7 @@ export default function StationHomePage() {
     );
   }
 
-  const isUserAdmin = user && !user.is_anonymous && userProfile?.role === 'admin';
-
-  if (!isUserAdmin) {
+  if (!isAdmin) {
     const isUserLoggedInButNotAdmin = user && !user.is_anonymous && userProfile?.role !== 'admin';
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-muted/40 p-4">

@@ -10,8 +10,6 @@ per-station kitchen displays, and an admin dashboard with analytics.
 - **Supabase** — auth, Postgres, realtime, row-level security
 - **Razorpay** — online payments
 - **Tailwind CSS** + **shadcn/ui** (Radix) · **framer-motion** · **Recharts**
-- **Genkit** + Google GenAI
-- Deployed on **Firebase App Hosting**
 
 ## Surfaces
 
@@ -24,14 +22,16 @@ per-station kitchen displays, and an admin dashboard with analytics.
 
 ## Try it
 
-Open the live site and a guided tour starts on your first visit. It walks you through the
-customer flow step by step: sign in, browse, add to cart, check out, and track the order live.
+Under the sign-up form on the login page, **Want to test?** signs you in with a demo account
+and starts a guided tour of the customer flow: browse, add to cart, check out, and track the
+order live. No sign-up needed.
 
-- Replay it any time: **Profile → App Tour**, or **Take a guided tour** on the login page.
+- Replay it any time: **Profile → App Tour**. New customers also get it on their first visit
+  to the menu.
 - Link straight to it: `/login?tour=customer`. Staff can use `/admin?tour=staff` for the
   cashier, station, and analytics tour (needs an admin account).
-- To skip sign-up, set the optional `NEXT_PUBLIC_DEMO_EMAIL` / `NEXT_PUBLIC_DEMO_PASSWORD`.
-  The login page then shows a **Use demo account** button (see below).
+- The demo account comes from `NEXT_PUBLIC_DEMO_EMAIL` / `NEXT_PUBLIC_DEMO_PASSWORD` (see
+  below). Without them, **Want to test?** still runs the tour, which asks the visitor to sign up.
 
 Tour steps live in `src/components/tour/tour-steps.ts`. Each one points at an element
 tagged with `data-tour="..."`.
@@ -71,7 +71,6 @@ See `.env.example`. `.env` is gitignored — never commit secrets.
 | `npm run build` / `npm run start` | Production build / serve |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run genkit:dev` | Run Genkit AI flows locally |
 
 ## Project structure
 

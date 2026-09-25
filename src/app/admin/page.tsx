@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Order, OrderStatus } from "@/lib/types";
@@ -8,11 +7,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  LogIn,
   AlertCircle,
   LogOut,
   Loader2,
@@ -23,11 +20,12 @@ import {
   Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useMemo, useCallback } from "react";
+import useSWR from "swr";
 import { useToast } from "@/hooks/use-toast";
-import { useRefetchOnFocus } from "@/hooks/use-refetch-on-focus";
 import { useSupabase } from "@/lib/supabase/provider";
-import { Input } from "@/components/ui/input";
+import { useRealtime } from "@/lib/supabase/realtime";
+import { AdminLogin } from "@/components/admin/AdminLogin";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -45,11 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { syncOrderStatus } from "@/lib/orderSync";
-import type {
-  RealtimePostgresChangesPayload,
-  RealtimeChannel,
-  SupabaseClient,
-} from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /* ---------------- SAFE DATE ---------------- */
 
@@ -112,7 +106,7 @@ function KOTCard({
         {items.length > 0 ? (
           <ul className="space-y-1">
             {items.map((item, idx) => (
-              <li key={item.id ?? `${item.menu_item_id ?? item.name}-${idx}`}>
+              <li key={item.id ?? `${item.name}-${idx}`}>
                 {item.quantity} × {item.name}
               </li>
             ))}
@@ -187,59 +181,101 @@ function KOTCard({
   );
 }
 
+/* ---------------- ORDER GRID ---------------- */
+
+function OrderGrid({
+  orders,
+  onUpdateStatus,
+}: {
+  orders: Order[];
+  onUpdateStatus: (id: string, status: OrderStatus) => void;
+}) {
+  if (orders.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-16">
+        <Package className="mx-auto h-12 w-12" />
+        <p className="mt-4">No orders in this category.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+      {orders.map((order) => (
+        <KOTCard key={order.id} order={order} onUpdateStatus={onUpdateStatus} />
+      ))}
+    </div>
+  );
+}
+
 /* ---------------- ADMIN DASHBOARD ---------------- */
 
+// History shown under "Completed" / "All Orders". Live orders are always
+// loaded in full; only the finished tail is capped, so the dashboard stays fast
+// however many orders the cafe has taken.
+const RECENT_ORDERS_LIMIT = 100;
+const ORDER_COLUMNS =
+  "id, display_order_id, user_id, user_name, order_date, total_amount, status, order_items(id, menu_item_uuid, name, quantity, price)";
+
+function toOrder(o: any): Order {
+  return {
+    id: o.id,
+    display_order_id: o.display_order_id,
+    userId: o.user_id,
+    userName: o.user_name,
+    orderDate: o.order_date,
+    totalAmount: o.total_amount,
+    status: o.status,
+    items: o.order_items ?? [],
+  };
+}
+
+async function fetchAdminOrders(supabase: SupabaseClient): Promise<Order[]> {
+  const [live, recent] = await Promise.all([
+    supabase
+      .from("orders")
+      .select(ORDER_COLUMNS)
+      .in("status", ["PENDING", "READY"])
+      .order("order_date", { ascending: false }),
+    supabase
+      .from("orders")
+      .select(ORDER_COLUMNS)
+      .order("order_date", { ascending: false })
+      .limit(RECENT_ORDERS_LIMIT),
+  ]);
+  if (live.error) throw live.error;
+  if (recent.error) throw recent.error;
+
+  const byId = new Map<string, Order>();
+  for (const o of [...(live.data ?? []), ...(recent.data ?? [])]) byId.set(o.id, toOrder(o));
+  return Array.from(byId.values()).sort((a, b) => b.orderDate.localeCompare(a.orderDate));
+}
+
 function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchOrders = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*, order_items(*)")
-      .order("order_date", { ascending: false });
+  const { data: orders = [], isLoading, mutate } = useSWR(
+    ["admin-orders"],
+    () => fetchAdminOrders(supabase)
+  );
 
-    if (!error && data) {
-      const normalized = data.map((o: any) => ({
-        ...o,
-        items: o.order_items ?? [],
-      }));
-      setOrders(normalized);
-    }
+  // One refetch per burst: a new order fires several events at once.
+  useRealtime("admin-orders", [{ table: "orders" }], () => mutate(), { debounceMs: 400 });
 
-    setIsLoading(false);
-  }, [supabase]);
+  const handleUpdateStatus = useCallback(async (orderId: string, status: OrderStatus) => {
+    // Move the card at once; the realtime echo (or the rollback) settles it.
+    mutate(
+      (current) => current?.map((o) => (o.id === orderId ? { ...o, status } : o)),
+      { revalidate: false }
+    );
 
-  useEffect(() => {
-    fetchOrders();
-
-    const channel: RealtimeChannel = supabase
-      .channel("admin-orders")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders" },
-        (_payload: RealtimePostgresChangesPayload<Order>) => {
-          fetchOrders();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchOrders, supabase]);
-
-  // Recover from realtime events missed while the tab was in the background.
-  useRefetchOnFocus(fetchOrders);
-
-  const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
     const { error } = await supabase
       .from("orders")
       .update({ status })
       .eq("id", orderId);
 
     if (error) {
+      mutate();
       toast({
         title: "Error",
         description: error.message,
@@ -253,7 +289,7 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
     }
 
     toast({ title: "Updated", description: `Order marked ${status}` });
-  };
+  }, [supabase, mutate, toast]);
 
   const liveOrders = useMemo(
     () => orders.filter((o) => o.status === "PENDING" || o.status === "READY"),
@@ -262,27 +298,6 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
   const deliveredOrders = useMemo(
     () => orders.filter((o) => o.status === "DELIVERED" || o.status === "CANCELLED"),
     [orders]
-  );
-
-  const OrderGrid = ({ ordersToShow }: { ordersToShow: Order[] }) => (
-    <>
-      {ordersToShow.length > 0 ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-          {ordersToShow.map((order) => (
-            <KOTCard
-              key={order.id}
-              order={order}
-              onUpdateStatus={handleUpdateStatus}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center text-muted-foreground py-16">
-          <Package className="mx-auto h-12 w-12" />
-          <p className="mt-4">No orders in this category.</p>
-        </div>
-      )}
-    </>
   );
 
   if (isLoading) {
@@ -301,24 +316,23 @@ function AdminDashboard({ supabase }: { supabase: SupabaseClient }) {
         <TabsTrigger value="all">All Orders</TabsTrigger>
       </TabsList>
       <TabsContent value="live">
-        <OrderGrid ordersToShow={liveOrders} />
+        <OrderGrid orders={liveOrders} onUpdateStatus={handleUpdateStatus} />
       </TabsContent>
       <TabsContent value="delivered">
-        <OrderGrid ordersToShow={deliveredOrders} />
+        <OrderGrid orders={deliveredOrders} onUpdateStatus={handleUpdateStatus} />
       </TabsContent>
       <TabsContent value="all">
-        <OrderGrid ordersToShow={orders} />
+        <p className="mb-4 text-sm text-muted-foreground">
+          Every live order, plus the latest {RECENT_ORDERS_LIMIT}. Full history is in Analytics.
+        </p>
+        <OrderGrid orders={orders} onUpdateStatus={handleUpdateStatus} />
       </TabsContent>
     </Tabs>
   );
 }
 
 
-/* ---------------- ADMIN LOGIN PAGE ---------------- */
-
-
 /* ---------------- PAGE ---------------- */
-import { AdminLogin } from "@/components/admin/AdminLogin";
 
 export default function AdminPage() {
   const { user, userProfile, isUserLoading, supabase } = useSupabase();

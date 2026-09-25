@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { useSupabase } from "@/lib/supabase/provider";
 import { format } from "date-fns";
 import { Download, Loader2, MessageSquare, Search } from "lucide-react";
@@ -24,28 +25,21 @@ import {
 
 export default function AdminFeedbackDashboard() {
     const { supabase, user, userProfile, isUserLoading } = useSupabase();
-    const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
     const isAdmin = !!user && !user.is_anonymous && userProfile?.role === "admin";
 
-    useEffect(() => {
-        if (!isAdmin) return;
-
-        async function loadFeedbacks() {
+    const { data: feedbacks = [], isLoading } = useSWR(
+        isAdmin ? ["admin-feedback"] : null,
+        async () => {
             const { data, error } = await supabase
                 .from("customer_feedbacks")
                 .select("*")
                 .order("created_at", { ascending: false });
-
-            if (!error && data) {
-                setFeedbacks(data as CustomerFeedback[]);
-            }
-            setIsLoading(false);
+            if (error) throw error;
+            return (data ?? []) as CustomerFeedback[];
         }
-        loadFeedbacks();
-    }, [supabase, isAdmin]);
+    );
 
     // --- AUTH GUARD ---
     if (isUserLoading) {

@@ -1,8 +1,8 @@
-
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import useSWR from "swr";
 import type {
   Order as BaseOrder,
   OrderItem as BaseOrderItem,
@@ -11,9 +11,8 @@ import type {
 } from "@/lib/types";
 import { useSupabase } from "@/lib/supabase/provider";
 import { useToast } from "@/hooks/use-toast";
-import { useRefetchOnFocus } from "@/hooks/use-refetch-on-focus";
+import { useRealtime } from "@/lib/supabase/realtime";
 import { useOrderStatus } from "@/context/OrderStatusContext";
-import type { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 
@@ -123,6 +122,8 @@ const SlotChar = ({ char, index }: { char: string; index: number }) => {
 
 /* ---------------- PAGE ---------------- */
 
+type OrderTicket = { order: DetailedOrder | null; stations: OrderStation[] };
+
 export default function OrderTicketPage() {
   const params = useParams();
   const router = useRouter();
@@ -130,46 +131,50 @@ export default function OrderTicketPage() {
 
   const { user, supabase } = useSupabase();
   const { toast } = useToast();
-  const { fetchOrdersStatus } = useOrderStatus();
+  const { refreshOrderStatus } = useOrderStatus();
 
-  const [order, setOrder] = useState<DetailedOrder | null>(null);
-  const [stationStatuses, setStationStatuses] = useState<OrderStation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isManualFetching, setIsManualFetching] = useState(false);
 
-  const prevStationStatusesRef = useRef<OrderStation[]>([]);
+  const prevStationStatusesRef = useRef<OrderStation[] | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   /* ---------------- AUDIO ---------------- */
   useEffect(() => {
     audioRef.current = new Audio("/notification-sound-effects-copyright-free_g2XT3kky.mp3");
+    audioRef.current.preload = "auto";
   }, []);
 
   /* ---------------- DATA FETCHING ---------------- */
-  const fetchOrder = useCallback(async () => {
-    if (!orderId || !user || !supabase) return;
+  // The order and its station tickets load in parallel and are cached, so
+  // coming back to this page shows the last known state immediately.
+  const { data, error, isLoading, mutate } = useSWR(
+    user && orderId ? (["order", user.id, orderId] as const) : null,
+    async ([, userId, id]): Promise<OrderTicket> => {
+      const [orderRes, stationsRes] = await Promise.all([
+        supabase
+          .from("orders")
+          .select("id, display_order_id, user_id, user_name, order_date, total_amount, status, pickup_notified_at, order_items(id, menu_item_uuid, name, quantity, price, menu_items(stations(id, name)))")
+          .eq("id", id)
+          .eq("user_id", userId)
+          .maybeSingle(),
+        supabase.from("order_stations").select("id, order_id, station_id, status").eq("order_id", id),
+      ]);
+      if (orderRes.error) throw orderRes.error;
+      if (stationsRes.error) throw stationsRes.error;
 
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*, order_items(*, menu_items(stations(id, name)))")
-      .eq("id", orderId)
-      .eq("user_id", user.id)
-      .single();
-
-    if (error) {
-      setError("Failed to load order details.");
-      setOrder(null);
-    } else if (data) {
-      const formattedOrder: DetailedOrder = {
-        ...data,
-        userId: data.user_id,
-        userName: data.user_name,
-        orderDate: data.order_date,
-        totalAmount: data.total_amount,
+      const row: any = orderRes.data;
+      const order: DetailedOrder | null = row && {
+        id: row.id,
+        display_order_id: row.display_order_id,
+        userId: row.user_id,
+        userName: row.user_name,
+        orderDate: row.order_date,
+        totalAmount: row.total_amount,
+        status: row.status,
+        pickup_notified_at: row.pickup_notified_at,
         items:
-          data.order_items?.map((item: any) => ({
-            id: item.menu_item_id,
+          row.order_items?.map((item: any) => ({
+            id: item.menu_item_uuid,
             uuid: item.id,
             name: item.name,
             quantity: item.quantity,
@@ -179,18 +184,24 @@ export default function OrderTicketPage() {
               : null,
           })) ?? [],
       };
-      setOrder(formattedOrder);
-      setError(null);
+      return { order, stations: (stationsRes.data ?? []) as OrderStation[] };
     }
+  );
 
-    setIsLoading(false);
-  }, [orderId, user, supabase]);
+  const order = data?.order ?? null;
+  const stationStatuses = useMemo(() => data?.stations ?? [], [data]);
 
-  const fetchStationStatuses = useCallback(async () => {
-    if (!orderId || !supabase) return;
-    const { data } = await supabase.from("order_stations").select("*").eq("order_id", orderId);
-    if (data) setStationStatuses(data as OrderStation[]);
-  }, [orderId, supabase]);
+  useRealtime(
+    `order-${orderId}`,
+    user && orderId
+      ? [
+          { table: "orders", event: "UPDATE", filter: `id=eq.${orderId}` },
+          { table: "order_stations", filter: `order_id=eq.${orderId}` },
+        ]
+      : null,
+    () => mutate(),
+    { debounceMs: 150 }
+  );
 
   /* ---------------- DATA GROUPING ---------------- */
   const groupedItemsByStation = useMemo(() => {
@@ -219,12 +230,16 @@ export default function OrderTicketPage() {
       .sort((a, b) => a.stationName.localeCompare(b.stationName));
   }, [order, stationStatuses]);
 
-  /* ---------------- SIDE EFFECTS & REALTIME ---------------- */
+  /* ---------------- READY NOTIFICATION ---------------- */
 
   useEffect(() => {
-    if (!order || !user || !supabase) return;
+    if (!order || !user) return;
 
+    // The first load only records a baseline; alerts are for changes seen live.
     const prevStatuses = prevStationStatusesRef.current;
+    prevStationStatusesRef.current = stationStatuses;
+    if (!prevStatuses) return;
+
     stationStatuses.forEach((currentStation) => {
       const prevStation = prevStatuses.find((p) => p.id === currentStation.id);
       const readyGroup = groupedItemsByStation.find(g => g.stationId === currentStation.station_id);
@@ -237,58 +252,15 @@ export default function OrderTicketPage() {
           duration: 5000,
           className: "bg-yellow-500 text-white border-yellow-500",
         });
-        supabase.from("orders").update({ pickup_notified_at: new Date().toISOString() }).eq("id", order.id).then(() => fetchOrdersStatus(user.id));
+        supabase.from("orders").update({ pickup_notified_at: new Date().toISOString() }).eq("id", order.id).then(() => refreshOrderStatus());
       }
     });
-
-    prevStationStatusesRef.current = stationStatuses;
-  }, [stationStatuses, order, supabase, toast, user, fetchOrdersStatus, groupedItemsByStation]);
-
-  useEffect(() => {
-    if (!user || !orderId || !supabase) return;
-
-    fetchOrder();
-    fetchStationStatuses();
-
-    const orderChannel: RealtimeChannel = supabase
-      .channel(`order-${orderId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` }, () => {
-        fetchOrder(); // Re-fetch all order data on update
-      })
-      .subscribe();
-
-    const stationChannel: RealtimeChannel = supabase
-      .channel(`order-stations-${orderId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "order_stations", filter: `order_id=eq.${orderId}` },
-        (payload: RealtimePostgresChangesPayload<OrderStation>) => {
-          const updated = payload.new as OrderStation;
-          setStationStatuses((prev) => {
-            const idx = prev.findIndex((s) => s.id === updated.id);
-            if (idx === -1) return [...prev, updated];
-            const copy = [...prev];
-            copy[idx] = updated;
-            return copy;
-          });
-        })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(orderChannel);
-      supabase.removeChannel(stationChannel);
-    };
-  }, [orderId, supabase, user, fetchOrder, fetchStationStatuses]);
-
-  // Recover from realtime events missed while the tab was in the background.
-  useRefetchOnFocus(() => {
-    fetchOrder();
-    fetchStationStatuses();
-  });
-
+  }, [stationStatuses, order, supabase, toast, user, refreshOrderStatus, groupedItemsByStation]);
 
   /* ---------------- UI RENDERING ---------------- */
 
-  if (isLoading) return <Card className="max-w-md mx-auto p-6"><Skeleton className="h-6 w-40 mb-4" /><Skeleton className="h-48 w-full" /></Card>;
-  if (error) return <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>;
+  if (!data && (isLoading || !user)) return <Card className="max-w-md mx-auto p-6"><Skeleton className="h-6 w-40 mb-4" /><Skeleton className="h-48 w-full" /></Card>;
+  if (error && !data) return <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>Failed to load order details.</AlertDescription></Alert>;
   if (!order) return <Alert variant="destructive"><AlertTitle>Order not found</AlertTitle></Alert>;
 
   const terminalStatusUI = order.status === 'CANCELLED' ? overallStatusDisplayMap[order.status] : null;
@@ -390,7 +362,7 @@ export default function OrderTicketPage() {
 
           <Button variant="outline" className="w-full" onClick={async () => {
             setIsManualFetching(true);
-            await Promise.all([fetchOrder(), fetchStationStatuses()]);
+            await mutate();
             setIsManualFetching(false);
           }} disabled={isManualFetching}>
             {isManualFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}

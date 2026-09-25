@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { getItemImage } from "@/lib/placeholder-images";
 import { ArrowLeft, Trash2, Plus, Minus } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,7 +57,7 @@ export default function CartPage() {
                     <div className="flex-grow space-y-4" data-tour="cart-items">
                         <AnimatePresence mode="popLayout">
                             {state.items.map((item) => {
-                                const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
+                                const itemImage = getItemImage(item.image);
                                 return (
                                     <motion.div
                                         key={item.id}
@@ -79,8 +78,8 @@ export default function CartPage() {
                                                         src={itemImage.imageUrl}
                                                         alt={item.name}
                                                         fill
+                                                        sizes="80px"
                                                         className="object-cover"
-                                                        data-ai-hint={itemImage.imageHint}
                                                     />
                                                 </div>
                                             }

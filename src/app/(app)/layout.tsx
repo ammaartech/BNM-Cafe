@@ -1,17 +1,14 @@
-
 "use client";
 import { useCart, CartProvider } from "@/context/CartContext";
 import { CheckCircle, ShoppingBag } from "lucide-react";
-import { Suspense, useEffect, useCallback } from "react";
+import { Suspense, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useUserPreferences, UserPreferencesProvider } from "@/context/UserPreferencesContext";
+import { UserPreferencesProvider } from "@/context/UserPreferencesContext";
 import BottomNavBar from "./BottomNavBar";
-import { useSupabase } from "@/lib/supabase/provider";
-import { OrderStatusProvider, useOrderStatus } from "@/context/OrderStatusContext";
+import { OrderStatusProvider } from "@/context/OrderStatusContext";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
-
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { getItemImage } from "@/lib/placeholder-images";
 
 function CartSuccessDialog() {
     const { addedItemPopup, setAddedItemPopup } = useCart();
@@ -26,7 +23,7 @@ function CartSuccessDialog() {
         }
     }, [addedItemPopup, setAddedItemPopup]);
 
-    const itemImage = addedItemPopup ? PlaceHolderImages.find((img) => img.id === addedItemPopup.image) : null;
+    const itemImage = addedItemPopup ? getItemImage(addedItemPopup.image) : undefined;
 
     return (
         <div className="fixed left-0 right-0 top-[max(1rem,env(safe-area-inset-top))] z-[100] flex justify-center pointer-events-none px-4">
@@ -56,9 +53,8 @@ function CartSuccessDialog() {
                                     src={itemImage.imageUrl}
                                     alt={addedItemPopup.name}
                                     fill
-                                    sizes="(max-width: 48px) 100vw, 48px"
+                                    sizes="48px"
                                     className="object-cover"
-                                    data-ai-hint={itemImage.imageHint}
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
@@ -99,10 +95,6 @@ function NavSkeleton() {
 
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
-    const { user } = useSupabase();
-    // SWR natively handles tab synchronization and visibility changes via revalidateOnFocus.
-    // We no longer need manual visibility change listeners here!
-
     return (
         <>
             <main className="flex flex-col flex-grow">

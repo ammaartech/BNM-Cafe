@@ -39,8 +39,10 @@ export const TOURS: Record<TourId, TourStep[]> = {
   customer: [
     {
       id: 'welcome',
-      path: '/login',
-      href: '/login',
+      // Shown on whichever of the two a visitor starts from: the login page,
+      // or the menu right after "Want to test?" signs them in.
+      path: /^\/(login|menu)$/,
+      href: '/menu',
       title: 'Welcome to B.N.M Cafe',
       body: 'This is a campus-cafe ordering app. In about two minutes you’ll browse the menu, build a cart, check out and watch an order get prepared live.',
       nextLabel: 'Start the tour',
@@ -53,7 +55,7 @@ export const TOURS: Record<TourId, TourStep[]> = {
       title: 'Sign in to start ordering',
       body: ({ isDemo }) =>
         isDemo
-          ? 'Tap “Use demo account” to jump straight in — no sign-up needed. The tour picks up again on the menu.'
+          ? 'Tap “Want to test?” to jump straight in with a demo account — no sign-up needed. The tour picks up again on the menu.'
           : 'Log in, or create an account on the Sign Up tab. The tour picks up again on the menu.',
       waitFor: 'Sign in to continue',
     },

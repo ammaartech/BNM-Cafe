@@ -7,4 +7,11 @@ export type ImagePlaceholder = {
   imageHint: string;
 };
 
-export const PlaceHolderImages: ImagePlaceholder[] = data.placeholderImages;
+const byId = new Map<string, ImagePlaceholder>(
+  (data.placeholderImages as ImagePlaceholder[]).map((img) => [img.id, img])
+);
+
+/** The photo for a menu item's `image` key, if there is one. */
+export function getItemImage(id: string | null | undefined): ImagePlaceholder | undefined {
+  return id ? byId.get(id) : undefined;
+}

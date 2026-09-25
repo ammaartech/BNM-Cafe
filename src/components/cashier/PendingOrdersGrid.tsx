@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
+import useSWR from "swr";
 import { useSupabase } from "@/lib/supabase/provider";
+import { useRealtime } from "@/lib/supabase/realtime";
 import { useToast } from "@/hooks/use-toast";
-import { useRefetchOnFocus } from "@/hooks/use-refetch-on-focus";
 import { Button } from "@/components/ui/button";
 import { Loader2, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { formatINR } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
-import { RealtimeChannel } from "@supabase/supabase-js";
 
 interface PendingOrder {
     id: string;
@@ -19,62 +19,34 @@ interface PendingOrder {
     order_date: string;
 }
 
-export function PendingOrdersGrid() {
+const PENDING_KEY = ["pending-payments"] as const;
+
+/**
+ * Orders still waiting for payment, kept live. Mount it once per screen (the
+ * cashier page does); every other reader of the same key shares its data.
+ */
+export function usePendingOrders(enabled: boolean) {
     const { supabase } = useSupabase();
-    const { toast } = useToast();
-
-    const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
-
-    const fetchPendingOrders = useCallback(async () => {
-        if (!supabase) return;
-        setLoading(true);
-
-        // Only fetch orders that are PENDING payment
+    const swr = useSWR(enabled ? PENDING_KEY : null, async () => {
         const { data, error } = await supabase
             .from("orders")
             .select("id, display_order_id, user_name, total_amount, order_date")
             .eq("payment_status", "PENDING")
             .order("order_date", { ascending: true });
+        if (error) throw error;
+        return (data ?? []) as PendingOrder[];
+    });
+    useRealtime("pending-payments", enabled ? [{ table: "orders" }] : null, () => swr.mutate());
+    return swr;
+}
 
-        if (error) {
-            console.error("Error fetching pending orders:", error);
-        } else {
-            setPendingOrders(data || []);
-        }
+export function PendingOrdersGrid() {
+    const { supabase } = useSupabase();
+    const { toast } = useToast();
 
-        setLoading(false);
-    }, [supabase]);
-
-    useEffect(() => {
-        fetchPendingOrders();
-
-        if (!supabase) return;
-
-        // Listen for new orders and updates to existing orders
-        const channel: RealtimeChannel = supabase
-            .channel("cashier-pending-orders-grid")
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "orders",
-                },
-                () => {
-                    fetchPendingOrders();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [supabase, fetchPendingOrders]);
-
-    // Recover from realtime events missed while the tab was in the background.
-    useRefetchOnFocus(fetchPendingOrders);
+    // Reads the cache kept live by usePendingOrders on the cashier page.
+    const { data: pendingOrders = [], isLoading: loading, mutate } = useSWR<PendingOrder[]>(PENDING_KEY);
+    const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
 
     const handleApprove = async (orderId: string, displayId: string, paymentMethod: "CASH" | "UPI") => {
         if (!supabase) return;
@@ -93,11 +65,11 @@ export function PendingOrdersGrid() {
 
             if (error) throw error;
 
+            mutate((orders) => orders?.filter((o) => o.id !== orderId), { revalidate: false });
             toast({
                 title: "Payment Collected",
                 description: `Order #${displayId} has been sent to the stations.`,
             });
-            // fetchPendingOrders is handled by the realtime subscription
         } catch (error: any) {
             toast({
                 title: "Approval Failed",

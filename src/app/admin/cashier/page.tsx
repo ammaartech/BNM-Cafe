@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useRefetchOnFocus } from "@/hooks/use-refetch-on-focus";
-import { useRouter } from "next/navigation";
+import React, { useMemo, useState } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
 import { categories } from "@/lib/data";
-import { MenuItem } from "@/lib/types";
+import { useMenuItems } from "@/lib/queries";
 import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -17,7 +15,7 @@ import { MenuGrid } from "@/components/cashier/MenuGrid";
 import { OrderSidebar } from "@/components/cashier/OrderSidebar";
 import { ReceiptTemplate } from "@/components/cashier/ReceiptTemplate";
 import { AdminLogin } from "@/components/admin/AdminLogin";
-import { PendingOrdersGrid } from "@/components/cashier/PendingOrdersGrid";
+import { PendingOrdersGrid, usePendingOrders } from "@/components/cashier/PendingOrdersGrid";
 import { Badge } from "@/components/ui/badge";
 
 /* ---------------- INNER COMPONENT ---------------- */
@@ -25,67 +23,21 @@ import { Badge } from "@/components/ui/badge";
 function CashierPageContent() {
     const { addToBill } = useCashier();
     const { supabase, user, userProfile, isUserLoading } = useSupabase();
-    const router = useRouter();
 
-    const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-    const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
-    const [pendingCount, setPendingCount] = useState(0);
 
-    // --- AUTH CHECK ---
-    useEffect(() => {
-        if (!isUserLoading && (!user || userProfile?.role !== "admin")) {
-            // router.push("/station"); // Or login page
-        }
-    }, [user, userProfile, isUserLoading, router]);
+    const isAdmin = !!user && userProfile?.role === "admin";
+    const { data: menuItems = [], isLoading: loading } = useMenuItems();
+    // Same cache entry the Pending Payments grid reads, so the badge and the
+    // grid can never disagree and share one query and one realtime channel.
+    const { data: pendingOrders } = usePendingOrders(isAdmin);
+    const pendingCount = pendingOrders?.length ?? 0;
 
-    // --- FETCH DATA ---
-    useEffect(() => {
-        async function fetchItems() {
-            if (!supabase) return;
-            setLoading(true);
-            const { data, error } = await supabase
-                .from("menu_items")
-                .select("*")
-                .order("name");
-
-            if (error) {
-                console.error("Error fetching menu:", error);
-            } else {
-                setMenuItems(data as MenuItem[]);
-            }
-            setLoading(false);
-        }
-        fetchItems();
-    }, [supabase]);
-
-    // --- FETCH PENDING COUNT ---
-    const fetchCount = useCallback(async () => {
-        if (!supabase) return;
-        const { count } = await supabase
-            .from("orders")
-            .select("*", { count: 'exact', head: true })
-            .eq("payment_status", "PENDING");
-        setPendingCount(count || 0);
-    }, [supabase]);
-
-    useEffect(() => {
-        if (!supabase) return;
-
-        fetchCount();
-
-        const channel = supabase.channel('pending-count')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-                fetchCount();
-            }).subscribe();
-
-        return () => { supabase.removeChannel(channel); }
-    }, [supabase, fetchCount]);
-
-    // Recover from realtime events missed while the tab was in the background.
-    useRefetchOnFocus(fetchCount);
-
+    const sortedMenu = useMemo(
+        () => [...menuItems].sort((a, b) => a.name.localeCompare(b.name)),
+        [menuItems]
+    );
 
     // --- AUTH GUARD RENDER ---
     if (isUserLoading) {
@@ -150,7 +102,7 @@ function CashierPageContent() {
 
 
     // --- FILTER LOGIC ---
-    const filteredItems = menuItems.filter((item) => {
+    const filteredItems = sortedMenu.filter((item) => {
         const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
         const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesCategory && matchesSearch;

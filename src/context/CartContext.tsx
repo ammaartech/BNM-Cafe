@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { CartItem, MenuItem } from "@/lib/types";
@@ -6,38 +5,24 @@ import { useToast } from "@/hooks/use-toast";
 import React, {
   createContext,
   useContext,
-  useReducer,
   ReactNode,
   useState,
-  useEffect,
   useCallback,
+  useMemo,
+  useRef,
 } from "react";
 import { useSupabase } from "@/lib/supabase/provider";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
-
+import useSWR, { useSWRConfig } from "swr";
+import { MENU_COLUMNS } from "@/lib/data";
 
 /* ---------------- TYPES ---------------- */
 
-type CartState = {
-  items: CartItem[];
-};
-
-type CartAction =
-  | { type: "SET_CART"; payload: CartItem[] }
-  | { type: "ADD_ITEM"; payload: CartItem }
-  | { type: "REMOVE_ITEM"; payload: { id: string } }
-  | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
-  | { type: "CLEAR_CART" };
-
 interface CartContextType {
-  state: CartState;
-  dispatch: React.Dispatch<CartAction>;
+  state: { items: CartItem[] };
   totalItems: number;
   totalPrice: number;
   placeOrder: (paymentStatus?: string, isRazorpayCheckout?: boolean) => Promise<string | undefined>;
-  fetchCart: (userId: string) => Promise<void>;
-  updatingItemId: string | null;
   addItem: (item: MenuItem, quantity?: number) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
@@ -45,52 +30,13 @@ interface CartContextType {
   setAddedItemPopup: React.Dispatch<React.SetStateAction<MenuItem | null>>;
 }
 
+type DbResult = PromiseLike<{ error: { message: string } | null }>;
+
 /* ---------------- CONTEXT ---------------- */
 
 const CartContext = createContext<CartContextType | null>(null);
 
-/* ---------------- REDUCER ---------------- */
-
-function cartReducer(state: CartState, action: CartAction): CartState {
-  switch (action.type) {
-    case "SET_CART":
-      return { items: action.payload };
-
-    case "ADD_ITEM": {
-      const existing = state.items.find(i => i.id === action.payload.id);
-      if (existing) {
-        return {
-          items: state.items.map(i =>
-            i.id === action.payload.id
-              ? { ...i, quantity: i.quantity + action.payload.quantity }
-              : i
-          ),
-        };
-      }
-      return { items: [...state.items, action.payload] };
-    }
-
-    case "REMOVE_ITEM":
-      return {
-        items: state.items.filter(i => i.id !== action.payload.id),
-      };
-
-    case "UPDATE_QUANTITY":
-      return {
-        items: state.items.map(i =>
-          i.id === action.payload.id
-            ? { ...i, quantity: action.payload.quantity }
-            : i
-        ).filter(item => item.quantity > 0), // Also remove if quantity is 0
-      };
-
-    case "CLEAR_CART":
-      return { items: [] };
-
-    default:
-      return state;
-  }
-}
+const EMPTY: CartItem[] = [];
 
 /* ---------------- HELPER ---------------- */
 
@@ -129,164 +75,99 @@ const playAddToCartSound = () => {
   }
 };
 
-const withTimeout = async <T,>(promise: Promise<T> | PromiseLike<T>, ms: number = 8000): Promise<T> => {
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      reject(new Error("Request timed out. Please check your connection."));
-    }, ms);
-  });
-  return Promise.race([promise, timeoutPromise]);
-};
-
 /* ---------------- PROVIDER ---------------- */
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, { items: [] });
-  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
   const [addedItemPopup, setAddedItemPopup] = useState<MenuItem | null>(null);
 
   const { supabase, user, userProfile, isUserLoading } = useSupabase();
   const { toast } = useToast();
   const router = useRouter();
+  const { mutate: mutateGlobal } = useSWRConfig();
 
   /* -------- FETCH CART -------- */
 
-  const fetcher = async ([_, userId]: [string, string]): Promise<CartItem[] | null> => {
-    if (!supabase) return null;
-
+  const fetchCart = useCallback(async ([, userId]: readonly [string, string]): Promise<CartItem[]> => {
     const { data: cartRows, error } = await supabase
       .from("user_cart_items")
       .select("menu_item_uuid, quantity")
       .eq("user_id", userId);
 
-    if (error) {
-      toast({ title: "Failed to load cart", variant: "destructive" });
-      return [];
-    }
-
-    if (!cartRows || cartRows.length === 0) {
-      return [];
-    }
-
-    const uuids = cartRows.map(r => r.menu_item_uuid);
+    if (error) throw error;
+    if (!cartRows?.length) return [];
 
     const { data: menuItems, error: miError } = await supabase
       .from("menu_items")
-      .select("*")
-      .in("uuid", uuids);
+      .select(MENU_COLUMNS)
+      .in("uuid", cartRows.map(r => r.menu_item_uuid));
 
-    if (miError || !menuItems) {
-      toast({ title: "Failed to load menu items", variant: "destructive" });
-      return null;
-    }
+    if (miError) throw miError;
 
-    return cartRows
-      .map(row => {
-        const mi = menuItems.find(m => m.uuid === row.menu_item_uuid);
-        if (!mi) return null;
+    const byUuid = new Map((menuItems as MenuItem[]).map(m => [m.uuid, m]));
+    return cartRows.flatMap(row => {
+      const mi = byUuid.get(row.menu_item_uuid);
+      return mi ? [{ ...mi, quantity: row.quantity }] : [];
+    });
+  }, [supabase]);
 
-        return {
-          id: mi.id,
-          uuid: mi.uuid,
-          name: mi.name,
-          price: mi.price,
-          stock: mi.stock,
-          image: mi.image,
-          quantity: row.quantity,
-          description: mi.description,
-          category: mi.category,
-        };
-      })
-      .filter(Boolean) as CartItem[];
-  };
-
-  const { data: cartItems, mutate } = useSWR(
-    user && !isUserLoading ? ['cart', user.id] : null,
-    fetcher,
-    { revalidateOnFocus: true }
+  const { data, mutate } = useSWR(
+    user && !user.is_anonymous ? (["cart", user.id] as const) : null,
+    fetchCart,
+    { onError: () => toast({ title: "Failed to load cart", variant: "destructive" }) }
   );
 
-  const fetchCart = useCallback(async (userId: string) => {
-    if (user && user.id === userId) {
-      await mutate();
-    }
-  }, [user, mutate]);
-
-  useEffect(() => {
-    if (cartItems) {
-      dispatch({ type: "SET_CART", payload: cartItems });
-    } else if (!isUserLoading && !user) {
-      dispatch({ type: 'CLEAR_CART' });
-    }
-  }, [cartItems, user, isUserLoading]);
-
+  const items = user ? data ?? EMPTY : EMPTY;
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   /* -------- CART ACTIONS -------- */
 
-  const removeItem = useCallback(async (itemId: string) => {
-    if (!user || !supabase) return;
+  // Every change shows on screen at once; the database writes run one after
+  // another, so a fast "+ + -" can't reach the server out of order. If a write
+  // fails, the cart is reloaded from the server so the screen can't drift from it.
+  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
 
-    const itemToRemove = state.items.find(i => i.id === itemId);
-    if (!itemToRemove) return;
-
-    setUpdatingItemId(itemId);
-    try {
-      const { error } = await withTimeout(
-        supabase
-          .from('user_cart_items')
-          .delete()
-          .match({ user_id: user.id, menu_item_uuid: itemToRemove.uuid })
-      );
-
+  const apply = useCallback((next: CartItem[], write: () => DbResult, failTitle: string) => {
+    mutate(next, { revalidate: false });
+    const job = queueRef.current.then(async () => {
+      const { error } = await write();
       if (error) throw error;
+    });
+    queueRef.current = job.catch(() => undefined);
+    return job.catch((err: { message?: string }) => {
+      toast({ title: failTitle, description: err?.message, variant: "destructive" });
+      mutate();
+    });
+  }, [mutate, toast]);
 
-      dispatch({ type: "REMOVE_ITEM", payload: { id: itemId } });
-    } catch (err: any) {
-      toast({ title: "Failed to remove item", description: err.message, variant: "destructive" });
-      if (err.message === "Request timed out. Please check your connection.") {
-        window.location.reload();
-      }
-    } finally {
-      setUpdatingItemId(null);
-    }
-  }, [supabase, user, state.items, toast]);
+  const removeItem = useCallback(async (itemId: string) => {
+    if (!user) return;
+    const target = itemsRef.current.find(i => i.id === itemId);
+    if (!target) return;
 
+    await apply(
+      itemsRef.current.filter(i => i.id !== itemId),
+      () => supabase.from("user_cart_items").delete().match({ user_id: user.id, menu_item_uuid: target.uuid }),
+      "Failed to remove item"
+    );
+  }, [supabase, user, apply]);
 
   const updateQuantity = useCallback(async (itemId: string, quantity: number) => {
-    if (!user || !supabase) return;
+    if (!user) return;
+    if (quantity <= 0) return removeItem(itemId);
 
-    if (quantity <= 0) {
-      await removeItem(itemId);
-      return;
-    }
+    const target = itemsRef.current.find(i => i.id === itemId);
+    if (!target) return;
 
-    const itemToUpdate = state.items.find(i => i.id === itemId);
-    if (!itemToUpdate) return;
-
-    setUpdatingItemId(itemId);
-    try {
-      const { error } = await withTimeout(
-        supabase
-          .from('user_cart_items')
-          .update({ quantity })
-          .match({ user_id: user.id, menu_item_uuid: itemToUpdate.uuid })
-      );
-
-      if (error) throw error;
-
-      dispatch({ type: "UPDATE_QUANTITY", payload: { id: itemId, quantity } });
-    } catch (err: any) {
-      toast({ title: "Failed to update cart", description: err.message, variant: "destructive" });
-      if (err.message === "Request timed out. Please check your connection.") {
-        window.location.reload();
-      }
-    } finally {
-      setUpdatingItemId(null);
-    }
-  }, [supabase, user, state.items, toast, removeItem]);
+    await apply(
+      itemsRef.current.map(i => (i.id === itemId ? { ...i, quantity } : i)),
+      () => supabase.from("user_cart_items").update({ quantity }).match({ user_id: user.id, menu_item_uuid: target.uuid }),
+      "Failed to update cart"
+    );
+  }, [supabase, user, apply, removeItem]);
 
   const addItem = useCallback(async (item: MenuItem, quantity: number = 1) => {
-    if (!user || !supabase) return;
+    if (!user) return;
 
     if (user.is_anonymous) {
       toast({ title: 'Please log in', description: 'Create an account to add items to your cart.', variant: 'destructive' });
@@ -294,80 +175,56 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setUpdatingItemId(item.id);
-    try {
-      const existingItem = state.items.find(i => i.id === item.id);
+    // New object identity so re-adding the same item resets the popup's dismiss timer
+    setAddedItemPopup({ ...item });
+    playAddToCartSound();
 
-      if (existingItem) {
-        await updateQuantity(item.id, existingItem.quantity + quantity);
-      } else {
-        const { error } = await withTimeout(
-          supabase
-            .from('user_cart_items')
-            .insert({
-              user_id: user.id,
-              menu_item_uuid: item.uuid,
-              quantity: quantity,
-            })
-        );
-
-        if (error) throw error;
-
-        const newCartItem: CartItem = { ...item, quantity: quantity };
-        dispatch({ type: "ADD_ITEM", payload: newCartItem });
-        // New object identity so re-adding the same item resets the popup's dismiss timer
-        setAddedItemPopup({ ...item });
-        playAddToCartSound();
-      }
-    } catch (err: any) {
-      toast({ title: "Failed to add item", description: err.message, variant: "destructive" });
-      if (err.message === "Request timed out. Please check your connection.") {
-        window.location.reload();
-      }
-    } finally {
-      setUpdatingItemId(null);
+    const existing = itemsRef.current.find(i => i.id === item.id);
+    if (existing) {
+      return updateQuantity(item.id, existing.quantity + quantity);
     }
-  }, [supabase, user, state.items, toast, updateQuantity, router]);
 
+    await apply(
+      [...itemsRef.current, { ...item, quantity }],
+      () => supabase.from("user_cart_items").insert({ user_id: user.id, menu_item_uuid: item.uuid, quantity }),
+      "Failed to add item"
+    );
+  }, [supabase, user, toast, router, apply, updateQuantity]);
 
   /* -------- TOTALS -------- */
 
-  const totalItems = state.items.reduce((s, i) => s + i.quantity, 0);
-  const totalPrice = state.items.reduce(
-    (s, i) => s + i.price * i.quantity,
-    0
-  );
+  const totalItems = items.reduce((s, i) => s + i.quantity, 0);
+  const totalPrice = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
   /* -------- PLACE ORDER -------- */
 
   const placeOrder = useCallback(async (paymentStatus?: string, isRazorpayCheckout: boolean = false) => {
-    if (!supabase || !user || isUserLoading) return;
+    if (!user || isUserLoading) return;
 
-    const orderItemsParam = state.items.map(item => ({
+    // Let any cart edit still in flight land first, so the order matches the screen.
+    await queueRef.current;
+
+    const cart = itemsRef.current;
+    const orderItemsParam = cart.map(item => ({
       menu_item_uuid: item.uuid, // MUST be uuid
       name: item.name,
       quantity: item.quantity,
       price: item.price,
     }));
-
-    // 🔍 STEP 1 LOG — DO NOT SKIP
-    console.log(
-      "ORDER ITEMS PARAM (FRONTEND → RPC)",
-      JSON.stringify(orderItemsParam, null, 2)
-    );
+    const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
     try {
       const { data, error } = await supabase.rpc("create_new_order", {
         user_id_param: user.id,
         user_name_param: userProfile?.name ?? user.email,
-        total_amount_param: totalPrice,
+        total_amount_param: total,
         order_items_param: orderItemsParam,
       });
 
       if (error) throw error;
 
       if (paymentStatus && data?.order_id) {
-        const updatePayload: any = { payment_status: paymentStatus };
+        const updatePayload: Record<string, string> = { payment_status: paymentStatus };
         if (paymentStatus === 'PAID') {
           updatePayload.payment_method = 'RAZORPAY';
         }
@@ -393,7 +250,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         console.error('Failed to clear cart from database:', deleteError);
       }
 
-      dispatch({ type: "CLEAR_CART" });
+      mutate([], { revalidate: false });
+      // The new order belongs at the top of "My Orders".
+      mutateGlobal((key) => Array.isArray(key) && key[0] === "orders");
+
       if (!isRazorpayCheckout) {
         router.push(`/orders/${data.order_id}`);
       }
@@ -405,39 +265,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
         variant: "destructive",
       });
     }
-  }, [
-    supabase,
-    user,
-    userProfile,
-    totalPrice,
-    state.items,
-    isUserLoading,
-    toast,
-    router,
-  ]);
+  }, [supabase, user, userProfile, isUserLoading, toast, router, mutate, mutateGlobal]);
 
   /* -------- CONTEXT VALUE -------- */
 
-  return (
-    <CartContext.Provider
-      value={{
-        state,
-        dispatch,
-        totalItems,
-        totalPrice,
-        placeOrder,
-        fetchCart,
-        updatingItemId,
-        addItem,
-        updateQuantity,
-        removeItem,
-        addedItemPopup,
-        setAddedItemPopup,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
+  const value = useMemo(() => ({
+    state: { items },
+    totalItems,
+    totalPrice,
+    placeOrder,
+    addItem,
+    updateQuantity,
+    removeItem,
+    addedItemPopup,
+    setAddedItemPopup,
+  }), [items, totalItems, totalPrice, placeOrder, addItem, updateQuantity, removeItem, addedItemPopup]);
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 /* ---------------- HOOK ---------------- */

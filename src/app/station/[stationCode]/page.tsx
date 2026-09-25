@@ -1,7 +1,7 @@
-
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
+import useSWR from 'swr';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSupabase } from '@/lib/supabase/provider';
@@ -25,12 +25,12 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus';
+import { useRealtime } from '@/lib/supabase/realtime';
 import { formatDistanceToNow } from 'date-fns';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { syncOrderStatus } from '@/lib/orderSync';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /* ---------------------------------- */
 /* Status Display Map                 */
@@ -133,170 +133,110 @@ function KOTCard({
 /* ---------------------------------- */
 /* Station Page                       */
 /* ---------------------------------- */
+async function fetchStationOrders(supabase: SupabaseClient, stationId: string): Promise<StationOrder[]> {
+  // All LIVE orders (Pending or Ready) that have been PAID
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, display_order_id, user_name, order_date, order_stations(id, station_id, status), order_items(id, name, quantity, price, menu_items(station_id))')
+    .in('status', ['PENDING', 'READY'])
+    .eq('payment_status', 'PAID')
+    .order('order_date', { ascending: false });
+
+  if (error) throw error;
+
+  // Keep only the orders with items for THIS station
+  return (data ?? [])
+    .map((order: any) => {
+      const stationItems = order.order_items.filter(
+        (oi: any) => oi.menu_items?.station_id === stationId
+      );
+      if (stationItems.length === 0) return null;
+
+      const orderStation = order.order_stations.find(
+        (os: any) => os.station_id === stationId
+      );
+      // No ticket for this station (shouldn't happen), or it's already picked up
+      if (!orderStation || orderStation.status === 'PICKED_UP') return null;
+
+      return {
+        orderStationId: orderStation.id,
+        orderId: order.id,
+        displayOrderId: order.display_order_id,
+        userName: order.user_name,
+        orderDate: order.order_date,
+        status: orderStation.status,
+        items: stationItems.map((si: any) => ({
+          id: si.id,
+          name: si.name,
+          quantity: si.quantity,
+          price: si.price,
+        })),
+      };
+    })
+    .filter((o): o is StationOrder => o !== null);
+}
+
 export default function StationPage() {
   const { stationCode } = useParams<{ stationCode: string }>();
   const { supabase, user, userProfile, isUserLoading } = useSupabase();
   const router = useRouter();
   const { toast } = useToast();
 
-  const [station, setStation] = useState<Station | null>(null);
-  const [orders, setOrders] = useState<StationOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const isAdmin = !!user && !user.is_anonymous && userProfile?.role === 'admin';
 
-  const fetchData = useCallback(async (showLoading = true) => {
-    if (!supabase || !stationCode) return;
-
-    if (showLoading) setLoading(true);
-    setError(null);
-
-    try {
-      // 1. Get current station
-      const { data: stationData, error: stationError } = await supabase
+  const { data: station, error: stationError, isLoading: stationLoading } = useSWR(
+    isAdmin && stationCode ? (['station', stationCode] as const) : null,
+    async ([, code]) => {
+      const { data, error } = await supabase
         .from('stations')
         .select('id, name, code, active')
-        .eq('code', stationCode)
+        .eq('code', code)
         .single();
+      if (error || !data) throw new Error('Station not found.');
+      return data as Station;
+    },
+    { revalidateOnFocus: false }
+  );
 
-      if (stationError || !stationData) throw new Error('Station not found.');
-      setStation(stationData);
+  const { data: orders = [], error: ordersError, isLoading: ordersLoading, mutate } = useSWR(
+    station ? (['station-orders', station.id] as const) : null,
+    ([, stationId]) => fetchStationOrders(supabase, stationId)
+  );
 
-      // 2. Fetch all LIVE orders (Pending or Ready) that have been PAID
-      const { data: liveOrdersData, error: liveOrdersError } = await supabase
-        .from('orders')
-        .select('*, order_stations(*), order_items(*, menu_items(station_id))')
-        .in('status', ['PENDING', 'READY'])
-        .eq('payment_status', 'PAID')
-        .order('order_date', { ascending: false });
-
-      if (liveOrdersError) throw liveOrdersError;
-
-      // 3. Filter these orders to find the ones relevant to THIS station
-      const stationOrders = liveOrdersData
-        .map(order => {
-          // Find the items for THIS station within the order
-          const stationItems = order.order_items.filter(
-            (oi: any) => oi.menu_items?.station_id === stationData.id
-          );
-
-          // If no items for this station, skip this order
-          if (stationItems.length === 0) {
-            return null;
-          }
-
-          // Find the corresponding order_stations entry for this station
-          const orderStation = order.order_stations.find(
-            (os: any) => os.station_id === stationData.id
-          );
-
-          // If there's no ticket for this station (shouldn't happen), or it's already picked up, skip
-          if (!orderStation || orderStation.status === 'PICKED_UP') {
-            return null;
-          }
-
-          return {
-            orderStationId: orderStation.id,
-            orderId: order.id,
-            displayOrderId: order.display_order_id,
-            userName: order.user_name,
-            orderDate: order.order_date,
-            status: orderStation.status,
-            items: stationItems.map((si: any) => ({
-              id: si.id,
-              name: si.name,
-              quantity: si.quantity,
-              price: si.price,
-            })),
-          };
-        })
-        .filter((o): o is StationOrder => o !== null);
-
-      setOrders(stationOrders);
-
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  }, [supabase, stationCode]);
+  // A new order fires several events at once; refetch once per burst.
+  useRealtime(
+    'station',
+    station
+      ? [
+          { table: 'order_stations', filter: `station_id=eq.${station.id}` },
+          { table: 'orders', event: 'INSERT' },
+          { table: 'orders', event: 'UPDATE', filter: 'payment_status=eq.PAID' },
+        ]
+      : null,
+    () => mutate(),
+    { debounceMs: 400 }
+  );
 
   useEffect(() => {
-    if (!isUserLoading) fetchData(true);
-  }, [isUserLoading, fetchData]);
+    if (!isUserLoading && !user) router.replace('/station');
+  }, [isUserLoading, user, router]);
 
-  // REALTIME LISTENER
-  useEffect(() => {
-    if (!supabase || !station?.id) return;
-
-    const channel: RealtimeChannel = supabase.channel(`station-channel-${station.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'order_stations',
-          filter: `station_id=eq.${station.id}`
-        },
-        (_payload) => {
-          fetchData(false);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'orders',
-        },
-        (_payload) => {
-          fetchData(false);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `payment_status=eq.PAID`
-        },
-        (_payload) => {
-          fetchData(false);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-
-  }, [supabase, station?.id, fetchData]);
-
-  // Recover from realtime events missed while the tab was in the background.
-  useRefetchOnFocus(() => fetchData(false));
+  const error = stationError?.message ?? (ordersError ? 'Failed to load orders.' : null);
+  const loading = stationLoading || ordersLoading;
 
   const updateStatus = async (
     osId: string,
     status: OrderStationStatus,
     orderId: string
   ) => {
-    if (!supabase) return;
-
-    // --- Optimistic Update ---
-    // Save original state in case of error
-    const previousOrders = [...orders];
-
-    // Update local state instantly so UI responds linearly
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.orderStationId === osId ? { ...order, status } : order
-      )
+    // Optimistic: move the ticket at once; picked-up tickets leave the board.
+    mutate(
+      (current) =>
+        status === 'PICKED_UP'
+          ? current?.filter((o) => o.orderStationId !== osId)
+          : current?.map((o) => (o.orderStationId === osId ? { ...o, status } : o)),
+      { revalidate: false }
     );
-
-    // Filter out if picked up, as we don't show picked up orders on the station dashboard
-    if (status === 'PICKED_UP') {
-      setOrders(prevOrders => prevOrders.filter(order => order.orderStationId !== osId));
-    }
 
     const { error } = await supabase
       .from('order_stations')
@@ -304,8 +244,7 @@ export default function StationPage() {
       .eq('id', osId);
 
     if (error) {
-      // Revert optimistic update
-      setOrders(previousOrders);
+      mutate(); // Roll back to the server's state
       toast({ title: 'Error updating ticket', variant: 'destructive' });
       return;
     }
@@ -327,7 +266,6 @@ export default function StationPage() {
   }
 
   if (!user) {
-    router.replace('/station');
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin" />

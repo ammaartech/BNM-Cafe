@@ -1,7 +1,8 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSWRConfig } from "swr";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -22,14 +23,13 @@ const formSchema = z.object({
     body: z.string().min(5, { message: "Feedback must be at least 5 characters long" }),
 });
 
-import { Suspense } from "react";
-
 function FeedbackFormContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const orderId = searchParams.get("orderId");
     const { user, supabase } = useSupabase();
     const { toast } = useToast();
+    const { mutate } = useSWRConfig();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -73,6 +73,7 @@ function FeedbackFormContent() {
             });
             console.error("Feedback error:", error);
         } else {
+            mutate(["my-feedback", user.id]);
             toast({
                 title: "Thank you!",
                 description: "Your feedback has been successfully submitted.",

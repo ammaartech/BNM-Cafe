@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import useSWR from "swr";
 import { useSupabase } from "@/lib/supabase/provider";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, MessageSquare, Loader2, Calendar, MessageSquarePlus } from "lucide-react";
@@ -11,31 +12,26 @@ import type { CustomerFeedback } from "@/lib/types";
 export default function MyFeedbackPage() {
     const { user, supabase, isUserLoading } = useSupabase();
     const router = useRouter();
-    const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         if (!isUserLoading && (!user || user.is_anonymous)) {
-            router.replace("/");
+            router.replace("/login");
         }
     }, [isUserLoading, user, router]);
 
-    useEffect(() => {
-        async function loadFeedback() {
-            if (!user) return;
+    const { data: feedbacks = [], isLoading: isFeedbackLoading } = useSWR(
+        user && !user.is_anonymous ? (["my-feedback", user.id] as const) : null,
+        async ([, userId]) => {
             const { data, error } = await supabase
                 .from("customer_feedbacks")
                 .select("*")
-                .eq("user_id", user.id)
+                .eq("user_id", userId)
                 .order("created_at", { ascending: false });
-
-            if (!error && data) {
-                setFeedbacks(data as CustomerFeedback[]);
-            }
-            setIsLoading(false);
+            if (error) throw error;
+            return (data ?? []) as CustomerFeedback[];
         }
-        loadFeedback();
-    }, [user, supabase]);
+    );
+    const isLoading = !user || isFeedbackLoading;
 
     if (isUserLoading || isLoading) {
         return (

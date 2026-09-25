@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Image from "next/image";
-import { PlaceHolderImages } from "@/lib/placeholder-images"; // Assuming this exists based on previous file reads
+import { getItemImage } from "@/lib/placeholder-images";
 
 interface MenuGridProps {
     items: MenuItem[];
@@ -16,7 +16,7 @@ export function MenuGrid({ items, onAddItem }: MenuGridProps) {
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 pb-20">
             {items.map((item) => {
-                const itemImage = PlaceHolderImages.find((img) => img.id === item.image);
+                const itemImage = getItemImage(item.image);
                 return (
                     <Card
                         key={item.id}
@@ -29,6 +29,7 @@ export function MenuGrid({ items, onAddItem }: MenuGridProps) {
                                     src={itemImage.imageUrl}
                                     alt={item.name}
                                     fill
+                                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                                     className="object-cover group-hover:scale-110 transition-transform duration-300"
                                 />
                             ) : (

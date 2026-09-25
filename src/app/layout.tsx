@@ -1,89 +1,36 @@
-
-
-'use client';
-
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { preconnect } from "react-dom";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
-import { SupabaseProvider } from "@/lib/supabase/provider";
-import { TourProvider } from "@/components/tour/TourProvider";
-import { usePathname } from "next/navigation";
-import { ThemeProvider } from "next-themes";
-import { cn } from "@/lib/utils";
+import { Providers } from "./providers";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
 });
 
-// Metadata cannot be exported from a client component.
-// We can define it statically here for the root layout.
-// export const metadata: Metadata = {
-//   title: "B.N.M Cafe",
-//   description: "Your university cafe companion",
-// };
-
-function RootLayoutContent({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const pathname = usePathname();
-  const isAdminPage = pathname.startsWith('/admin');
-  const isStaffPage = pathname.startsWith('/staff');
-  const isStationPage = pathname.startsWith('/station');
-  const isAuthPage = pathname === '/' || pathname === '/login';
-
-  const layoutClass = () => {
-    if (isStaffPage || isStationPage || isAuthPage || isAdminPage) return 'w-full max-w-full';
-    return 'max-w-md shadow-2xl';
-  }
-
-  // Staff (KOT) screens stay dark; admin and station keep their current light
-  // look. Customer pages follow the user's choice from Profile > Appearance.
-  const forcedTheme = isStaffPage
-    ? 'dark'
-    : (isAdminPage || isStationPage)
-      ? 'light'
-      : undefined;
-
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <title>B.N.M Cafe</title>
-        <meta name="description" content="Your university cafe companion" />
-      </head>
-      <body className={`font-sans antialiased ${inter.variable}`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-          forcedTheme={forcedTheme}
-          disableTransitionOnChange
-        >
-          <div className={cn(
-            "mx-auto bg-background min-h-dvh flex flex-col",
-            layoutClass()
-          )}>
-            <SupabaseProvider>
-              <TourProvider>
-                {children}
-              </TourProvider>
-            </SupabaseProvider>
-            <Toaster />
-          </div>
-        </ThemeProvider>
-      </body>
-    </html>
-  );
-}
-
+export const metadata: Metadata = {
+  title: "B.N.M Cafe",
+  description: "Your university cafe companion",
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <RootLayoutContent>{children}</RootLayoutContent>;
+  // Open the connection to Supabase while the page is still parsing, so the
+  // first auth/data request skips the DNS + TLS handshake.
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    preconnect(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  }
+
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className={`font-sans antialiased ${inter.variable}`}>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
 }

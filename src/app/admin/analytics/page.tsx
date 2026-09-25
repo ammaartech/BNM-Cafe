@@ -1,6 +1,9 @@
 "use client";
 
 import { useSupabase } from "@/lib/supabase/provider";
+import { useRealtime } from "@/lib/supabase/realtime";
+import useSWR from "swr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
     IndianRupee, ShoppingCart, Users, AlertCircle, Download,
@@ -9,7 +12,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { TrendIndicator } from "@/components/admin/analytics/TrendIndicator";
 import { TooltipExplainer } from "@/components/admin/analytics/TooltipExplainer";
 import type { OrderItem } from "@/lib/types";
@@ -73,6 +76,8 @@ interface AnalyticsData {
     frequentlyBoughtTogether: { item1: string; item2: string; count: number }[];
 }
 
+const EMPTY_ORDERS: RawOrder[] = [];
+
 const PROFIT_MARGIN_ASSUMPTION = 0.35; // 35% margin for calculation
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', '#f59e0b', '#10b981', '#3b82f6'];
@@ -124,37 +129,44 @@ const salesChartConfig = {
     sales: { label: "Orders", color: "hsl(var(--accent))" },
 } satisfies ChartConfig;
 
+// PostgREST caps a response at 1,000 rows by default, so one plain select
+// silently dropped every order past the thousandth. Read in pages instead.
+const PAGE_SIZE = 1000;
+const ANALYTICS_COLUMNS =
+    "id, display_order_id, order_date, total_amount, status, payment_status, payment_method, user_id, user_name, order_items(*, menu_items(station_id, category))";
+
+async function fetchAnalyticsOrders(supabase: SupabaseClient): Promise<RawOrder[]> {
+    const all: RawOrder[] = [];
+    for (let from = 0; ; from += PAGE_SIZE) {
+        const { data, error } = await supabase
+            .from("orders")
+            .select(ANALYTICS_COLUMNS)
+            .neq("status", "CANCELLED")
+            .order("order_date", { ascending: false })
+            .order("id", { ascending: true }) // stable paging when timestamps tie
+            .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        all.push(...((data ?? []) as RawOrder[]));
+        if (!data || data.length < PAGE_SIZE) return all;
+    }
+}
+
 function AdminAnalyticsPage() {
     const { supabase } = useSupabase();
-    const [allOrders, setAllOrders] = useState<RawOrder[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [timeRange, setTimeRange] = useState<TimeRange>('today');
 
-    // 1. Fetch ALL data once
-    useEffect(() => {
-        const fetchAllData = async () => {
-            if (!supabase) return;
-            setIsLoading(true);
+    // 1. Fetch all orders once, cached for the session
+    const { data: allOrders = EMPTY_ORDERS, isLoading, error: fetchError, mutate } = useSWR(
+        ["analytics-orders"],
+        () => fetchAnalyticsOrders(supabase),
+        { revalidateOnFocus: false }
+    );
+    // A failed background refresh keeps showing the last good numbers.
+    const error = fetchError && allOrders === EMPTY_ORDERS ? "Failed to fetch order data." : null;
 
-            // Fetching all non-cancelled orders
-            const { data: ordersData, error: ordersError } = await supabase
-                .from("orders")
-                .select("*, order_items(*, menu_items(station_id, category))")
-                .neq('status', 'CANCELLED')
-                .order('order_date', { ascending: false });
-
-            if (ordersError) {
-                setError("Failed to fetch order data.");
-                setIsLoading(false);
-                return;
-            }
-
-            setAllOrders(ordersData as RawOrder[]);
-            setIsLoading(false);
-        };
-        fetchAllData();
-    }, [supabase]);
+    // New and updated orders flow into the numbers live. A long debounce keeps
+    // a lunch rush from turning into back-to-back full reloads.
+    useRealtime("analytics", [{ table: "orders" }], () => mutate(), { debounceMs: 5_000 });
 
     // 2. Compute Filtered Data based on timeRange
     const dashboardData = useMemo<AnalyticsData | null>(() => {

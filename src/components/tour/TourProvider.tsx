@@ -156,10 +156,11 @@ export function TourProvider({ children }: { children: ReactNode }) {
     if (restored) storage.set('session', PROGRESS_KEY, state ? JSON.stringify(state) : null);
   }, [state, restored]);
 
-  // Auto-start once for first-time visitors.
+  // Auto-start once for first-time customers on the menu. Not on /login: there
+  // the tour is opt-in through "Want to test?", so the page stays uncluttered.
   useEffect(() => {
     if (!restored || isUserLoading || stateRef.current) return;
-    if ((pathname === '/login' || pathname === '/menu') && !storage.get('local', seenKey('customer'))) {
+    if (pathname === '/menu' && !storage.get('local', seenKey('customer'))) {
       setState({ tourId: 'customer', index: 0 });
     } else if (pathname.startsWith('/admin') && userProfile?.role === 'admin' && !storage.get('local', seenKey('staff'))) {
       setState({ tourId: 'staff', index: 0 });
